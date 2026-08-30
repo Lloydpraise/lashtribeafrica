@@ -1,0 +1,174 @@
+---
+import Layout from "../layouts/ecommerce/Layout.astro";
+---
+
+<Layout title="Lashtribe Africa">
+  <main class="landing-page">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <section class="landing-shell">
+      <div class="brand-lockup" aria-label="Lashtribe Africa">
+        <div class="logo">LASHTRIBE <em>Africa</em></div>
+      </div>
+
+      <p class="tagline">The one Place every lashtech in Africa should be!</p>
+
+      <div class="landing-grid">
+        <a class="landing-card" href="/ecommerce">
+          <span class="kicker">Shop</span>
+          <h2>Ecommerce</h2>
+          <p>Browse products, cart, checkout, and wholesale offers.</p>
+        </a>
+
+        <a class="landing-card academy" href="/academy">
+          <span class="kicker">Learn</span>
+          <h2>Academy</h2>
+          <p>Access lessons, dashboard, and training content.</p>
+        </a>
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .landing-page {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.25rem;
+    background: #0d0d0f;
+    color: #1a1a1a;
+    font-family: "Montserrat", sans-serif;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url("https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    filter: blur(2px) brightness(0.42) saturate(0.8) contrast(1.08);
+    transform: scale(1.08);
+  }
+
+  .landing-shell {
+    position: relative;
+    z-index: 1;
+    width: min(980px, 100%);
+    text-align: center;
+    color: #fff;
+  }
+
+  .brand-lockup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+  }
+
+  .logo {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(2.8rem, 6vw, 7rem);
+    letter-spacing: 0.02em;
+    font-weight: 700;
+    color: #fff;
+    line-height: 0.95;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+  }
+
+  .logo em {
+    font-family: "Petit Formal Script", cursive;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 0.82em;
+    padding: 0 0.05em;
+    color: #f5d7d7;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.4);
+  }
+
+  .tagline {
+    margin: 0 auto 2.25rem;
+    max-width: 43rem;
+    font-size: clamp(0.95rem, 2.2vw, 1.4rem);
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  .landing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .landing-card {
+    display: block;
+    background: rgba(18, 18, 21, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 2rem 1.5rem;
+    text-decoration: none;
+    color: #f9f5f2;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    backdrop-filter: blur(8px);
+  }
+
+  .landing-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 22px 42px rgba(0, 0, 0, 0.16);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .landing-card.academy {
+    background: rgba(30, 18, 22, 0.8);
+  }
+
+  .kicker {
+    display: inline-block;
+    margin-bottom: 1rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #f2b5a0;
+  }
+
+  h2 {
+    margin: 0 0 0.8rem;
+    font-size: clamp(1.5rem, 2vw, 2.2rem);
+    font-family: "Playfair Display", serif;
+    color: #fff;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.6;
+    color: rgba(26, 26, 26, 0.8);
+  }
+
+  .landing-card p {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  @media (max-width: 768px) {
+    .landing-page {
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding-top: 2.25rem;
+    }
+
+    .brand-lockup {
+      margin-bottom: 1rem;
+    }
+
+    .tagline {
+      margin-bottom: 1.5rem;
+    }
+  }
+</style>

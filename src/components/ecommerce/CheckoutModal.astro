@@ -1,0 +1,124 @@
+---
+---
+
+<div class="checkout-modal" id="checkoutModal">
+  <div class="checkout-head">
+    <h3>Checkout</h3>
+    <button class="drawer-close" id="checkoutClose">✕</button>
+  </div>
+
+  <div class="checkout-body" id="checkoutBody">
+    <div id="welcomeNote" class="welcome-note" style="display:none;">
+      <span
+        >Welcome back<span id="welcomeName"></span> — using your saved
+        details.</span
+      >
+      <a href="#" id="notYouLink">Not you?</a>
+    </div>
+
+    <div id="checkoutFormStep">
+      <div class="co-field">
+        <label>Full Name</label>
+        <input type="text" id="coName" placeholder="e.g. Wanjiru Kamau" />
+      </div>
+      <div class="co-field">
+        <label>Phone / WhatsApp</label>
+        <input type="text" id="coPhone" placeholder="07xx xxx xxx" />
+      </div>
+      <div class="co-field">
+        <label>Delivery Area</label>
+        <input type="text" id="coArea" placeholder="e.g. Nairobi CBD" />
+      </div>
+      <label class="co-remember"
+        ><input
+          type="checkbox"
+          id="coRemember"
+          checked
+          style="margin-top:2px;"
+        /> Remember me — so checkout is instant and we can follow up with you
+        next time</label
+      >
+      <button class="btn-primary co-continue" id="coContinueBtn">Continue</button>
+    </div>
+
+    <div id="upsellStep" style="display:none;">
+      <div class="upsell-strip">
+        <div class="eyebrow upsell-eyebrow">Goes well with your order</div>
+        <div class="upsell-item">
+          <div class="upsell-thumb">
+            <svg viewBox="0 0 60 60"
+              ><path
+                d="M15 30 L45 30 M30 15 L30 45"
+                stroke="black"
+                stroke-width="1.3"></path></svg
+            >
+          </div>
+          <div class="upsell-info">
+            <h6>Isolation Tweezers, Curved</h6><span>Ksh 780</span>
+          </div>
+          <button class="upsell-add" data-id="tw" data-price="780">Add</button>
+        </div>
+        <div class="upsell-item">
+          <div class="upsell-thumb">
+            <svg viewBox="0 0 60 60"
+              ><rect
+                x="16"
+                y="16"
+                width="28"
+                height="28"
+                stroke="black"
+                stroke-width="1.3"
+                fill="none"></rect></svg
+            >
+          </div>
+          <div class="upsell-info">
+            <h6>Under-Eye Gel Patches</h6><span>Ksh 560</span>
+          </div>
+          <button class="upsell-add" data-id="gel" data-price="560">Add</button>
+        </div>
+        <div class="upsell-item">
+          <div class="upsell-thumb">
+            <svg viewBox="0 0 60 60"
+              ><path
+                d="M12 40 Q30 15 48 40"
+                stroke="black"
+                stroke-width="1.3"
+                fill="none"></path></svg
+            >
+          </div>
+          <div class="upsell-info">
+            <h6>Lint-Free Micro Brushes</h6><span>Ksh 420</span>
+          </div>
+          <button class="upsell-add" data-id="brush" data-price="420">Add</button>
+        </div>
+      </div>
+
+      <div class="co-shipping-note">
+        Shipping fee is on you and isn't in the total below. You'll be
+        contacted shortly with the exact dates and cost for your area.
+      </div>
+    </div>
+
+    <div id="confirmStep" class="co-confirm" style="display:none;">
+      <div class="tick">
+        <svg width="20" height="16" viewBox="0 0 20 16" fill="none"
+          ><path d="M1 8 L7 14 L19 1" stroke="black" stroke-width="2"
+          ></path></svg
+        >
+      </div>
+      <h4>You're on the list.</h4>
+      <p>We've got your order and your details.</p>
+      <p>We'll be in touch shortly with your exact shipping dates and fee.</p>
+    </div>
+  </div>
+
+  <div class="checkout-foot" id="checkoutFoot" style="display:none;">
+    <div class="pay-row">
+      <span>Total to pay</span><span id="payTotal">Ksh 0</span>
+    </div>
+    <button class="btn-primary pay-btn" id="payNowBtn">Pay Here</button>
+    <p class="trust-note">
+      Simple, secure checkout — your details are safe with us.
+    </p>
+  </div>
+</div>

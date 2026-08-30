@@ -1,0 +1,23 @@
+---
+interface Props {
+  icon: string; // inner SVG markup for the module cover illustration
+  title: string;
+  blurb: string;
+}
+
+const { icon, title, blurb } = Astro.props;
+---
+
+<div class="course-card" data-open-player="1">
+  <div class="module-cover">
+    <svg viewBox="0 0 100 100" set:html={icon} />
+  </div>
+  <div class="course-body">
+    <h4>{title}</h4>
+    <p>{blurb}</p>
+    <div class="course-cta-row">
+      <span class="course-free-tag">Included</span>
+      <button class="course-start" data-open-player="1">Start Course →</button>
+    </div>
+  </div>
+</div>

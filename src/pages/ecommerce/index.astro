@@ -1,0 +1,100 @@
+---
+import Layout from "../../layouts/ecommerce/Layout.astro";
+import AnnouncementTicker from "../../components/ecommerce/AnnouncementTicker.astro";
+import SiteHeader from "../../components/ecommerce/SiteHeader.astro";
+import Hero from "../../components/ecommerce/Hero.astro";
+import MarketingPillars from "../../components/ecommerce/MarketingPillars.astro";
+import ProductRail from "../../components/ecommerce/ProductRail.astro";
+import KitStrip from "../../components/ecommerce/KitStrip.astro";
+import AcademyHook from "../../components/ecommerce/AcademyHook.astro";
+import RewardsReseller from "../../components/ecommerce/RewardsReseller.astro";
+import SiteFooter from "../../components/ecommerce/SiteFooter.astro";
+import CartDrawer from "../../components/ecommerce/CartDrawer.astro";
+
+const topSelling = [
+  {
+    slug: "0-07-volume-fans-mixed-tray",
+    icon: '<path d="M10 60 Q35 40 60 55 Q80 68 95 45" stroke="black" stroke-width="1.5" fill="none"/>',
+    name: "0.07 Volume Fans — Mixed Tray",
+    marketPrice: "Ksh 1,800",
+    nowPrice: "Ksh 1,150",
+    note: "Save Ksh 3,250 on the tray!",
+  },
+  {
+    slug: "pro-bond-adhesive-5ml",
+    icon: '<ellipse cx="50" cy="50" rx="30" ry="12" stroke="black" stroke-width="1.5" fill="none"/>',
+    name: "Pro Bond Adhesive, 5ml",
+    marketPrice: "Ksh 2,400",
+    nowPrice: "Ksh 1,600",
+    note: "Save Ksh 4,000 on the case!",
+  },
+  {
+    slug: "isolation-tweezers-curved",
+    icon: '<path d="M20 50 L80 50 M50 20 L50 80" stroke="black" stroke-width="1.5"/>',
+    name: "Isolation Tweezers, Curved",
+    marketPrice: "Ksh 1,200",
+    nowPrice: "Ksh 780",
+    note: "Save Ksh 2,100 on the set!",
+  },
+  {
+    slug: "under-eye-gel-patches-bulk",
+    icon: '<rect x="25" y="25" width="50" height="50" stroke="black" stroke-width="1.5" fill="none"/>',
+    name: "Under-Eye Gel Patches, Bulk",
+    marketPrice: "Ksh 900",
+    nowPrice: "Ksh 560",
+    note: "Save Ksh 1,700 on the pack!",
+  },
+];
+
+const newIn = [
+  {
+    slug: "mega-volume-fans-0-05",
+    icon: '<path d="M15 55 Q50 30 85 55" stroke="black" stroke-width="1.5" fill="none"/>',
+    name: "Mega Volume Fans — 0.05",
+    marketPrice: "Ksh 2,000",
+    nowPrice: "Ksh 1,300",
+    note: "Just landed this batch",
+  },
+  {
+    slug: "low-fume-primer-10ml",
+    icon: '<circle cx="50" cy="50" r="28" stroke="black" stroke-width="1.5" fill="none"/>',
+    name: "Low-Fume Primer, 10ml",
+    marketPrice: "Ksh 1,600",
+    nowPrice: "Ksh 990",
+    note: "Just landed this batch",
+  },
+  {
+    slug: "nano-mist-humidifier",
+    icon: '<path d="M30 30 L70 70 M70 30 L30 70" stroke="black" stroke-width="1.5"/>',
+    name: "Nano Mist Humidifier",
+    marketPrice: "Ksh 3,200",
+    nowPrice: "Ksh 2,250",
+    note: "Just landed this batch",
+  },
+  {
+    slug: "lint-free-micro-brushes",
+    icon: '<path d="M20 70 Q50 20 80 70" stroke="black" stroke-width="1.5" fill="none"/>',
+    name: "Lint-Free Micro Brushes",
+    marketPrice: "Ksh 700",
+    nowPrice: "Ksh 420",
+    note: "Just landed this batch",
+  },
+];
+---
+
+<Layout>
+  <AnnouncementTicker />
+  <SiteHeader />
+  <Hero />
+  <MarketingPillars />
+  <ProductRail id="shop" title="Top Selling" products={topSelling} />
+  <ProductRail id="new-in" title="New In" products={newIn} noTopPadding />
+  <KitStrip />
+  <AcademyHook />
+  <RewardsReseller />
+  <SiteFooter />
+  <CartDrawer />
+
+  <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/main.js" is:inline></script>
+</Layout>

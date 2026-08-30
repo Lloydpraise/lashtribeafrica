@@ -1,0 +1,39 @@
+---
+const products = [
+  {
+    icon: '<path d="M8 40 Q30 20 52 35" stroke="black" stroke-width="1.2" fill="none"/>',
+    name: "0.07 Volume Fans",
+    price: 1150,
+  },
+  {
+    icon: '<ellipse cx="30" cy="30" rx="18" ry="8" stroke="black" stroke-width="1.2" fill="none"/>',
+    name: "Pro Bond Adhesive",
+    price: 1600,
+  },
+  {
+    icon: '<path d="M15 15 L45 45 M45 15 L15 45" stroke="black" stroke-width="1.2"/>',
+    name: "Isolation Tweezers",
+    price: 780,
+  },
+];
+---
+
+<div class="product-strip">
+  <div class="eyebrow">Products Used In This Course</div>
+  <div class="product-strip-row">
+    {
+      products.map((p) => (
+        <div class="ps-card">
+          <div class="ps-thumb">
+            <svg viewBox="0 0 60 60" set:html={p.icon} />
+          </div>
+          <div class="ps-info">
+            <h6>{p.name}</h6>
+            <span>Ksh {p.price.toLocaleString()}</span>
+          </div>
+          <button class="ps-add" data-name={p.name} data-price={p.price}>+</button>
+        </div>
+      ))
+    }
+  </div>
+</div>

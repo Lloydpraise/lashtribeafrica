@@ -1,0 +1,61 @@
+---
+interface Product {
+  slug?: string;
+  icon: string; // inner SVG markup for the product illustration
+  name: string;
+  marketPrice: string;
+  nowPrice: string;
+  note: string;
+}
+
+interface Props {
+  id?: string;
+  title: string;
+  viewAllHref?: string;
+  products: Product[];
+  noTopPadding?: boolean;
+}
+
+const {
+  id,
+  title,
+  viewAllHref = "/ecommerce/product/0-07-volume-fans-mixed-tray",
+  products,
+  noTopPadding = false,
+} = Astro.props;
+
+const delayClasses = ["", "d1", "d2", "d3"];
+---
+
+<section
+  class="shop wrap"
+  id={id}
+  style={noTopPadding ? "padding-top:0;" : undefined}
+>
+  <div class="section-head reveal">
+    <h2>{title}</h2>
+    <a class="view-all" href={viewAllHref}>View All Products</a>
+  </div>
+  <div class="rail">
+    {
+      products.map((product, i) => (
+        <article class:list={["card", "reveal", delayClasses[i % delayClasses.length]]}>
+          <a class="card-link" href={product.slug ? `/ecommerce/product/${product.slug}` : "/ecommerce/product/0-07-volume-fans-mixed-tray"}>
+            <div class="card-img">
+              <span class="badge-moq">MOQ 5</span>
+              <svg viewBox="0 0 100 100" set:html={product.icon} />
+            </div>
+            <div class="card-body">
+              <h4>{product.name}</h4>
+              <div class="price-row">
+                <span class="price-market">{product.marketPrice}</span>
+                <span class="price-now">{product.nowPrice}</span>
+              </div>
+              <div class="card-note">{product.note}</div>
+            </div>
+          </a>
+        </article>
+      ))
+    }
+  </div>
+</section>

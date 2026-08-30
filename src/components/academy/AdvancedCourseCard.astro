@@ -1,0 +1,45 @@
+---
+interface Props {
+  id: string; // used for data-course-id, so it must be unique across BOTH advanced grids on the page
+  icon: string; // inner SVG markup for the module cover illustration
+  title: string;
+  blurb: string;
+  price: number;
+}
+
+const { id, icon, title, blurb, price } = Astro.props;
+---
+
+<div class="course-card advanced-card" data-course-id={id}>
+  <div class="module-cover">
+    <svg viewBox="0 0 100 100" set:html={icon} />
+    <div class="module-lock lock-badge">
+      <svg viewBox="0 0 24 24" fill="none"
+        ><rect
+          x="6"
+          y="11"
+          width="12"
+          height="9"
+          rx="1.5"
+          stroke="white"
+          stroke-width="1.4"></rect><path
+          d="M8.5 11 V8 a3.5 3.5 0 0 1 7 0 v3"
+          stroke="white"
+          stroke-width="1.4"></path></svg
+      >
+    </div>
+  </div>
+  <div class="course-body">
+    <h4>{title}</h4>
+    <p>{blurb}</p>
+    <div class="course-price-row">
+      <span class="course-price">Ksh {price.toLocaleString()}</span>
+      <button
+        class="course-buy"
+        data-course-id={id}
+        data-price={price}
+        data-title={title}>Buy Course</button
+      >
+    </div>
+  </div>
+</div>

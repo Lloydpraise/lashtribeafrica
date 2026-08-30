@@ -1,0 +1,16 @@
+---
+const messages = [
+  "WHOLESALE · DIRECT FROM SOURCE",
+  "ORDER NOW — NEW BATCH SHIPS SOON",
+  "MOQ 5 ON MOST PRODUCTS",
+  "UNBEATABLE PRICES · UNMATCHED QUALITY",
+];
+// repeated twice in the original markup so the marquee loops seamlessly
+const loop = [...messages, ...messages];
+---
+
+<div class="ticker">
+  <div class="ticker-track">
+    {loop.map((msg) => <span>{msg}</span>)}
+  </div>
+</div>

@@ -1,0 +1,56 @@
+---
+const { showAcademyStats = false } = Astro.props;
+---
+
+<footer>
+  <div class="wrap">
+    {
+      showAcademyStats && (
+        <div class="foot-badges" aria-label="Academy stats">
+          <div class="foot-badge">
+            <span class="foot-badge-num">2,400+</span>
+            <span class="foot-badge-label">Students taught</span>
+          </div>
+          <div class="foot-badge">
+            <span class="foot-badge-num">38</span>
+            <span class="foot-badge-label">Courses</span>
+          </div>
+          <div class="foot-badge">
+            <span class="foot-badge-num">4.9★</span>
+            <span class="foot-badge-label">Average rating</span>
+          </div>
+        </div>
+      )
+    }
+    <div class="foot-top">
+      <div>
+        <div class="foot-logo">LASHTRIBE <em class="script">Africa</em></div>
+        <p style="font-size:12px;color:#999;max-width:260px;line-height:1.6;">
+          Wholesale, direct from source. No gatekeeping — just what we
+          actually use.
+        </p>
+      </div>
+      <div class="foot-col">
+        <h5>Shop</h5>
+        <a href="#shop">Top Selling</a>
+        <a href="#new-in">New In</a>
+        <a href="#how-it-works">How Preorders Work</a>
+      </div>
+      <div class="foot-col">
+        <h5>Community</h5>
+        <a href="#rewards">Rewards</a>
+        <a href="#">Reseller / Private Label</a>
+        <a href="/academy" class="academy-link">Lashtribe Academy →</a>
+      </div>
+      <div class="foot-col">
+        <h5>Support</h5>
+        <a href="#">Shipping & Preorders</a>
+        <a href="#">Contact Us</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Lashtribe Africa</span>
+      <span>By the team behind Lashes By Shazz</span>
+    </div>
+  </div>
+</footer>

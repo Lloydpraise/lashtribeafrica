@@ -1,0 +1,69 @@
+---
+import CourseCard from "./CourseCard.astro";
+import AdvancedCourseCard from "./AdvancedCourseCard.astro";
+
+const startHereCourses = [
+  {
+    icon: '<path d="M15 55 Q50 30 85 55" stroke="black" stroke-width="1.5" fill="none"/>',
+    title: "Volume Lashing Fundamentals",
+    blurb: "Start here — fans, isolation, and the basics.",
+  },
+  {
+    icon: '<ellipse cx="50" cy="50" rx="30" ry="12" stroke="black" stroke-width="1.5" fill="none"/>',
+    title: "Classic Set Essentials",
+    blurb: "The foundation every lashtech starts with.",
+  },
+  {
+    icon: '<path d="M20 50 L80 50 M50 20 L50 80" stroke="black" stroke-width="1.5"/>',
+    title: "Tool & Product Handling",
+    blurb: "Adhesive, tweezers, and hygiene basics.",
+  },
+  {
+    icon: '<rect x="25" y="25" width="50" height="50" stroke="black" stroke-width="1.5" fill="none"/>',
+    title: "Client Consultations",
+    blurb: "Reading face shape and setting expectations.",
+  },
+];
+
+const advancedCourses = [
+  {
+    id: "bootcamp2",
+    icon: '<path d="M20 30 L80 30 M20 50 L80 50 M20 70 L60 70" stroke="black" stroke-width="1.5"/>',
+    title: "Lash Business Bootcamp",
+    blurb: "Pricing, marketing, and running a lash studio that actually pays.",
+    price: 4500,
+  },
+  {
+    id: "russian2",
+    icon: '<path d="M20 60 Q40 20 60 60 Q70 40 85 60" stroke="black" stroke-width="1.5" fill="none"/>',
+    title: "Russian Volume Pro",
+    blurb: "Advanced fan shaping and symmetry for dense, lightweight volume.",
+    price: 3200,
+  },
+];
+---
+
+<div id="dashboardEmpty" class="wrap dash-wrap" style="display:none;">
+  <div class="empty-hero reveal">
+    <div class="eyebrow">Welcome to Lashtribe Academy</div>
+    <h1>Let's get you started, <span id="emptyName">friend</span>.</h1>
+    <p>Pick your first course below and we'll pick up right where you left off next time.</p>
+    <a href="#courseCatalog" class="btn-primary">Browse Courses</a>
+  </div>
+
+  <div class="section-head reveal" id="courseCatalog"><h2>Start Here — Foundational Courses</h2></div>
+  <div class="course-grid reveal">
+    {startHereCourses.map((c) => <CourseCard icon={c.icon} title={c.title} blurb={c.blurb} />)}
+  </div>
+
+  <div class="section-head adv-head reveal">
+    <h2>Advanced Courses</h2><span class="eyebrow">Unlock anytime</span>
+  </div>
+  <div class="course-grid advanced-grid reveal" id="advancedGridEmpty">
+    {
+      advancedCourses.map((c) => (
+        <AdvancedCourseCard id={c.id} icon={c.icon} title={c.title} blurb={c.blurb} price={c.price} />
+      ))
+    }
+  </div>
+</div>

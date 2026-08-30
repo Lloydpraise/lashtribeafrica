@@ -1,0 +1,13 @@
+---
+const navItems = [
+  { href: "#shop", label: "Shop" },
+  { href: "#new-in", label: "New In" },
+  { href: "#how-it-works", label: "How Preorders Work" },
+  { href: "#rewards", label: "Rewards" },
+];
+---
+
+<nav class="links mobile-nav" id="navLinks" aria-label="Main navigation">
+  {navItems.map((item) => <a href={item.href}>{item.label}</a>)}
+  <a href="/academy" class="academy-link">Lashtribe Academy →</a>
+</nav>

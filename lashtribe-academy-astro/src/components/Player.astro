@@ -1,0 +1,62 @@
+---
+import ProductStrip from "./ProductStrip.astro";
+---
+
+<section class="view" id="viewPlayer">
+  <div class="wrap player-wrap">
+    <button class="back-link" id="backToDash">← Back to Dashboard</button>
+    <div class="player-grid">
+      <div class="player-main">
+        <div class="video-box" id="videoBox">
+          <div class="video-overlay-art">
+            <svg viewBox="0 0 300 300"
+              ><path
+                d="M20 200 Q100 150 180 190 Q230 215 280 170"
+                stroke="white"
+                stroke-width="1"
+                fill="none"></path></svg
+            >
+          </div>
+          <button class="video-play" id="videoPlayBtn">▶</button>
+          <div class="video-caption" id="videoCaption">Fan Formation Techniques</div>
+        </div>
+        <div class="scrub"><div class="scrub-fill" id="scrubFill" style="width:35%;"></div></div>
+
+        <ProductStrip />
+
+        <div class="transcript" id="transcriptBox">
+          <h4>Transcript</h4>
+          <p id="transcriptText">
+            We're picking up in fan formation — the technique that gives volume
+            sets their shape. Fan width and curl consistency matter more than
+            speed here, so slow down and watch the base of every fan before
+            you isolate.
+          </p>
+        </div>
+
+        <div class="main-reward" id="mainReward">
+          <div class="badge">🎓</div>
+          <h3>Your Certificate Is Ready</h3>
+          <p>
+            Complete Volume Lashing Fundamentals to unlock your certificate,
+            a Lashtribe Academy badge on your profile, and 500 bonus points.
+          </p>
+        </div>
+
+        <button class="btn-primary" id="markCompleteBtn" style="margin-top:22px;"
+          >Mark Step Complete →</button
+        >
+      </div>
+
+      <aside class="curriculum">
+        <h4>Course Steps</h4>
+        <ol class="curr-list" id="currList" style="list-style:none;"></ol>
+        <div class="reward-panel" id="rewardPanel">
+          <div class="eyebrow">What You'll Get</div>
+          <h5>Lashtribe Academy Certificate</h5>
+          <p>Plus a badge on your Lashtribe profile and 500 bonus points.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>

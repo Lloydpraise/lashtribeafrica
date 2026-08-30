@@ -1,0 +1,192 @@
+---
+import Layout from "../../../layouts/ecommerce/Layout.astro";
+import SiteHeader from "../../../components/ecommerce/SiteHeader.astro";
+import CartDrawer from "../../../components/ecommerce/CartDrawer.astro";
+import SiteFooter from "../../../components/ecommerce/SiteFooter.astro";
+import { ecommerceProducts, formatKsh, productIndex } from "../../../data/ecommerce-products.js";
+
+export function getStaticPaths() {
+  return ecommerceProducts.map((product) => ({
+    params: { slug: product.slug },
+  }));
+}
+
+const slug = Astro.params.slug || ecommerceProducts[0].slug;
+const product = productIndex[slug] || ecommerceProducts[0];
+const complementaryProducts = ecommerceProducts.filter((item) =>
+  product.complements.includes(item.id)
+);
+const relatedProducts = ecommerceProducts.filter((item) => item.slug !== product.slug).slice(0, 3);
+const priceDifference = product.marketPrice - product.nowPrice;
+const cartActionLabel = `Added ${product.name}`;
+---
+
+<Layout title={`${product.name} | Lashtribe Africa`}>
+  <SiteHeader />
+
+  <main class="product-page">
+    <section class="product-shell wrap">
+      <div class="product-gallery">
+        <div class="product-visual">
+          <span class="product-badge">{product.badge}</span>
+          <svg viewBox="0 0 100 100" set:html={product.icon} />
+        </div>
+
+        <div class="bundle-strip" aria-label="Goes together with">
+          <div class="bundle-header">
+            <span class="eyebrow">Goes together with</span>
+          </div>
+          <div class="bundle-items">
+            {
+              complementaryProducts.map((item) => (
+                <div class="bundle-card">
+                  <div class="bundle-thumb">
+                    <svg viewBox="0 0 100 100" set:html={item.icon} />
+                  </div>
+                  <div class="bundle-copy">
+                    <strong>{item.name}</strong>
+                    <span>{formatKsh(item.nowPrice)}</span>
+                  </div>
+                  <button
+                    class="bundle-add"
+                    type="button"
+                    data-product-id={item.id}
+                    aria-label={`Add ${item.name} to cart`}
+                  >
+                    +
+                  </button>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="product-panel">
+        <div class="product-meta">
+          <span class="eyebrow">Wholesale favorite</span>
+        </div>
+
+        <h1>{product.name}</h1>
+
+        <ul class="feature-list">
+          {product.features.map((feature) => <li>{feature}</li>)}
+        </ul>
+
+        <div class="product-price-card">
+          <div class="market-price-row">
+            <span class="label">Market Price</span>
+            <span class="market-price">{formatKsh(product.marketPrice)}</span>
+          </div>
+          <div class="save-row">
+            <span class="label">You Will Save</span>
+            <strong>{formatKsh(priceDifference)}</strong>
+          </div>
+          <div class="current-price-row">
+            <span class="current-price">{formatKsh(product.nowPrice)}</span>
+          </div>
+        </div>
+
+        <div class="product-actions">
+          <button class="btn-primary product-add" type="button" data-product-id={product.id}>
+            Add to Cart
+          </button>
+          <button class="btn-black product-buy" type="button" data-product-id={product.id}>
+            Buy Now
+          </button>
+        </div>
+
+        <div class="product-description">
+          <h2>Product Details</h2>
+          <p>{product.description}</p>
+          <p>
+            Preorder from Lashtribe Africa and receive direct sourcing value on every order,
+            with flexible batch volumes and fast dispatch on the next available production run.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="related-products wrap">
+      <div class="section-head related-head">
+        <h2>You may also like</h2>
+      </div>
+      <div class="related-grid">
+        {
+          relatedProducts.map((item) => (
+            <a class="related-card" href={`/ecommerce/product/${item.slug}`}>
+              <div class="related-thumb">
+                <svg viewBox="0 0 100 100" set:html={item.icon} />
+              </div>
+              <div class="related-copy">
+                <h3>{item.name}</h3>
+                <div class="related-price-row">
+                  <span class="market">{formatKsh(item.marketPrice)}</span>
+                  <span class="now">{formatKsh(item.nowPrice)}</span>
+                </div>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+  </main>
+
+  <SiteFooter />
+  <CartDrawer />
+
+  <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/main.js" is:inline></script>
+  <script is:inline>
+    (function () {
+      const productId = Number(document.querySelector('[data-product-id]')?.dataset.productId || 0);
+      const formatKsh = (value) => `Ksh ${Number(value || 0).toLocaleString()}`;
+
+      function addToCart(id) {
+        const cart = window.LashtribeCart ? window.LashtribeCart.getCart() : JSON.parse(localStorage.getItem('lashtribe_cart') || '{}');
+        const next = { ...cart };
+        next[id] = (Number(next[id]) || 0) + 1;
+
+        if (window.LashtribeCart) {
+          window.LashtribeCart.setCart(next);
+          window.LashtribeCart.syncCartBadges();
+        } else {
+          localStorage.setItem('lashtribe_cart', JSON.stringify(next));
+        }
+
+        const drawer = document.getElementById('cartDrawer');
+        if (drawer) {
+          drawer.classList.add('open');
+          const overlay = document.getElementById('overlay');
+          if (overlay) overlay.classList.add('open');
+        }
+      }
+
+      document.querySelectorAll('.product-add, .bundle-add').forEach((button) => {
+        button.addEventListener('click', () => {
+          const id = Number(button.dataset.productId || 0);
+          if (!id) return;
+          if (button.classList.contains('bundle-add')) {
+            button.classList.add('added');
+            button.textContent = '✓';
+            button.disabled = true;
+          }
+          addToCart(id);
+        });
+      });
+
+      document.querySelectorAll('.product-buy').forEach((button) => {
+        button.addEventListener('click', () => {
+          const id = Number(button.dataset.productId || 0);
+          if (!id) return;
+          addToCart(id);
+          if (window.LashtribeCart) {
+            window.LashtribeCart.goToCheckout();
+          } else {
+            window.location.href = '/ecommerce/checkout';
+          }
+        });
+      });
+    })();
+  </script>
+</Layout>

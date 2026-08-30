@@ -1,0 +1,170 @@
+---
+import Layout from "../../layouts/ecommerce/Layout.astro";
+---
+
+<Layout title="Checkout | Lashtribe Africa">
+  <div class="checkout-page">
+    <div class="checkout-header">
+      <div class="logo">Lashtribe <em>africa</em></div>
+      <a class="back-link" href="/">Continue shopping</a>
+    </div>
+
+    <div class="checkout-shell">
+      <section class="checkout-panel">
+        <div class="eyebrow">Checkout</div>
+        <h1>Complete your order</h1>
+
+        <form class="checkout-form">
+          <div class="field-row">
+            <div class="field">
+              <label for="fullName">Full name</label>
+              <input id="fullName" name="fullName" type="text" placeholder="Your full name" />
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="you@example.com" />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="phone">Phone number</label>
+              <input id="phone" name="phone" type="tel" placeholder="+254 712 345 678" />
+            </div>
+            <div class="field">
+              <label for="area">Delivery area</label>
+              <input id="area" name="area" type="text" placeholder="Nairobi, Kenya" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="notes">Delivery notes</label>
+            <textarea id="notes" name="notes" rows="4" placeholder="Any special delivery notes or preferred drop-off instructions"></textarea>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" checked />
+            <span>Send me preorder updates and stock alerts for future batches.</span>
+          </label>
+
+          <label class="checkbox-row small-checkbox">
+            <input type="checkbox" />
+            <span>Create account for easier checkout</span>
+          </label>
+        </form>
+      </section>
+
+      <aside class="order-summary">
+        <div class="summary-header">
+          <h2>Order summary</h2>
+          <span class="summary-count"><span id="summaryCount">2</span> items</span>
+        </div>
+
+        <div class="summary-items" id="summaryItems">
+          <div class="summary-item">
+            <div class="summary-thumb">
+              <svg viewBox="0 0 60 60"><path d="M8 40 Q30 20 52 35" stroke="black" stroke-width="1.2" fill="none"></path></svg>
+            </div>
+            <div class="summary-info">
+              <h3>0.07 Volume Fans — Mixed Tray</h3>
+              <small>Qty <span class="summary-qty" data-qty="1">5</span></small>
+            </div>
+            <div class="summary-price" data-line-price="1">Ksh 5,750</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-thumb">
+              <svg viewBox="0 0 60 60"><ellipse cx="30" cy="30" rx="18" ry="8" stroke="black" stroke-width="1.2" fill="none"></ellipse></svg>
+            </div>
+            <div class="summary-info">
+              <h3>Pro Bond Adhesive, 5ml</h3>
+              <small>Qty <span class="summary-qty" data-qty="2">5</span></small>
+            </div>
+            <div class="summary-price" data-line-price="2">Ksh 8,000</div>
+          </div>
+        </div>
+
+        <div class="summary-totals">
+          <div class="saved-row">
+            <span>You saved</span>
+            <strong id="checkoutSaved">Ksh 7,250</strong>
+          </div>
+
+          <div class="totals-row">
+            <span>Subtotal</span>
+            <span id="checkoutSubtotal">Ksh 13,750</span>
+          </div>
+          <div class="totals-row">
+            <span>Shipping</span>
+            <span id="checkoutShipping">TBD</span>
+          </div>
+          <div class="totals-row total">
+            <span>Total</span>
+            <span id="checkoutTotal">Ksh 13,750</span>
+          </div>
+        </div>
+
+        <button class="pay-now-btn" type="button">Pay now</button>
+        <p class="summary-note">Secure payment processing will be connected here once your gateway is ready.</p>
+      </aside>
+    </div>
+  </div>
+
+  <script is:inline>
+    const CART_KEY = 'lashtribe_cart';
+    const unitPrices = { 1: 1150, 2: 1600 };
+    const marketPrices = { 1: 1800, 2: 2400 };
+
+    function formatMoney(value) {
+      return 'Ksh ' + Number(value).toLocaleString();
+    }
+
+    function readCart() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(CART_KEY) || 'null');
+        if (stored && typeof stored === 'object') {
+          return {
+            1: Math.max(5, Number(stored[1]) || 5),
+            2: Math.max(5, Number(stored[2]) || 5),
+          };
+        }
+      } catch (error) {
+        console.warn('Unable to read cart state', error);
+      }
+      return { 1: 5, 2: 5 };
+    }
+
+    function renderCheckoutSummary() {
+      const cart = readCart();
+      let subtotal = 0;
+      let marketTotal = 0;
+
+      for (const line of [1, 2]) {
+        const qty = cart[line];
+        const lineSubtotal = unitPrices[line] * qty;
+        const lineMarket = marketPrices[line] * qty;
+        subtotal += lineSubtotal;
+        marketTotal += lineMarket;
+
+        const qtyNode = document.querySelector('[data-qty="' + line + '"]');
+        const priceNode = document.querySelector('[data-line-price="' + line + '"]');
+
+        if (qtyNode) qtyNode.textContent = qty;
+        if (priceNode) priceNode.textContent = formatMoney(lineSubtotal);
+      }
+
+      const saved = marketTotal - subtotal;
+      const summaryCount = document.getElementById('summaryCount');
+      const checkoutSubtotal = document.getElementById('checkoutSubtotal');
+      const checkoutSaved = document.getElementById('checkoutSaved');
+      const checkoutTotal = document.getElementById('checkoutTotal');
+
+      if (summaryCount) summaryCount.textContent = String(Object.values(cart).reduce((sum, value) => sum + value, 0));
+      if (checkoutSubtotal) checkoutSubtotal.textContent = formatMoney(subtotal);
+      if (checkoutSaved) checkoutSaved.textContent = formatMoney(saved);
+      if (checkoutTotal) checkoutTotal.textContent = formatMoney(subtotal);
+    }
+
+    renderCheckoutSummary();
+  </script>
+</Layout>

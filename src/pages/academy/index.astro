@@ -1,0 +1,19 @@
+---
+import Layout from "../../layouts/academy/Layout.astro";
+import OverlayToast from "../../components/academy/OverlayToast.astro";
+import AuthView from "../../components/academy/AuthView.astro";
+import AppShell from "../../components/academy/AppShell.astro";
+import CourseCheckoutModal from "../../components/academy/CourseCheckoutModal.astro";
+import AcademyCartPanel from "../../components/academy/AcademyCartPanel.astro";
+---
+
+<Layout>
+  <OverlayToast />
+  <AuthView />
+  <AppShell />
+  <AcademyCartPanel />
+  <CourseCheckoutModal />
+
+  <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/academy.js" is:inline></script>
+</Layout>

@@ -1,0 +1,36 @@
+---
+const pillars = [
+  {
+    delayClass: "",
+    eyebrow: "01 — Direct Sourcing",
+    title: "Same suppliers, no middlemen.",
+    copy: "We're already a trusted name in the industry — the suppliers behind Lashes By Shazz now supply you too.",
+  },
+  {
+    delayClass: "d1",
+    eyebrow: "02 — Unmatched Quality",
+    title: "Exactly what we use.",
+    copy: "If it's not good enough for our own chair, it's not good enough to sell.",
+  },
+  {
+    delayClass: "d2",
+    eyebrow: "03 — Unbeatable Prices",
+    title: "Wholesale, at wholesale units.",
+    copy: "Batching orders together keeps prices low and your margins healthy.",
+  },
+];
+---
+
+<section class="pillars" id="how-it-works">
+  <div class="wrap">
+    {
+      pillars.map((p) => (
+        <div class:list={["pillar", "reveal", p.delayClass]}>
+          <div class="eyebrow">{p.eyebrow}</div>
+          <h3>{p.title}</h3>
+          <p>{p.copy}</p>
+        </div>
+      ))
+    }
+  </div>
+</section>

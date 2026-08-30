@@ -1,0 +1,16 @@
+---
+import Layout from "../layouts/Layout.astro";
+import OverlayToast from "../components/OverlayToast.astro";
+import AuthView from "../components/AuthView.astro";
+import AppShell from "../components/AppShell.astro";
+import CourseCheckoutModal from "../components/CourseCheckoutModal.astro";
+---
+
+<Layout>
+  <OverlayToast />
+  <AuthView />
+  <AppShell />
+  <CourseCheckoutModal />
+
+  <script src="/scripts/main.js" is:inline></script>
+</Layout>

@@ -1,0 +1,78 @@
+---
+---
+
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="cartDrawer">
+  <div class="drawer-head">
+    <h3>Your Preorder</h3>
+    <button class="drawer-close" id="drawerClose">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="line-item">
+      <div class="line-thumb">
+        <svg viewBox="0 0 60 60"
+          ><path
+            d="M8 40 Q30 20 52 35"
+            stroke="black"
+            stroke-width="1.2"
+            fill="none"></path></svg
+        >
+      </div>
+      <div class="line-info">
+        <h5>0.07 Volume Fans — Mixed Tray</h5>
+        <div class="moq-note">MOQ 5 · Ksh 1,150 each</div>
+        <div class="stepper">
+          <button class="qty-btn" data-line="1" data-dir="-1">–</button>
+          <span class="qty-val" id="qty1">5</span>
+          <button class="qty-btn" data-line="1" data-dir="1">+</button>
+        </div>
+      </div>
+      <div class="line-price" id="lineTotal1">Ksh 5,750</div>
+    </div>
+    <div class="line-item">
+      <div class="line-thumb">
+        <svg viewBox="0 0 60 60"
+          ><ellipse
+            cx="30"
+            cy="30"
+            rx="18"
+            ry="8"
+            stroke="black"
+            stroke-width="1.2"
+            fill="none"></ellipse></svg
+        >
+      </div>
+      <div class="line-info">
+        <h5>Pro Bond Adhesive, 5ml</h5>
+        <div class="moq-note">MOQ 5 · Ksh 1,600 each</div>
+        <div class="stepper">
+          <button class="qty-btn" data-line="2" data-dir="-1">–</button>
+          <span class="qty-val" id="qty2">5</span>
+          <button class="qty-btn" data-line="2" data-dir="1">+</button>
+        </div>
+      </div>
+      <div class="line-price" id="lineTotal2">Ksh 8,000</div>
+    </div>
+
+    <div class="savings-box">
+      <div class="savings-row">
+        <span>Market value</span><span id="marketTotal">Ksh 21,000</span>
+      </div>
+      <div class="savings-row saved">
+        <span>You're saving</span><span id="savedTotal">Ksh 7,250</span>
+      </div>
+      <div class="savings-row total">
+        <span>Total</span><span id="yourTotal">Ksh 13,750</span>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn-primary" id="drawerCheckoutBtn" type="button" style="width:100%;"
+      >Checkout</button
+    >
+    <p class="note">
+      Shipping fee confirmed separately, based on your delivery area. This
+      is a preorder for the next scheduled batch.
+    </p>
+  </div>
+</div>
