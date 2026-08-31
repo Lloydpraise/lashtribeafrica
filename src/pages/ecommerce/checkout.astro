@@ -6,7 +6,7 @@ import Layout from "../../layouts/ecommerce/Layout.astro";
   <div class="checkout-page">
     <div class="checkout-header">
       <div class="logo">Lashtribe <em>africa</em></div>
-      <a class="back-link" href="/">Continue shopping</a>
+      <a class="back-link" href="/ecommerce">Continue shopping</a>
     </div>
 
     <div class="checkout-shell">
@@ -51,13 +51,42 @@ import Layout from "../../layouts/ecommerce/Layout.astro";
             <input type="checkbox" />
             <span>Create account for easier checkout</span>
           </label>
+
+          <div class="checkout-form-footer">
+            <div class="saved-row">
+              <span>You saved</span>
+              <strong id="checkoutSavedMobile">Ksh 7,250</strong>
+            </div>
+
+            <div class="totals-row">
+              <span>Subtotal</span>
+              <span id="checkoutSubtotalMobile">Ksh 13,750</span>
+            </div>
+            <div class="totals-row">
+              <span>Shipping</span>
+              <span id="checkoutShippingMobile">TBD</span>
+            </div>
+            <div class="totals-row total">
+              <span>Total</span>
+              <span id="checkoutTotalMobile">Ksh 13,750</span>
+            </div>
+
+            <button class="pay-now-btn mobile-pay-now" type="button">Pay now</button>
+            <p class="summary-note">Secure payment processing will be connected here once your gateway is ready.</p>
+          </div>
         </form>
       </section>
 
       <aside class="order-summary">
         <div class="summary-header">
           <h2>Order summary</h2>
-          <span class="summary-count"><span id="summaryCount">2</span> items</span>
+          <div class="summary-meta">
+            <span class="summary-count"><span id="summaryCount">2</span> items</span>
+            <button class="summary-toggle" type="button" aria-expanded="false" aria-controls="summaryItems">
+              <span>Items</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
         </div>
 
         <div class="summary-items" id="summaryItems">
@@ -102,6 +131,11 @@ import Layout from "../../layouts/ecommerce/Layout.astro";
             <span>Total</span>
             <span id="checkoutTotal">Ksh 13,750</span>
           </div>
+        </div>
+
+        <div class="summary-footer-total" aria-label="Order total">
+          <span>Total</span>
+          <strong id="checkoutFooterTotal">Ksh 13,750</strong>
         </div>
 
         <button class="pay-now-btn" type="button">Pay now</button>
@@ -158,11 +192,28 @@ import Layout from "../../layouts/ecommerce/Layout.astro";
       const checkoutSubtotal = document.getElementById('checkoutSubtotal');
       const checkoutSaved = document.getElementById('checkoutSaved');
       const checkoutTotal = document.getElementById('checkoutTotal');
+      const checkoutSubtotalMobile = document.getElementById('checkoutSubtotalMobile');
+      const checkoutSavedMobile = document.getElementById('checkoutSavedMobile');
+      const checkoutTotalMobile = document.getElementById('checkoutTotalMobile');
 
       if (summaryCount) summaryCount.textContent = String(Object.values(cart).reduce((sum, value) => sum + value, 0));
       if (checkoutSubtotal) checkoutSubtotal.textContent = formatMoney(subtotal);
       if (checkoutSaved) checkoutSaved.textContent = formatMoney(saved);
       if (checkoutTotal) checkoutTotal.textContent = formatMoney(subtotal);
+      if (checkoutSubtotalMobile) checkoutSubtotalMobile.textContent = formatMoney(subtotal);
+      if (checkoutSavedMobile) checkoutSavedMobile.textContent = formatMoney(saved);
+      if (checkoutTotalMobile) checkoutTotalMobile.textContent = formatMoney(subtotal);
+    }
+
+    const summaryToggle = document.querySelector('.summary-toggle');
+    const summaryItems = document.getElementById('summaryItems');
+
+    if (summaryToggle && summaryItems) {
+      summaryToggle.addEventListener('click', () => {
+        const isExpanded = summaryToggle.getAttribute('aria-expanded') === 'true';
+        summaryToggle.setAttribute('aria-expanded', String(!isExpanded));
+        summaryItems.classList.toggle('is-open', !isExpanded);
+      });
     }
 
     renderCheckoutSummary();

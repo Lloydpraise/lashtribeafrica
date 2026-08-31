@@ -49,9 +49,10 @@
 
   /* ---------- App header ---------- */
   .app-header{border-bottom:1px solid var(--grey);position:sticky;top:0;background:rgba(255,253,251,.94);backdrop-filter:blur(6px);z-index:40;}
-  .app-header-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;}
-  .logo{font-family:var(--serif);font-size:20px;font-weight:700;}
+  .app-header-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;width:100%;}
+  .logo{font-family:var(--serif);font-size:20px;font-weight:700;flex-shrink:0;}
   .logo em{font-family:var(--script);font-weight:400;font-size:22px;}
+  .header-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-left:auto;}
   .account-wrap{position:relative;}
   .account-btn{display:flex;align-items:center;gap:9px;background:none;border:1px solid var(--grey);border-radius:24px;padding:6px 14px 6px 6px;cursor:pointer;}
   .avatar{width:28px;height:28px;border-radius:50%;background:var(--blush);color:var(--black);display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:13px;}
@@ -106,7 +107,7 @@
   .course-card .module-lock{}
   .course-body{padding:16px;display:flex;flex:1;flex-direction:column;}
   .course-body h4{font-size:13.5px;margin:0 0 6px;}
-  .course-body p{font-size:11.5px;color:var(--charcoal);margin:0 0 12px;line-height:1.5;}
+  .course-body p{font-size:11.5px;color:var(--charcoal);margin:0 0 12px;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;text-overflow:ellipsis;}
   .advanced-grid .course-body p{font-size:12.5px;}
   .course-price-row{display:flex;justify-content:space-between;align-items:center;}
   .course-price{font-family:var(--serif);font-weight:700;font-size:16px;}
@@ -187,21 +188,58 @@
     .player-grid{grid-template-columns:1fr;}
     .curriculum{position:static;}
     .auth-card{padding:28px 22px;}
-    .app-header-row{flex-wrap:wrap;gap:10px;}
+    .app-header-row{flex-wrap:nowrap;gap:10px;}
+    .header-actions{margin-left:auto;}
     .account-name{display:none;}
     .stats-strip{flex-wrap:wrap;gap:18px;justify-content:center;text-align:center;}
     .product-strip-row{grid-template-columns:1fr;}
   }
 
   @media (max-width:640px){
+    .wrap, .dash-wrap, .player-wrap{padding-left:16px;padding-right:16px;}
     .auth-view{align-items:flex-start;justify-content:flex-start;padding:20px 14px 28px;}
     .auth-card{width:min(100%, 420px);padding:26px 18px 22px;border-radius:18px;}
     .field input{padding:11px 12px;}
     .auth-submit{padding:13px 18px;}
-    .course-grid{grid-template-columns:repeat(2,1fr);}
-    .course-card{min-height:0;}
-    .course-body{padding:14px;}
-    .course-cta-row{margin-top:auto;}
+    .section-head{flex-direction:column;align-items:flex-start;gap:8px;margin:28px 0 16px;}
+    .continue-hero{min-height:280px;}
+    .continue-content{padding:22px 18px;}
+    .continue-content h1{font-size:24px;line-height:1.15;}
+    .progress-row{max-width:100%;}
+    .play-btn{width:100%;justify-content:center;}
+    .module-row{display:grid;grid-template-columns:1fr;gap:16px;}
+    .module-card{width:100%;}
+    .course-grid{grid-template-columns:1fr;}
+    .course-card{min-height:0;height:100%;}
+    .course-body{padding:14px;min-height:128px;gap:8px;}
+    .course-body p{margin:0;}
+    .course-cta-row{margin-top:auto;width:100%;padding-top:8px;}
+    .player-wrap{padding-top:16px;padding-bottom:60px;}
+    .back-link{margin-bottom:16px;}
+    .player-grid,.curriculum,.player-main,.product-strip-row,.ps-card{max-width:100% !important;width:100% !important;}
+    .player-grid{grid-template-columns:1fr !important;gap:18px !important;}
+    .player-main{min-width:0 !important;}
+    .curriculum{padding:16px;}
+    .curr-step{padding:10px 6px;font-size:12px;}
+    .product-strip{margin:20px 0 0;padding:16px 14px 4px;}
+    .product-strip-row{grid-template-columns:1fr !important;}
+    .ps-card{padding:8px 10px;}
+    .video-caption{font-size:14px;left:14px;bottom:12px;}
+    .transcript{margin-top:18px;}
+    .transcript p{font-size:13px;line-height:1.7;}
+    .academy-cart-drawer{width:100%;max-width:100%;}
+  }
+
+  @media (max-width:420px){
+    .continue-content .eyebrow{letter-spacing:.12em;}
+    .continue-sub{font-size:12.5px;}
+    .course-body h4{font-size:12.5px;}
+    .course-buy,.btn-primary{width:100%;}
+    .course-start{width:auto;}
+    .course-cta-row{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;}
+    .course-price-row{align-items:flex-start;flex-direction:column;gap:10px;}
+    .ps-info h6{font-size:10.5px;}
+    .ps-info span{font-size:9.5px;}
   }
 
   /* ---------- Reveal on scroll ---------- */
