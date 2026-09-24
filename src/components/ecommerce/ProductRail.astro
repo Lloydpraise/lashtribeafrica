@@ -1,11 +1,13 @@
 ---
 interface Product {
   slug?: string;
-  icon: string; // inner SVG markup for the product illustration
+  icon?: string; // inner SVG markup for the product illustration (fallback when no photo)
+  image?: string; // cover photo URL, preferred over icon when present
   name: string;
   marketPrice: string;
   nowPrice: string;
   note: string;
+  moq?: number;
 }
 
 interface Props {
@@ -42,8 +44,12 @@ const delayClasses = ["", "d1", "d2", "d3"];
         <article class:list={["card", "reveal", delayClasses[i % delayClasses.length]]}>
           <a class="card-link" href={product.slug ? `/ecommerce/product/${product.slug}` : "/ecommerce/product/0-07-volume-fans-mixed-tray"}>
             <div class="card-img">
-              <span class="badge-moq">MOQ 5</span>
-              <svg viewBox="0 0 100 100" set:html={product.icon} />
+              <span class="badge-moq">MOQ {product.moq ?? 5}</span>
+              {product.image ? (
+                <img src={product.image} alt={product.name} loading="lazy" />
+              ) : (
+                <svg viewBox="0 0 100 100" set:html={product.icon} />
+              )}
             </div>
             <div class="card-body">
               <h4>{product.name}</h4>

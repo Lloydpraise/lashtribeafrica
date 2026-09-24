@@ -1,0 +1,51 @@
+---
+import AdminApp from "../../admin/AdminApp.jsx";
+
+// Google Fonts used by the storefront's --serif / --sans / --script
+// (global.css only declares the CSS vars, the ecommerce/academy Layouts
+// load the actual font files — the admin panel needs the same import
+// since it doesn't go through either Layout).
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin — Lashtribe Africa</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Montserrat:wght@400;500;600;700&family=Petit+Formal+Script&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Brand CSS variables, lifted from src/styles/global.css so the
+         admin panel doesn't need to load the entire storefront stylesheet. */
+      :root {
+        --blush: #F3E4E7;
+        --warm-white: #FFFDFB;
+        --black: #000000;
+        --charcoal: #222222;
+        --grey: #E8E8E8;
+        --rose: #C98A96;
+        --rose-deep: #A96A78;
+        --green: #3F7A54;
+        --serif: 'Playfair Display', Georgia, serif;
+        --sans: 'Montserrat', Helvetica, Arial, sans-serif;
+        --script: 'Petit Formal Script', cursive;
+        --max: 1240px;
+        --radius: 9px;
+        --radius-sm: 5px;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+      }
+    </style>
+  </head>
+  <body>
+    <AdminApp client:load />
+  </body>
+</html>

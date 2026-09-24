@@ -16,6 +16,22 @@ const {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
+    <script is:inline>
+      document.documentElement.classList.add('is-loading');
+      window.addEventListener('load', () => {
+        document.documentElement.classList.remove('is-loading');
+      });
+    </script>
+    <style is:global>
+      html.is-loading body {
+        opacity: 0;
+      }
+
+      body {
+        opacity: 1;
+        transition: opacity 180ms ease;
+      }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

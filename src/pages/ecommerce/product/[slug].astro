@@ -3,22 +3,24 @@ import Layout from "../../../layouts/ecommerce/Layout.astro";
 import SiteHeader from "../../../components/ecommerce/SiteHeader.astro";
 import CartDrawer from "../../../components/ecommerce/CartDrawer.astro";
 import SiteFooter from "../../../components/ecommerce/SiteFooter.astro";
-import { ecommerceProducts, formatKsh, productIndex } from "../../../data/ecommerce-products.js";
+import { getEcommerceProducts, formatKsh } from "../../../data/ecommerce-products.js";
 
-export function getStaticPaths() {
-  return ecommerceProducts.map((product) => ({
+export async function getStaticPaths() {
+  const products = await getEcommerceProducts();
+  return products.map((product) => ({
     params: { slug: product.slug },
   }));
 }
 
-const slug = Astro.params.slug || ecommerceProducts[0].slug;
-const product = productIndex[slug] || ecommerceProducts[0];
-const complementaryProducts = ecommerceProducts.filter((item) =>
-  product.complements.includes(item.id)
+const allProducts = await getEcommerceProducts();
+const slug = Astro.params.slug || allProducts[0].slug;
+const product = allProducts.find((p) => p.slug === slug) || allProducts[0];
+const complementaryProducts = allProducts.filter((item) =>
+  product.complementSlugs.includes(item.slug)
 );
-const relatedProducts = ecommerceProducts.filter((item) => item.slug !== product.slug).slice(0, 3);
+const relatedProducts = allProducts.filter((item) => item.slug !== product.slug).slice(0, 3);
 const priceDifference = product.marketPrice - product.nowPrice;
-const cartActionLabel = `Added ${product.name}`;
+const coverImage = product.images?.[0];
 ---
 
 <Layout title={`${product.name} | Lashtribe Africa`}>
@@ -27,51 +29,82 @@ const cartActionLabel = `Added ${product.name}`;
   <main class="product-page">
     <section class="product-shell wrap">
       <div class="product-gallery">
-        <div class="product-visual">
+        <div class="product-visual" id="productVisual">
           <span class="product-badge">{product.badge}</span>
-          <svg viewBox="0 0 100 100" set:html={product.icon} />
+          {coverImage ? (
+            <img src={coverImage.url} alt={coverImage.alt || product.name} id="productMainImage" />
+          ) : (
+            <svg viewBox="0 0 100 100" set:html={product.icon} />
+          )}
         </div>
 
-        <div class="bundle-strip" aria-label="Goes together with">
-          <div class="bundle-header">
-            <span class="eyebrow">Goes together with</span>
+        {product.images.length > 1 && (
+          <div class="product-thumb-strip">
+            {product.images.map((img, i) => (
+              <button type="button" class:list={["thumb-btn", i === 0 && "active"]} data-image-url={img.url}>
+                <img src={img.url} alt={img.alt || product.name} />
+              </button>
+            ))}
           </div>
-          <div class="bundle-items">
-            {
-              complementaryProducts.map((item) => (
-                <div class="bundle-card">
-                  <div class="bundle-thumb">
-                    <svg viewBox="0 0 100 100" set:html={item.icon} />
-                  </div>
-                  <div class="bundle-copy">
-                    <strong>{item.name}</strong>
-                    <span>{formatKsh(item.nowPrice)}</span>
-                  </div>
-                  <button
-                    class="bundle-add"
-                    type="button"
-                    data-product-id={item.id}
-                    aria-label={`Add ${item.name} to cart`}
-                  >
-                    +
-                  </button>
-                </div>
-              ))
-            }
+        )}
+
+        {product.videos.length > 0 && (
+          <div class="product-video-block">
+            <h3>Product Demo</h3>
+            <video src={product.videos[0].url} controls preload="metadata" />
           </div>
-        </div>
+        )}
+
+        {complementaryProducts.length > 0 && (
+          <div class="bundle-strip" aria-label="Goes together with">
+            <div class="bundle-header">
+              <span class="eyebrow">Goes together with</span>
+            </div>
+            <div class="bundle-items">
+              {
+                complementaryProducts.map((item) => (
+                  <div class="bundle-card">
+                    <div class="bundle-thumb">
+                      {item.images?.[0] ? (
+                        <img src={item.images[0].url} alt={item.name} />
+                      ) : (
+                        <svg viewBox="0 0 100 100" set:html={item.icon} />
+                      )}
+                    </div>
+                    <div class="bundle-copy">
+                      <strong>{item.name}</strong>
+                      <span>{formatKsh(item.nowPrice)}</span>
+                    </div>
+                    <button
+                      class="bundle-add"
+                      type="button"
+                      data-product-id={item.id}
+                      aria-label={`Add ${item.name} to cart`}
+                    >
+                      +
+                    </button>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        )}
       </div>
 
       <div class="product-panel">
         <div class="product-meta">
-          <span class="eyebrow">Wholesale favorite</span>
+          <span class="eyebrow">
+            {product.category ? product.category.name : "Wholesale favorite"}
+          </span>
         </div>
 
         <h1>{product.name}</h1>
 
-        <ul class="feature-list">
-          {product.features.map((feature) => <li>{feature}</li>)}
-        </ul>
+        {product.features.length > 0 && (
+          <ul class="feature-list">
+            {product.features.map((feature) => <li>{feature}</li>)}
+          </ul>
+        )}
 
         <div class="product-price-card">
           <div class="market-price-row">
@@ -84,6 +117,10 @@ const cartActionLabel = `Added ${product.name}`;
           </div>
           <div class="current-price-row">
             <span class="current-price">{formatKsh(product.nowPrice)}</span>
+          </div>
+          <div class="moq-row">
+            <span class="label">Minimum Order Qty</span>
+            <span>{product.moq}</span>
           </div>
         </div>
 
@@ -116,7 +153,11 @@ const cartActionLabel = `Added ${product.name}`;
           relatedProducts.map((item) => (
             <a class="related-card" href={`/ecommerce/product/${item.slug}`}>
               <div class="related-thumb">
-                <svg viewBox="0 0 100 100" set:html={item.icon} />
+                {item.images?.[0] ? (
+                  <img src={item.images[0].url} alt={item.name} />
+                ) : (
+                  <svg viewBox="0 0 100 100" set:html={item.icon} />
+                )}
               </div>
               <div class="related-copy">
                 <h3>{item.name}</h3>
@@ -139,8 +180,19 @@ const cartActionLabel = `Added ${product.name}`;
   <script src="/scripts/main.js" is:inline></script>
   <script is:inline>
     (function () {
-      const productId = Number(document.querySelector('[data-product-id]')?.dataset.productId || 0);
+      const productIdAttr = document.querySelector('[data-product-id]')?.dataset.productId || '';
       const formatKsh = (value) => `Ksh ${Number(value || 0).toLocaleString()}`;
+
+      // Gallery thumb switching
+      document.querySelectorAll('.thumb-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const url = btn.dataset.imageUrl;
+          const mainImg = document.getElementById('productMainImage');
+          if (mainImg && url) mainImg.src = url;
+          document.querySelectorAll('.thumb-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
 
       function addToCart(id) {
         const cart = window.LashtribeCart ? window.LashtribeCart.getCart() : JSON.parse(localStorage.getItem('lashtribe_cart') || '{}');
@@ -164,7 +216,7 @@ const cartActionLabel = `Added ${product.name}`;
 
       document.querySelectorAll('.product-add, .bundle-add').forEach((button) => {
         button.addEventListener('click', () => {
-          const id = Number(button.dataset.productId || 0);
+          const id = button.dataset.productId;
           if (!id) return;
           if (button.classList.contains('bundle-add')) {
             button.classList.add('added');
@@ -177,7 +229,7 @@ const cartActionLabel = `Added ${product.name}`;
 
       document.querySelectorAll('.product-buy').forEach((button) => {
         button.addEventListener('click', () => {
-          const id = Number(button.dataset.productId || 0);
+          const id = button.dataset.productId;
           if (!id) return;
           addToCart(id);
           if (window.LashtribeCart) {
