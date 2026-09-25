@@ -1,0 +1,34 @@
+---
+// Embeds the current product catalog (offer-adjusted prices included)
+// and the active free-shipping offer as JSON, so the client-side cart
+// scripts (cart-render.js) can price whatever's in localStorage without
+// another network call. Used by CartDrawer and the checkout page.
+import { getEcommerceProducts } from "../../data/ecommerce-products.js";
+import { getActiveOffers, getFreeShippingOffer } from "../../data/offers.js";
+
+const [products, offers] = await Promise.all([getEcommerceProducts(), getActiveOffers()]);
+const freeShipping = getFreeShippingOffer(offers);
+
+const catalog = {};
+for (const p of products) {
+  catalog[p.id] = {
+    name: p.name,
+    slug: p.slug,
+    image: p.images?.[0]?.url || null,
+    icon: p.icon || "",
+    moq: p.moq || 1,
+    price: p.effectivePrice,
+    marketPrice: p.marketPrice,
+    hasOffer: p.hasOffer,
+  };
+}
+
+const payload = {
+  products: catalog,
+  freeShipping: freeShipping
+    ? { minOrderValue: freeShipping.minOrderValue, badgeText: freeShipping.badgeText, label: freeShipping.label }
+    : null,
+};
+---
+
+<script type="application/json" id="lashtribe-catalog" set:html={JSON.stringify(payload)} />

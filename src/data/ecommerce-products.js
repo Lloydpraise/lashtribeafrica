@@ -4,6 +4,7 @@
 // configured yet or the products table isn't available.
 
 import { supabase } from "../services/service.js";
+import { getActiveOffers, applyOfferPricing } from "./offers.js";
 
 export function formatKsh(value) {
   return `Ksh ${Number(value || 0).toLocaleString()}`;
@@ -174,7 +175,7 @@ function mapRow(row, allRows) {
     nowPrice: Number(row.now_price) || 0,
     moq: row.moq || 1,
     stockQuantity: row.stock_quantity ?? null,
-    category: row.category ? { name: row.category.name, slug: row.category.slug } : null,
+    category: row.category ? { id: row.category.id, name: row.category.name, slug: row.category.slug } : null,
     featuredSections: row.featured_sections || [],
     images: row.images || [],
     videos: row.videos || [],
@@ -183,10 +184,12 @@ function mapRow(row, allRows) {
 }
 
 export async function getEcommerceProducts() {
+  let products;
+
   try {
     const { data, error } = await supabase
       .from("products")
-      .select("*, category:category_id(name,slug)")
+      .select("*, category:category_id(id,name,slug)")
       .eq("status", "active")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
@@ -194,15 +197,20 @@ export async function getEcommerceProducts() {
     if (error) throw error;
     if (!data || data.length === 0) throw new Error("No active products found.");
 
-    return data.map((row) => mapRow(row, data));
+    products = data.map((row) => mapRow(row, data));
   } catch (err) {
     console.warn(
       "[ecommerce-products] Falling back to static seed data — " +
         (err?.message || err) +
         ". Run the migrations in supabase/migrations/ and check your .env to load real products."
     );
-    return FALLBACK_PRODUCTS;
+    products = FALLBACK_PRODUCTS;
   }
+
+  // Layer in offer-adjusted pricing (effectivePrice/hasOffer/offerBadge).
+  // Any failure here just means "no offers" — never blocks the catalog.
+  const offers = await getActiveOffers();
+  return applyOfferPricing(products, offers);
 }
 
 export async function getProductBySlug(slug) {

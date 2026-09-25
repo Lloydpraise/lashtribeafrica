@@ -1,0 +1,40 @@
+---
+// Shared shell for the three policy pages (privacy, shipping, terms).
+// Content comes from Site Settings → Policies in the admin panel, stored
+// as plain text; blank lines become paragraph breaks.
+import Layout from "../../layouts/ecommerce/Layout.astro";
+import SiteHeader from "../ecommerce/SiteHeader.astro";
+import SiteFooter from "../ecommerce/SiteFooter.astro";
+import CartDrawer from "../ecommerce/CartDrawer.astro";
+
+interface Props {
+  title: string;
+  content: string;
+  fallback: string;
+}
+
+const { title, content, fallback } = Astro.props;
+const body = (content && content.trim().length > 0) ? content : fallback;
+const paragraphs = body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+---
+
+<Layout title={`${title} | Lashtribe Africa`}>
+  <SiteHeader />
+
+  <main class="policy-page">
+    <div class="wrap policy-wrap">
+      <div class="eyebrow">Lashtribe Africa</div>
+      <h1>{title}</h1>
+      <div class="policy-body">
+        {paragraphs.map((p) => <p>{p}</p>)}
+      </div>
+    </div>
+  </main>
+
+  <SiteFooter />
+  <CartDrawer />
+
+  <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/cart-render.js" is:inline></script>
+  <script src="/scripts/main.js" is:inline></script>
+</Layout>

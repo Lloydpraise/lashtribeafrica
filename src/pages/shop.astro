@@ -1,0 +1,63 @@
+---
+import Layout from "../layouts/ecommerce/Layout.astro";
+import SiteHeader from "../components/ecommerce/SiteHeader.astro";
+import ProductRail from "../components/ecommerce/ProductRail.astro";
+import SiteFooter from "../components/ecommerce/SiteFooter.astro";
+import CartDrawer from "../components/ecommerce/CartDrawer.astro";
+import { getEcommerceProducts } from "../data/ecommerce-products.js";
+
+const allProducts = await getEcommerceProducts();
+
+const slugify = (value = "") =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const groupedProducts = Object.entries(
+  allProducts.reduce((acc, product) => {
+    const category = product.category?.name || "Other";
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(product);
+    return acc;
+  }, {})
+).sort(([left], [right]) => left.localeCompare(right));
+---
+
+<Layout title="Shop | Lashtribe Africa">
+  <SiteHeader />
+
+  <main class="shop-page">
+    <section class="shop wrap" style="padding-top:48px;">
+      <div class="section-head reveal">
+        <h2>All Products</h2>
+      </div>
+      <p class="section-copy reveal" style="max-width:700px;color:#666;line-height:1.7;margin-bottom:24px;">
+        Browse our full catalog by category. Every product below is arranged in the same live product set used across the storefront.
+      </p>
+    </section>
+
+    {groupedProducts.map(([category, products]) => (
+      <ProductRail
+        id={slugify(category)}
+        title={category}
+        products={products.map((product) => ({
+          slug: product.slug,
+          image: product.images?.[0]?.url,
+          name: product.name,
+          marketPrice: `Ksh ${Number(product.marketPrice || 0).toLocaleString()}`,
+          nowPrice: `Ksh ${Number(product.nowPrice || 0).toLocaleString()}`,
+          note: product.note,
+          moq: product.moq,
+        }))}
+        viewAllHref={`/shop#${slugify(category)}`}
+      />
+    ))}
+  </main>
+
+  <SiteFooter />
+  <CartDrawer />
+  <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/main.js" is:inline></script>
+</Layout>

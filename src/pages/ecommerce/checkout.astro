@@ -1,5 +1,6 @@
 ---
 import Layout from "../../layouts/ecommerce/Layout.astro";
+import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astro";
 ---
 
 <Layout title="Checkout | Lashtribe Africa">
@@ -73,6 +74,7 @@ import Layout from "../../layouts/ecommerce/Layout.astro";
 
             <button class="pay-now-btn mobile-pay-now" type="button">Pay now</button>
             <p class="summary-note">Secure payment processing will be connected here once your gateway is ready.</p>
+            <p class="summary-note">By placing your order you agree to our <a href="/terms-and-conditions">Terms & Conditions</a> and <a href="/shipping-policy">Shipping Policy</a>.</p>
           </div>
         </form>
       </section>
@@ -89,29 +91,7 @@ import Layout from "../../layouts/ecommerce/Layout.astro";
           </div>
         </div>
 
-        <div class="summary-items" id="summaryItems">
-          <div class="summary-item">
-            <div class="summary-thumb">
-              <svg viewBox="0 0 60 60"><path d="M8 40 Q30 20 52 35" stroke="black" stroke-width="1.2" fill="none"></path></svg>
-            </div>
-            <div class="summary-info">
-              <h3>0.07 Volume Fans — Mixed Tray</h3>
-              <small>Qty <span class="summary-qty" data-qty="1">5</span></small>
-            </div>
-            <div class="summary-price" data-line-price="1">Ksh 5,750</div>
-          </div>
-
-          <div class="summary-item">
-            <div class="summary-thumb">
-              <svg viewBox="0 0 60 60"><ellipse cx="30" cy="30" rx="18" ry="8" stroke="black" stroke-width="1.2" fill="none"></ellipse></svg>
-            </div>
-            <div class="summary-info">
-              <h3>Pro Bond Adhesive, 5ml</h3>
-              <small>Qty <span class="summary-qty" data-qty="2">5</span></small>
-            </div>
-            <div class="summary-price" data-line-price="2">Ksh 8,000</div>
-          </div>
-        </div>
+        <div class="summary-items" id="summaryItems"></div>
 
         <div class="summary-totals">
           <div class="saved-row">
@@ -140,82 +120,12 @@ import Layout from "../../layouts/ecommerce/Layout.astro";
 
         <button class="pay-now-btn" type="button">Pay now</button>
         <p class="summary-note">Secure payment processing will be connected here once your gateway is ready.</p>
+        <p class="summary-note">By placing your order you agree to our <a href="/terms-and-conditions">Terms & Conditions</a> and <a href="/shipping-policy">Shipping Policy</a>.</p>
       </aside>
     </div>
   </div>
 
-  <script is:inline>
-    const CART_KEY = 'lashtribe_cart';
-    const unitPrices = { 1: 1150, 2: 1600 };
-    const marketPrices = { 1: 1800, 2: 2400 };
-
-    function formatMoney(value) {
-      return 'Ksh ' + Number(value).toLocaleString();
-    }
-
-    function readCart() {
-      try {
-        const stored = JSON.parse(localStorage.getItem(CART_KEY) || 'null');
-        if (stored && typeof stored === 'object') {
-          return {
-            1: Math.max(5, Number(stored[1]) || 5),
-            2: Math.max(5, Number(stored[2]) || 5),
-          };
-        }
-      } catch (error) {
-        console.warn('Unable to read cart state', error);
-      }
-      return { 1: 5, 2: 5 };
-    }
-
-    function renderCheckoutSummary() {
-      const cart = readCart();
-      let subtotal = 0;
-      let marketTotal = 0;
-
-      for (const line of [1, 2]) {
-        const qty = cart[line];
-        const lineSubtotal = unitPrices[line] * qty;
-        const lineMarket = marketPrices[line] * qty;
-        subtotal += lineSubtotal;
-        marketTotal += lineMarket;
-
-        const qtyNode = document.querySelector('[data-qty="' + line + '"]');
-        const priceNode = document.querySelector('[data-line-price="' + line + '"]');
-
-        if (qtyNode) qtyNode.textContent = qty;
-        if (priceNode) priceNode.textContent = formatMoney(lineSubtotal);
-      }
-
-      const saved = marketTotal - subtotal;
-      const summaryCount = document.getElementById('summaryCount');
-      const checkoutSubtotal = document.getElementById('checkoutSubtotal');
-      const checkoutSaved = document.getElementById('checkoutSaved');
-      const checkoutTotal = document.getElementById('checkoutTotal');
-      const checkoutSubtotalMobile = document.getElementById('checkoutSubtotalMobile');
-      const checkoutSavedMobile = document.getElementById('checkoutSavedMobile');
-      const checkoutTotalMobile = document.getElementById('checkoutTotalMobile');
-
-      if (summaryCount) summaryCount.textContent = String(Object.values(cart).reduce((sum, value) => sum + value, 0));
-      if (checkoutSubtotal) checkoutSubtotal.textContent = formatMoney(subtotal);
-      if (checkoutSaved) checkoutSaved.textContent = formatMoney(saved);
-      if (checkoutTotal) checkoutTotal.textContent = formatMoney(subtotal);
-      if (checkoutSubtotalMobile) checkoutSubtotalMobile.textContent = formatMoney(subtotal);
-      if (checkoutSavedMobile) checkoutSavedMobile.textContent = formatMoney(saved);
-      if (checkoutTotalMobile) checkoutTotalMobile.textContent = formatMoney(subtotal);
-    }
-
-    const summaryToggle = document.querySelector('.summary-toggle');
-    const summaryItems = document.getElementById('summaryItems');
-
-    if (summaryToggle && summaryItems) {
-      summaryToggle.addEventListener('click', () => {
-        const isExpanded = summaryToggle.getAttribute('aria-expanded') === 'true';
-        summaryToggle.setAttribute('aria-expanded', String(!isExpanded));
-        summaryItems.classList.toggle('is-open', !isExpanded);
-      });
-    }
-
-    renderCheckoutSummary();
-  </script>
+  <CartCatalogScript />
+  <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/cart-render.js" is:inline></script>
 </Layout>

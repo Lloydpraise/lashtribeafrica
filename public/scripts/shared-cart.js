@@ -1,17 +1,19 @@
 (function () {
   const CART_KEY = 'lashtribe_cart';
-  const FALLBACK_CART = { 1: 5, 2: 5 };
 
+  // Cart shape: { [productId]: quantity }. Any positive-quantity entry is
+  // kept, regardless of key — this is a real product-id keyed cart, not
+  // the old two-line demo.
   function normalizeCart(cart) {
-    const nextCart = { ...FALLBACK_CART };
-    if (!cart || typeof cart !== 'object') return nextCart;
+    const next = {};
+    if (!cart || typeof cart !== 'object') return next;
 
-    for (const key of Object.keys(nextCart)) {
-      const value = Number(cart[key]);
-      nextCart[key] = Number.isFinite(value) && value > 0 ? Math.round(value) : nextCart[key];
+    for (const [id, rawQty] of Object.entries(cart)) {
+      const qty = Math.round(Number(rawQty));
+      if (Number.isFinite(qty) && qty > 0) next[id] = qty;
     }
 
-    return nextCart;
+    return next;
   }
 
   function getCart() {
@@ -23,7 +25,7 @@
     } catch (error) {
       console.warn('Unable to read cart state from localStorage', error);
     }
-    return { ...FALLBACK_CART };
+    return {};
   }
 
   function setCart(cart) {
@@ -33,6 +35,7 @@
     } catch (error) {
       console.warn('Unable to save cart state to localStorage', error);
     }
+    window.dispatchEvent(new CustomEvent('lashtribe:cart-updated', { detail: nextCart }));
     return nextCart;
   }
 
@@ -56,7 +59,6 @@
 
   window.LashtribeCart = {
     CART_KEY,
-    FALLBACK_CART,
     getCart,
     setCart,
     getCartCount,

@@ -7,6 +7,9 @@ import Courses from "./sections/Courses.jsx";
 import Customers from "./sections/Customers.jsx";
 import Orders from "./sections/Orders.jsx";
 import SiteSettings from "./sections/SiteSettings.jsx";
+import Kits from "./sections/Kits.jsx";
+import Offers from "./sections/Offers.jsx";
+import Policies from "./sections/Policies.jsx";
 import "./admin.css";
 
 const SECTIONS = {
@@ -33,7 +36,10 @@ const SECTIONS = {
   },
   customers: { title: "Customers", subtitle: "People who've bought from you", Component: Customers },
   orders: { title: "Orders", subtitle: "Ecommerce + Academy purchases", Component: Orders },
-  settings: { title: "Site Settings", subtitle: "Storefront content", Component: SiteSettings },
+  settings: { title: "Site Settings", subtitle: "Hero, countdown & announcement ticker", Component: SiteSettings },
+  kits: { title: "Kits", subtitle: "Kit Strip bundles — pick which one is live", Component: Kits },
+  offers: { title: "Offers", subtitle: "% off and free shipping promotions", Component: Offers },
+  policies: { title: "Policies", subtitle: "Privacy, shipping & terms pages", Component: Policies },
 };
 
 function sectionFromHash() {

@@ -70,88 +70,38 @@
     }
   });
 
-  // cadence fill
-  const cadenceFill = document.getElementById('cadenceFill');
-  if (cadenceFill) cadenceFill.style.width = '40%';
-
-  // rotating hero headline using the exact three phrases requested
+  // rotating hero headline — phrases come from Site Settings, passed in
+  // via a data attribute so this script has no hardcoded copy in it.
   const heroCycle = document.getElementById('heroCycle');
   if (heroCycle) {
-    const heroPhrases = [
-      'Direct Sourcing',
-      'No Gatekeeping',
-      'Unbeatable Prices'
-    ];
-    let heroPhraseIndex = 0;
-
-    const rotateHeroPhrase = () => {
-      heroCycle.style.opacity = '0';
-      heroCycle.style.transform = 'translateY(10px)';
-
-      setTimeout(() => {
-        heroPhraseIndex = (heroPhraseIndex + 1) % heroPhrases.length;
-        heroCycle.textContent = heroPhrases[heroPhraseIndex];
-        heroCycle.style.opacity = '1';
-        heroCycle.style.transform = 'translateY(0)';
-      }, 180);
-    };
-
-    heroCycle.textContent = heroPhrases[0];
-    heroCycle.classList.add('fade');
-
-    if (!reduceMotion) {
-      setInterval(rotateHeroPhrase, 2600);
-    }
-  }
-
-  // cart math
-  const unitPrices = { 1: 1150, 2: 1600 };
-  const marketPrices = { 1: 1800, 2: 2400 };
-
-  function getInitialCart(){
-    return window.LashtribeCart ? window.LashtribeCart.getCart() : { 1: 5, 2: 5 };
-  }
-
-  const qty = getInitialCart();
-
-  function persistCart(){
-    if (window.LashtribeCart) {
-      window.LashtribeCart.setCart(qty);
-      window.LashtribeCart.syncCartBadges();
-      return;
-    }
-
+    let heroPhrases = [];
     try {
-      localStorage.setItem('lashtribe_cart', JSON.stringify(qty));
+      heroPhrases = JSON.parse(heroCycle.dataset.phrases || '[]');
     } catch (error) {
-      console.warn('Unable to save cart state to localStorage', error);
+      heroPhrases = [];
     }
-  }
 
-  function renderCart(){
-    let market = 0, actual = 0;
-    const totalItems = Object.values(qty).reduce((sum, value) => sum + Number(value || 0), 0);
+    if (heroPhrases.length > 1) {
+      let heroPhraseIndex = 0;
 
-    for (const line of [1,2]){
-      const lineActual = unitPrices[line] * qty[line];
-      const lineMarket = marketPrices[line] * qty[line];
-      market += lineMarket; actual += lineActual;
-      const qtyNode = document.getElementById('qty' + line);
-      const lineNode = document.getElementById('lineTotal' + line);
-      if (qtyNode) qtyNode.textContent = qty[line];
-      if (lineNode) lineNode.textContent = 'Ksh ' + lineActual.toLocaleString();
+      const rotateHeroPhrase = () => {
+        heroCycle.style.opacity = '0';
+        heroCycle.style.transform = 'translateY(10px)';
+
+        setTimeout(() => {
+          heroPhraseIndex = (heroPhraseIndex + 1) % heroPhrases.length;
+          heroCycle.textContent = heroPhrases[heroPhraseIndex];
+          heroCycle.style.opacity = '1';
+          heroCycle.style.transform = 'translateY(0)';
+        }, 180);
+      };
+
+      heroCycle.classList.add('fade');
+
+      if (!reduceMotion) {
+        setInterval(rotateHeroPhrase, 2600);
+      }
     }
-    const marketNode = document.getElementById('marketTotal');
-    const yourTotalNode = document.getElementById('yourTotal');
-    const savedNode = document.getElementById('savedTotal');
-    const cartCountNodes = document.querySelectorAll('#cartCount, #cartMiniBadge');
-    cartCountNodes.forEach((node) => {
-      if (node) node.textContent = String(totalItems);
-    });
-    if (marketNode) marketNode.textContent = 'Ksh ' + market.toLocaleString();
-    if (yourTotalNode) yourTotalNode.textContent = 'Ksh ' + actual.toLocaleString();
-    if (savedNode) savedNode.textContent = 'Ksh ' + (market - actual).toLocaleString();
-    persistCart();
   }
 
   const drawerCheckoutBtn = document.getElementById('drawerCheckoutBtn');
@@ -166,17 +116,8 @@
     });
   }
 
-  document.querySelectorAll('.qty-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const line = btn.dataset.line;
-      const dir = parseInt(btn.dataset.dir, 10);
-      qty[line] = Math.max(5, qty[line] + dir);
-      renderCart();
-    });
-  });
-
-  if (document.getElementById('cartDrawer')) {
-    renderCart();
+  if (window.LashtribeCart) {
+    window.LashtribeCart.syncCartBadges();
   }
 
   // scroll reveal

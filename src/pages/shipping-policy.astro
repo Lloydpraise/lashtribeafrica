@@ -1,0 +1,9 @@
+---
+import PolicyPage from "../components/policies/PolicyPage.astro";
+import { getSiteSettings } from "../data/site-settings.js";
+
+const settings = await getSiteSettings();
+const fallback = `Lashtribe Africa ships in batches, matched to our production and restock cadence — check the countdown on the homepage for the current ordering window. Shipping fees are confirmed separately based on your delivery area once your order is placed. When a free-shipping offer is active, it's applied automatically once your order meets the minimum.`;
+---
+
+<PolicyPage title="Shipping Policy" content={settings.policyShipping} fallback={fallback} />

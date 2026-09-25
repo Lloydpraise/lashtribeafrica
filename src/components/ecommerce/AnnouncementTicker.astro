@@ -1,16 +1,32 @@
 ---
-const messages = [
-  "WHOLESALE · DIRECT FROM SOURCE",
-  "ORDER NOW — NEW BATCH SHIPS SOON",
-  "MOQ 5 ON MOST PRODUCTS",
-  "UNBEATABLE PRICES · UNMATCHED QUALITY",
-];
-// repeated twice in the original markup so the marquee loops seamlessly
-const loop = [...messages, ...messages];
+import { getSiteSettings } from "../../data/site-settings.js";
+import { getActiveOffers, getFreeShippingOffer } from "../../data/offers.js";
+
+const settings = await getSiteSettings();
+const offers = await getActiveOffers();
+const freeShipping = getFreeShippingOffer(offers);
+
+// A free-shipping offer overrides the normal ticker messages with a
+// single repeating banner. Otherwise show the configured messages (or
+// nothing, if the ticker's turned off and there's no offer to show).
+let messages = [];
+if (freeShipping) {
+  const label = freeShipping.minOrderValue > 0
+    ? `${freeShipping.badgeText} ON ORDERS OVER KSH ${freeShipping.minOrderValue.toLocaleString()}`
+    : freeShipping.badgeText;
+  messages = [label];
+} else if (settings.tickerEnabled) {
+  messages = settings.tickerMessages;
+}
+
+// repeated so the marquee loops seamlessly
+const loop = messages.length > 0 ? [...messages, ...messages, ...messages, ...messages] : [];
 ---
 
-<div class="ticker">
-  <div class="ticker-track">
-    {loop.map((msg) => <span>{msg}</span>)}
+{loop.length > 0 && (
+  <div class="ticker" class:list={{ "ticker-offer": Boolean(freeShipping) }}>
+    <div class="ticker-track">
+      {loop.map((msg) => <span>{msg}</span>)}
+    </div>
   </div>
-</div>
+)}

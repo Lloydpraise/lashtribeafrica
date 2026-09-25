@@ -31,6 +31,7 @@ const coverImage = product.images?.[0];
       <div class="product-gallery">
         <div class="product-visual" id="productVisual">
           <span class="product-badge">{product.badge}</span>
+          {product.hasOffer && <span class="offer-badge">{product.offerBadge}</span>}
           {coverImage ? (
             <img src={coverImage.url} alt={coverImage.alt || product.name} id="productMainImage" />
           ) : (
@@ -73,7 +74,7 @@ const coverImage = product.images?.[0];
                     </div>
                     <div class="bundle-copy">
                       <strong>{item.name}</strong>
-                      <span>{formatKsh(item.nowPrice)}</span>
+                      <span>{formatKsh(item.effectivePrice)}</span>
                     </div>
                     <button
                       class="bundle-add"
@@ -113,10 +114,16 @@ const coverImage = product.images?.[0];
           </div>
           <div class="save-row">
             <span class="label">You Will Save</span>
-            <strong>{formatKsh(priceDifference)}</strong>
+            <strong>{formatKsh(product.hasOffer ? product.marketPrice - product.effectivePrice : priceDifference)}</strong>
           </div>
+          {product.hasOffer && (
+            <div class="offer-price-row">
+              <span class="offer-badge-inline">{product.offerBadge}</span>
+              <span class="was-price">{formatKsh(product.nowPrice)}</span>
+            </div>
+          )}
           <div class="current-price-row">
-            <span class="current-price">{formatKsh(product.nowPrice)}</span>
+            <span class="current-price">{formatKsh(product.effectivePrice)}</span>
           </div>
           <div class="moq-row">
             <span class="label">Minimum Order Qty</span>
@@ -163,7 +170,7 @@ const coverImage = product.images?.[0];
                 <h3>{item.name}</h3>
                 <div class="related-price-row">
                   <span class="market">{formatKsh(item.marketPrice)}</span>
-                  <span class="now">{formatKsh(item.nowPrice)}</span>
+                  <span class="now">{formatKsh(item.effectivePrice)}</span>
                 </div>
               </div>
             </a>
@@ -177,6 +184,7 @@ const coverImage = product.images?.[0];
   <CartDrawer />
 
   <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/cart-render.js" is:inline></script>
   <script src="/scripts/main.js" is:inline></script>
   <script is:inline>
     (function () {

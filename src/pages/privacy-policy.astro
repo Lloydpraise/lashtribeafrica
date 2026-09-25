@@ -1,0 +1,9 @@
+---
+import PolicyPage from "../components/policies/PolicyPage.astro";
+import { getSiteSettings } from "../data/site-settings.js";
+
+const settings = await getSiteSettings();
+const fallback = `We collect only what's needed to process your preorder — your name, contact details, and delivery area — and never sell it to third parties. Payment details are handled by our payment processor and are not stored on our servers. Contact us any time to review or delete the information we hold about you.`;
+---
+
+<PolicyPage title="Privacy Policy" content={settings.policyPrivacy} fallback={fallback} />

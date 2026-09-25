@@ -1,50 +1,61 @@
 ---
+import { getSiteSettings, getCountdownState } from "../../data/site-settings.js";
+
+const settings = await getSiteSettings();
+const countdown = getCountdownState(settings);
+const bgImageUrl = settings.heroBgImage?.url || null;
 ---
 
 <section class="hero" id="home">
   <div class="hero-bg" aria-hidden="true">
-    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M40 260 Q120 200 200 250 Q260 285 340 220"
-        stroke="white"
-        stroke-width="1"
-        fill="none"
-        opacity=".5"></path>
-      <ellipse
-        cx="220"
-        cy="150"
-        rx="90"
-        ry="34"
-        stroke="white"
-        stroke-width="1"
-        fill="none"
-        opacity=".5"></ellipse>
-      <path
-        d="M60 300 Q200 340 340 290"
-        stroke="white"
-        stroke-width="1"
-        fill="none"
-        opacity=".35"></path>
-    </svg>
+    {bgImageUrl ? (
+      <img class="hero-bg-photo" src={bgImageUrl} alt="" />
+    ) : (
+      <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M40 260 Q120 200 200 250 Q260 285 340 220"
+          stroke="white"
+          stroke-width="1"
+          fill="none"
+          opacity=".5"></path>
+        <ellipse
+          cx="220"
+          cy="150"
+          rx="90"
+          ry="34"
+          stroke="white"
+          stroke-width="1"
+          fill="none"
+          opacity=".5"></ellipse>
+        <path
+          d="M60 300 Q200 340 340 290"
+          stroke="white"
+          stroke-width="1"
+          fill="none"
+          opacity=".35"></path>
+      </svg>
+    )}
     <div class="hero-overlay"></div>
-    <div class="hero-photo-tag">Studio Lash Bed — Nairobi</div>
+    <div class="hero-photo-tag">{settings.heroPhotoTag}</div>
   </div>
   <div class="wrap hero-content">
-    <div class="eyebrow hero-eyebrow">Wholesale For Lashtechs</div>
-    <h1 class="hero-cycle-wrap"><span id="heroCycle">Direct Sourcing.</span></h1>
+    <div class="eyebrow hero-eyebrow">{settings.heroEyebrow}</div>
+    <h1 class="hero-cycle-wrap">
+      <span id="heroCycle" data-phrases={JSON.stringify(settings.heroPhrases)}>{settings.heroPhrases[0]}</span>
+    </h1>
     <div class="hero-ctas">
-      <a href="#shop" class="btn-primary">Order Now</a>
-      <a href="#how-it-works" class="btn-ghost">How It Works</a>
+      <a href={settings.heroCtaPrimaryLink} class="btn-primary">{settings.heroCtaPrimaryLabel}</a>
+      <a href={settings.heroCtaSecondaryLink} class="btn-ghost">{settings.heroCtaSecondaryLabel}</a>
     </div>
     <div class="cadence">
       <div class="cadence-row">
-        <span class="cadence-label">Order Now</span>
-        <span class="cadence-days" id="cadenceDays">5 days left</span>
+        <span class="cadence-label">{settings.countdownLabel}</span>
+        <span class="cadence-days" id="cadenceDays">{countdown.label}</span>
       </div>
-      <div class="cadence-bar"><div class="cadence-fill" id="cadenceFill"></div></div>
+      <div class="cadence-bar"><div class="cadence-fill" id="cadenceFill" style={`width:${countdown.percent}%;`}></div></div>
       <div class="cadence-foot">
-        <span>Window opened Mon</span>
-        <span>Next batch ships soon</span>
+        <span>{settings.countdownOpenedText}</span>
+        <span>{settings.countdownNextText}</span>
       </div>
     </div>
   </div>

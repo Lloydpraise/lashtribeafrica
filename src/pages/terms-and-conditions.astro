@@ -1,0 +1,9 @@
+---
+import PolicyPage from "../components/policies/PolicyPage.astro";
+import { getSiteSettings } from "../data/site-settings.js";
+
+const settings = await getSiteSettings();
+const fallback = `By ordering from Lashtribe Africa, you agree to our minimum order quantities, batch-based shipping schedule, and posted pricing at the time of checkout. Offers and discounts apply only to the products and periods stated and may change without notice. All sales are preorders for the next scheduled production batch unless stated otherwise.`;
+---
+
+<PolicyPage title="Terms & Conditions" content={settings.policyTerms} fallback={fallback} />
