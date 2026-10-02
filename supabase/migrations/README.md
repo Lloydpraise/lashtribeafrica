@@ -19,6 +19,18 @@ CLI if you have it set up (`supabase db push`).
    row with the copy that used to be hardcoded, so nothing changes on
    the storefront until you edit it in Site Settings.
 
+5. `0005_academy_courses.sql` — academy courses: `courses`, `course_modules`,
+   `lessons` (public curriculum metadata), `lesson_content` (gated video + text
+   blocks), `enrollments`, `lesson_progress`, `lesson_notes`, plus
+   `has_course_access()` and `academy_admins`. Run after 0001 (re-uses
+   `set_updated_at()`). **Unlike the product tables, writes are admin-only**:
+   after running it, make yourself an admin with
+   `insert into public.academy_admins (user_id) select id from auth.users where email = 'you@example.com';`
+6. `0006_seed_demo_courses.sql` — optional. Two sample courses (one video + text,
+   one reading-only) so `/academy/learn/?course=volume-lashing-fundamentals`
+   works straight away. The videos are placeholder clips; delete the demo with
+   the one-liner at the top of the file.
+
 **Security note:** all of this uses permissive RLS policies that let the
 public anon key read *and write*. That's because the admin panel is a
 static site with only a client-side password gate — there's no real

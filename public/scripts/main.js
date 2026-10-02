@@ -20,11 +20,79 @@
   // search panel
   const searchToggle = document.getElementById('searchToggle');
   const searchPanel = document.getElementById('searchPanel');
+  const searchInput = document.getElementById('searchInput');
+  const searchSuggestions = document.getElementById('searchSuggestions');
   if (searchToggle && searchPanel) {
     searchToggle.addEventListener('click', (event) => {
       event.stopPropagation();
       searchPanel.classList.toggle('open');
       if (searchPanel.classList.contains('open')) document.getElementById('searchInput')?.focus();
+    });
+  }
+
+  if (searchInput && searchSuggestions) {
+    let searchProducts = [];
+    try {
+      searchProducts = JSON.parse(searchSuggestions.parentElement?.dataset.searchProducts || '[]');
+    } catch (error) {
+      searchProducts = [];
+    }
+
+    searchInput.addEventListener('input', () => {
+      const terms = searchInput.value.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+      searchSuggestions.replaceChildren();
+
+      if (!terms.length) {
+        searchSuggestions.hidden = true;
+        return;
+      }
+
+      const matches = searchProducts
+        .filter((product) => {
+          const text = (product.searchText || product.name).toLocaleLowerCase();
+          return terms.every((term) => text.includes(term));
+        })
+        .slice(0, 5);
+
+      if (!matches.length) {
+        const emptyMessage = document.createElement('p');
+        emptyMessage.className = 'search-empty';
+        emptyMessage.textContent = 'No products found';
+        searchSuggestions.append(emptyMessage);
+      }
+
+      matches.forEach((product) => {
+        const link = document.createElement('a');
+        link.className = 'search-suggestion';
+        link.href = `/ecommerce/product/${encodeURIComponent(product.slug)}`;
+        link.setAttribute('role', 'option');
+
+        const thumbnail = document.createElement('span');
+        thumbnail.className = 'search-suggestion-thumb';
+        if (product.image) {
+          const image = document.createElement('img');
+          image.src = product.image;
+          image.alt = '';
+          image.loading = 'lazy';
+          thumbnail.append(image);
+        } else {
+          thumbnail.textContent = product.name?.charAt(0) || '';
+          thumbnail.setAttribute('aria-hidden', 'true');
+        }
+
+        const name = document.createElement('span');
+        name.className = 'search-suggestion-name';
+        name.textContent = product.name;
+
+        const price = document.createElement('span');
+        price.className = 'search-suggestion-price';
+        price.textContent = product.price;
+
+        link.append(thumbnail, name, price);
+        searchSuggestions.append(link);
+      });
+
+      searchSuggestions.hidden = false;
     });
   }
 

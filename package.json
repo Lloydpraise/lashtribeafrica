@@ -12,11 +12,12 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^7.2.8",
     "@astrojs/react": "^4.2.0",
+    "@supabase/supabase-js": "^2.45.4",
+    "astro": "^7.2.8",
+    "hls.js": "^1.7.3",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "@supabase/supabase-js": "^2.45.4"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",

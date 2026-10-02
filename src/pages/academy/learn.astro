@@ -1,0 +1,19 @@
+---
+import Layout from "../../layouts/academy/Layout.astro";
+import LearnApp from "../../components/learn/LearnApp.jsx";
+import "../../styles/learn.css";
+---
+
+<Layout title="Lashtribe Academy — Learn">
+  <LearnApp client:only="react">
+    <div slot="fallback" class="lx-root">
+      <div class="lx-center">
+        <div class="lx-loading" role="status">
+          <div class="lx-spin" aria-hidden="true"></div>
+          <span>Loading your course…</span>
+        </div>
+      </div>
+    </div>
+  </LearnApp>
+  <script is:inline src="/scripts/shared-cart.js"></script>
+</Layout>

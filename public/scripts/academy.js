@@ -42,9 +42,12 @@
     if (appShell) appShell.style.display = 'none';
     if (viewAuth) viewAuth.style.display = 'flex';
     if (accountMenu) accountMenu.classList.remove('open');
+    try { sessionStorage.removeItem('lashtribe_academy_session'); } catch (err) { /* ignore */ }
   });
 
   function enterApp(isNew, name){
+    // remember the (demo) session so coming back from a lesson doesn't show sign-in again
+    try { sessionStorage.setItem('lashtribe_academy_session', JSON.stringify({ isNew, name })); } catch (err) { /* ignore */ }
     if (viewAuth) viewAuth.style.display = 'none';
     if (appShell) appShell.style.display = 'block';
     const avatarInitial = document.getElementById('avatarInitial');
@@ -60,6 +63,11 @@
     if (dashboardEmpty) dashboardEmpty.style.display = isNew ? 'block' : 'none';
     showDashboard();
   }
+
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('lashtribe_academy_session') || 'null');
+    if (saved && saved.name) enterApp(!!saved.isNew, saved.name);
+  } catch (err) { /* ignore */ }
 
   // ---------- Account menu ----------
   const accountBtn = document.getElementById('accountBtn');
@@ -78,12 +86,12 @@
     if (viewPlayer) viewPlayer.style.display = 'none';
     window.scrollTo(0, 0);
   }
-  function showPlayer(){
-    const viewDashboard = document.getElementById('viewDashboard');
-    const viewPlayer = document.getElementById('viewPlayer');
-    if (viewDashboard) viewDashboard.style.display = 'none';
-    if (viewPlayer) viewPlayer.style.display = 'block';
-    window.scrollTo(0, 0);
+  // The learning experience now lives on its own page (/academy/learn) so lessons are
+  // deep-linkable and the browser back button returns to the dashboard.
+  function showPlayer(e){
+    const holder = e && e.target && e.target.closest ? e.target.closest('[data-course]') : null;
+    const slug = (holder && holder.dataset.course) || 'volume-lashing-fundamentals';
+    window.location.href = '/academy/learn/?course=' + encodeURIComponent(slug);
   }
 
   const continuePlayBtn = document.getElementById('continuePlayBtn');

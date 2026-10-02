@@ -41,7 +41,7 @@ export function emptyProduct() {
     low_stock_threshold: 5,
     images: [],
     videos: [],
-    status: "draft",
+    status: "active",
   };
 }
 

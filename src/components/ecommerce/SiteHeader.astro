@@ -1,5 +1,26 @@
 ---
 import MobileNav from "./MobileNav.astro";
+import { formatKsh, getEcommerceProducts } from "../../data/ecommerce-products.js";
+
+type SearchProduct = {
+  slug: string;
+  name: string;
+  description?: string;
+  effectivePrice?: number;
+  nowPrice: number;
+  images?: { url?: string }[];
+  category?: { name?: string } | null;
+};
+
+const searchProducts = ((await getEcommerceProducts()) as SearchProduct[]).map((product) => ({
+  slug: product.slug,
+  name: product.name,
+  price: formatKsh(product.effectivePrice ?? product.nowPrice),
+  image: product.images?.[0]?.url || "",
+  searchText: [product.name, product.slug, product.description, product.category?.name]
+    .filter(Boolean)
+    .join(" "),
+}));
 ---
 
 <header id="siteHeader">
@@ -20,7 +41,7 @@ import MobileNav from "./MobileNav.astro";
           ><circle cx="8.2" cy="15.4" r="1.2" fill="currentColor"></circle><circle cx="14.6" cy="15.4" r="1.2" fill="currentColor"></circle></svg
         >
         <span class="cart-label">Cart</span>
-        <span class="cart-count" id="cartCount">10</span>
+        <span class="cart-count" id="cartCount">0</span>
       </button>
       <button class="burger" id="burgerBtn" aria-label="Menu">
         <svg width="22" height="16" viewBox="0 0 22 16"
@@ -31,13 +52,18 @@ import MobileNav from "./MobileNav.astro";
     </div>
   </div>
   <div class="search-panel" id="searchPanel">
-    <div class="wrap search-inner">
-      <input
-        type="text"
-        placeholder="Search adhesives, fans, tools, tweezers…"
-        id="searchInput"
-      />
-      <button>Search</button>
+    <div class="wrap search-inner" data-search-products={JSON.stringify(searchProducts)}>
+      <form action="/shop" method="get">
+        <input
+          type="search"
+          name="search"
+          placeholder="Search adhesives, fans, tools, tweezers…"
+          aria-label="Search products"
+          id="searchInput"
+        />
+        <button type="submit">Search</button>
+      </form>
+      <div class="search-suggestions" id="searchSuggestions" role="listbox" hidden></div>
     </div>
   </div>
 </header>
