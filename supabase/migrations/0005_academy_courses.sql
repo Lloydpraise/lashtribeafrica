@@ -114,7 +114,7 @@ create trigger lessons_set_updated_at
 --              chapters:[{t,title}], transcript:[{t,text}],
 --              products:[{t, slug, note}] }   -- or null for reading lessons
 --   blocks : [{ type: 'heading'|'text'|'list'|'steps'|'callout'|'quote'|
---                     'figure'|'checkpoint'|'quiz'|'divider', ... }]
+--                     'figure'|'checkpoint'|'flip'|'compare'|'quiz'|'divider', ... }]
 -- ---------------------------------------------------------------------
 create table if not exists public.lesson_content (
   lesson_id uuid primary key references public.lessons(id) on delete cascade,

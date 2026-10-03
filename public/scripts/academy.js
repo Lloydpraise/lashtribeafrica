@@ -90,7 +90,7 @@
   // deep-linkable and the browser back button returns to the dashboard.
   function showPlayer(e){
     const holder = e && e.target && e.target.closest ? e.target.closest('[data-course]') : null;
-    const slug = (holder && holder.dataset.course) || 'volume-lashing-fundamentals';
+    const slug = (holder && holder.dataset.course) || 'classic-set-essentials';
     window.location.href = '/academy/learn/?course=' + encodeURIComponent(slug);
   }
 
@@ -103,7 +103,7 @@
   const nextModuleCard = document.getElementById('nextModuleCard');
   if (nextModuleCard) {
     nextModuleCard.addEventListener('click', () => {
-      showToast('Finish Volume Lashing Fundamentals to unlock this module.');
+      showToast('Finish Classic Set Essentials to unlock this module.');
     });
   }
 

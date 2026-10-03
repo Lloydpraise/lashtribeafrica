@@ -31,6 +31,15 @@ CLI if you have it set up (`supabase db push`).
    works straight away. The videos are placeholder clips; delete the demo with
    the one-liner at the top of the file.
 
+7. `0007_course_classic_set_essentials.sql` — the real "Classic Set Essentials"
+   course (4 modules, 13 lessons, story-mode blocks + final quiz). Generated from
+   `src/data/courses/classic-set-essentials.js` by
+   `node scripts/course-to-sql.mjs src/data/courses/classic-set-essentials.js > supabase/migrations/0007_...sql`.
+   Safe to re-run (upserts by id). Images live in `public/course-media/`.
+   Lessons are `is_preview = true` so they read without a real login; to lock down:
+   `update public.lessons set is_preview = false where course_id = '62eebf2d-79e9-5ada-ab79-9102d999a4cd';`
+   The other courses can use the same script.
+
 **Security note:** all of this uses permissive RLS policies that let the
 public anon key read *and write*. That's because the admin panel is a
 static site with only a client-side password gate — there's no real

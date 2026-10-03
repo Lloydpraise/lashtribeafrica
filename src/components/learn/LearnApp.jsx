@@ -7,6 +7,7 @@ import {
 import { createTimeStore, useMedia, burstConfetti, fmtMinutes } from "./util.js";
 import VideoStage from "./VideoStage.jsx";
 import Reader, { Block, groupSections } from "./Reader.jsx";
+import Story from "./Story.jsx";
 import Assessment from "./Assessment.jsx";
 import Curriculum from "./Curriculum.jsx";
 import { Transcript, Notes, Shop } from "./Panels.jsx";
@@ -88,7 +89,10 @@ export default function LearnApp() {
   const [drawer, setDrawer] = useState(false);
   const [courseOpen, setCourseOpen] = useState(true);
   const [notesOpen, setNotesOpen] = useState(true);
-  const [mode, setMode] = useState("scroll");
+  const [view, setView] = useState(() => {
+    try { return localStorage.getItem("lashtribe_reading_view") === "article" ? "article" : "story"; } catch { return "story"; }
+  });
+  const pickView = (v) => { setView(v); try { localStorage.setItem("lashtribe_reading_view", v); } catch { /* ignore */ } };
   const [seenInfo, setSeenInfo] = useState({ n: 0, total: 0 });
   const [toast, setToast] = useState("");
   const [cartCount, setCartCount] = useState(0);
@@ -295,6 +299,18 @@ export default function LearnApp() {
       timed={timed} onAdd={onAddProduct} watermark={watermark} />
   ) : null;
 
+  const storyActive = !!lesson && lesson.kind === "reading" && view === "story" && lessonState === "idle" && !!content && bodyBlocks.length > 0;
+
+  const storyView = storyActive && (
+    <Story key={lesson.id} blocks={bodyBlocks} title={lesson.title} summary={lesson.summary} minutes={lesson.read_minutes || 3}
+      startAt={done ? 0 : progress[lesson.id]?.position || 0} watermark={watermark}
+      onFinish={() => complete(lesson.id)}
+      onPosition={(i) => { setProgress((p) => ({ ...p, [lesson.id]: { ...(p[lesson.id] || {}), position: i } })); saveProgress(ctx, lesson.id, { position: i }); }}
+      onArticle={() => pickView("article")}
+      nextLabel={next ? "Next lesson →" : "Finish course →"}
+      onNext={() => (next ? go(next.id) : go("__certificate"))} />
+  );
+
   const lessonView = lesson && (
     <>
       <div className="lx-lesson-head">
@@ -303,10 +319,10 @@ export default function LearnApp() {
         </div>
         <h1>{lesson.title}</h1>
         {lesson.summary && <p className="lx-sum">{lesson.summary}</p>}
-        {lesson.kind === "reading" && sections > 1 && (
-          <div className="lx-modes" role="group" aria-label="Reading mode">
-            <button className={mode === "scroll" ? "on" : ""} onClick={() => setMode("scroll")}>Scroll</button>
-            <button className={mode === "cards" ? "on" : ""} onClick={() => setMode("cards")}>Cards</button>
+        {lesson.kind === "reading" && (
+          <div className="lx-modes" role="group" aria-label="Reading view">
+            <button className={view === "story" ? "on" : ""} onClick={() => pickView("story")}>Story</button>
+            <button className={view === "article" ? "on" : ""} onClick={() => pickView("article")}>Article</button>
           </div>
         )}
       </div>
@@ -321,7 +337,7 @@ export default function LearnApp() {
               ? <div className="lx-notes-body"><div className="lx-sec-label">Lesson notes</div>
                   <div className="reader mode-scroll">{groupSections(bodyBlocks).map((s, i) => <section className="rd-section tight" key={i}>{s.title && <div className="rd-sec-head"><h2>{s.title}</h2></div>}{s.blocks.map((b, k) => <Block b={b} key={k} />)}</section>)}</div>
                 </div>
-              : <Reader key={lesson.id + mode} resetKey={lesson.id} blocks={bodyBlocks} mode={mode} watermark={watermark}
+              : <Reader key={lesson.id} resetKey={lesson.id} blocks={bodyBlocks} watermark={watermark}
                   onProgress={(n, total) => setSeenInfo({ n, total })} />
           )
       )}
@@ -339,7 +355,7 @@ export default function LearnApp() {
     ? <Transcript lines={video?.transcript || []} timeStore={timeStore} onSeek={seek} />
     : id === "shop"
       ? <Shop items={timed} onAdd={onAddProduct} onSeek={seek} hasVideo={!!video} added={added} />
-      : <Notes notes={notes} hasVideo={!!video} timeStore={timeStore} canNote={ctx.source === "demo" || !!ctx.user}
+      : <Notes notes={notes} hasVideo={!!video} timeStore={timeStore} canNote={ctx.source === "demo" || !!ctx.user || demoSession}
           onNeedSignIn={() => say("Sign in to save notes.")}
           onAdd={async (t, body) => { const n = await addNote(ctx, lesson.id, t, body); setNotes((x) => [...x, n]); }}
           onDelete={async (id) => { await deleteNote(ctx, lesson.id, id); setNotes((x) => x.filter((n) => n.id !== id)); }}
@@ -348,7 +364,7 @@ export default function LearnApp() {
   const currProps = { course, modules: ctx.modules, lessons, progress, currentId: lessonId, stateOf, onPick: go, pct, doneCount, certReady, certEnabled: course.certificate_enabled };
 
   return (
-    <div className={"lx-root" + (isWide && courseOpen ? " course-open" : "") + (!isMobile && notesOpen ? " notes-open" : "")}>
+    <div className={"lx-root" + (lesson?.kind === "reading" && !isCert ? " reading" : "") + (isWide && courseOpen ? " course-open" : "") + (!isMobile && notesOpen ? " notes-open" : "")}>
       <div className="lx-top">
         <a className="lx-back" href="/academy/" aria-label="Back to the academy">← <span>Academy</span></a>
         <div className="lx-top-title">{course.title}</div>
@@ -391,7 +407,7 @@ export default function LearnApp() {
               ))}
             </div>
           )}
-              {(!isMobile || tab === "lesson") && lessonView}
+              {(!isMobile || tab === "lesson") && (storyActive ? storyView : lessonView)}
               {isMobile && tab !== "lesson" && (
                 <div className="lx-m-panel">
                   {tab === "course" ? <Curriculum {...currProps} /> : panelBody(tab)}
@@ -400,7 +416,7 @@ export default function LearnApp() {
             </>
           ) : <p className="lx-muted">This course has no published lessons yet.</p>}
 
-          {lesson && !isCert && (
+          {lesson && !isCert && !(storyActive && (!isMobile || tab === "lesson")) && (
             <div className="lx-bar-wrap">
               <div className="lx-bar-row">
                 <button className="lx-btn ghost" disabled={!prev} onClick={() => prev && go(prev.id)} aria-label="Previous lesson">←<span> Prev</span></button>

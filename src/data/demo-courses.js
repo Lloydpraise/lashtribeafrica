@@ -4,6 +4,7 @@
 // The sample videos below are placeholders (public test clips), replace them with real lessons.
 
 import { art } from "../components/learn/util.js";
+import { CLASSIC_SET_ESSENTIALS } from "./courses/classic-set-essentials.js";
 
 const BBB = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 const ELE = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
@@ -91,6 +92,7 @@ export const DEMO_COURSES = [
               { type: "text", text: "Retention is decided in the first ten minutes of an appointment. Before a single extension touches a natural lash, the lash bed has to be clean, dry and oil free." },
               { type: "heading", text: "Start with a clean canvas" },
               { type: "text", text: "Natural oils, sunscreen and makeup residue are the number one cause of early lash loss. Cleanse every client, even the ones who arrive 'bare faced'." },
+              { type: "flip", prompt: "Myth or fact?", front: "Clients who arrive bare faced don't need cleansing.", back: "Natural oils and sunscreen still cause early lash loss. **Cleanse every client.**" },
               { type: "figure", url: eyeArt, caption: "Lash line, upper lid, and where cleansing stops." },
               { type: "steps", items: [
                 { title: "Remove makeup", text: "Use an oil free remover on a lint free pad, working from the inner corner outward." },
@@ -103,7 +105,7 @@ export const DEMO_COURSES = [
               { type: "quote", text: "Retention is built in preparation, not repaired in the fill.", by: "Lashtribe Academy" },
               { type: "checkpoint", question: "What should you do right after rinsing the lash bed?", options: ["Apply adhesive immediately", "Dry completely before primer", "Apply a second cleanse"], answer: 1, explain: "Moisture weakens the bond, so the lashes must be completely dry before primer or adhesive." },
               { type: "heading", text: "Your 60 second checklist" },
-              { type: "list", style: "bullets", items: ["Makeup and oils removed", "Cleansed and rinsed", "Completely dry", "Primer applied and flash dried", "Under eye pads placed smoothly"] },
+              { type: "list", style: "checklist", items: ["Makeup and oils removed", "Cleansed and rinsed", "Completely dry", "Primer applied and flash dried", "Under eye pads placed smoothly"] },
               { type: "callout", tone: "key", title: "Remember", text: "Clean, dry and primed. If you do nothing else, do these three." },
             ],
           },
@@ -215,6 +217,7 @@ export const DEMO_COURSES = [
               { type: "figure", url: dropArt, caption: "Store upright, sealed, and away from sunlight." },
               { type: "list", style: "bullets", items: ["Cool, dry place away from direct sun", "Upright, with the cap tightly closed", "Sealed in an airtight container with silica gel"] },
               { type: "callout", tone: "tip", title: "Pro tip", text: "Write the date you open each bottle on the label, and replace it after about a month." },
+              { type: "flip", prompt: "Myth or fact?", front: "Adhesive cures fastest in a very dry room.", back: "Humidity speeds up curing. Most adhesives work best in **moderate humidity**, so check your room." },
               { type: "heading", text: "Working with it" },
               { type: "steps", items: [
                 { title: "Shake", text: "Shake the bottle for at least 30 seconds before each use." },
@@ -238,6 +241,7 @@ export const DEMO_COURSES = [
                 { title: "Disinfect", text: "Soak in hospital grade disinfectant for the recommended time." },
                 { title: "Dry and store", text: "Dry completely and store in a clean, closed case." },
               ] },
+              { type: "compare", title: "Handling your tweezers", do: ["Store them in a closed case", "Disinfect after every client", "Check the tips meet evenly"], dont: ["Drop them on a hard floor", "Share them between technicians", "Use them to open bottles"] },
               { type: "callout", tone: "mistake", title: "Common mistake", text: "Dropping tweezers onto a hard floor. Even a small bend in the tip will affect isolation." },
               { type: "callout", tone: "key", title: "Remember", text: "Clean after every client and never share tweezers between technicians." },
             ],
@@ -247,6 +251,8 @@ export const DEMO_COURSES = [
     ],
   },
 ];
+
+DEMO_COURSES.unshift(CLASSIC_SET_ESSENTIALS);
 
 export function getDemoCourse(slug) {
   const c = DEMO_COURSES.find((x) => x.slug === slug);

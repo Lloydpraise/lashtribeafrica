@@ -83,8 +83,7 @@ export async function loadLessonContent(ctx, lesson) {
 
 // ---------- progress ----------
 export async function loadProgress(ctx) {
-  if (ctx.source === "demo") return readLS()[ctx.course.slug]?.progress || {};
-  if (!ctx.user) return {};
+  if (ctx.source === "demo" || !ctx.user) return readLS()[ctx.course.slug]?.progress || {};
   const { data } = await supabase
     .from("lesson_progress").select("lesson_id, completed, position_seconds").eq("course_id", ctx.course.id);
   const map = {};
@@ -93,7 +92,7 @@ export async function loadProgress(ctx) {
 }
 
 export async function saveProgress(ctx, lessonId, patch) {
-  if (ctx.source === "demo") {
+  if (ctx.source === "demo" || !ctx.user) {
     const all = readLS();
     const c = (all[ctx.course.slug] ||= { progress: {}, notes: {} });
     c.progress[lessonId] = { ...(c.progress[lessonId] || {}), ...patch };
@@ -127,15 +126,14 @@ export async function enrollFree(ctx) {
 
 // ---------- notes ----------
 export async function loadNotes(ctx, lessonId) {
-  if (ctx.source === "demo") return (readLS()[ctx.course.slug]?.notes?.[lessonId] || []).slice();
-  if (!ctx.user) return [];
+  if (ctx.source === "demo" || !ctx.user) return (readLS()[ctx.course.slug]?.notes?.[lessonId] || []).slice();
   const { data } = await supabase
     .from("lesson_notes").select("id, t_seconds, body, created_at")
     .eq("lesson_id", lessonId).order("created_at", { ascending: true });
   return (data || []).map((n) => ({ id: n.id, t: n.t_seconds, body: n.body, at: n.created_at }));
 }
 export async function addNote(ctx, lessonId, t, body) {
-  if (ctx.source === "demo") {
+  if (ctx.source === "demo" || !ctx.user) {
     const all = readLS();
     const c = (all[ctx.course.slug] ||= { progress: {}, notes: {} });
     const note = { id: "n" + Date.now(), t, body, at: new Date().toISOString() };
@@ -151,7 +149,7 @@ export async function addNote(ctx, lessonId, t, body) {
   return { id: data.id, t: data.t_seconds, body: data.body, at: data.created_at };
 }
 export async function deleteNote(ctx, lessonId, id) {
-  if (ctx.source === "demo") {
+  if (ctx.source === "demo" || !ctx.user) {
     const all = readLS();
     const list = all[ctx.course.slug]?.notes?.[lessonId];
     if (list) all[ctx.course.slug].notes[lessonId] = list.filter((n) => n.id !== id);
