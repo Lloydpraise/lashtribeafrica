@@ -7,3 +7,169 @@ import DashboardEmpty from "./DashboardEmpty.astro";
   <DashboardPopulated />
   <DashboardEmpty />
 </section>
+
+<script>
+  import { supabase } from "../../services/service.js";
+  import { loadCourse, loadProgress } from "../../services/academy.js";
+
+  const hasDatabase = Boolean(
+    import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  );
+
+  function createCourseCard(course) {
+    const card = document.createElement("div");
+    const paid = !course.is_free;
+    card.className = paid ? "course-card advanced-card" : "course-card";
+    card.dataset.course = course.slug;
+    if (!paid) card.dataset.openPlayer = "1";
+
+    const cover = document.createElement("div");
+    cover.className = "module-cover";
+    if (course.cover_url) {
+      const image = document.createElement("img");
+      image.src = course.cover_url;
+      image.alt = course.title;
+      image.loading = "lazy";
+      cover.append(image);
+    } else {
+      const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      icon.setAttribute("viewBox", "0 0 100 100");
+      icon.setAttribute("aria-hidden", "true");
+      const ellipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+      ellipse.setAttribute("cx", "50");
+      ellipse.setAttribute("cy", "50");
+      ellipse.setAttribute("rx", "30");
+      ellipse.setAttribute("ry", "12");
+      ellipse.setAttribute("fill", "none");
+      ellipse.setAttribute("stroke", "currentColor");
+      ellipse.setAttribute("stroke-width", "1.5");
+      icon.append(ellipse);
+      cover.append(icon);
+    }
+    card.append(cover);
+
+    const body = document.createElement("div");
+    body.className = "course-body";
+    const title = document.createElement("h4");
+    title.textContent = course.title;
+    body.append(title);
+
+    const blurb = document.createElement("p");
+    blurb.textContent = course.subtitle || course.description || "";
+    body.append(blurb);
+
+    if (paid) {
+      const priceRow = document.createElement("div");
+      priceRow.className = "course-price-row";
+      const price = document.createElement("span");
+      price.className = "course-price";
+      price.textContent = `Ksh ${Number(course.price || 0).toLocaleString()}`;
+      const buy = document.createElement("button");
+      buy.type = "button";
+      buy.className = "course-buy";
+      buy.dataset.courseId = course.id;
+      buy.dataset.price = String(Number(course.price || 0));
+      buy.dataset.title = course.title;
+      buy.textContent = "Buy Course";
+      priceRow.append(price, buy);
+      body.append(priceRow);
+    } else {
+      const cta = document.createElement("div");
+      cta.className = "course-cta-row";
+      const included = document.createElement("span");
+      included.className = "course-free-tag";
+      included.textContent = "Included";
+      const start = document.createElement("button");
+      start.type = "button";
+      start.className = "course-start";
+      start.textContent = "Start Course →";
+      cta.append(included, start);
+      body.append(cta);
+    }
+
+    card.append(body);
+    return card;
+  }
+
+  function renderCatalog(courses) {
+    const freeCourses = courses.filter((course) => course.is_free);
+    const paidCourses = courses.filter((course) => !course.is_free);
+    const freeGrids = [
+      document.getElementById("courseGridPopulated"),
+      document.getElementById("courseGridEmpty"),
+    ];
+    const paidGrids = [
+      document.getElementById("advancedGridPopulated"),
+      document.getElementById("advancedGridEmpty"),
+    ];
+
+    freeGrids.forEach((grid) => {
+      if (grid) grid.replaceChildren(...freeCourses.map(createCourseCard));
+    });
+    paidGrids.forEach((grid) => {
+      if (grid) grid.replaceChildren(...paidCourses.map(createCourseCard));
+    });
+  }
+
+  let catalog = [];
+  if (hasDatabase) {
+    const { data, error } = await supabase
+      .from("courses")
+      .select("id, slug, title, subtitle, description, is_free, price, cover_url, sort_order")
+      .eq("status", "published")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Academy: could not load the published course catalog.", error);
+    } else {
+      catalog = data || [];
+      if (catalog.length) renderCatalog(catalog);
+    }
+  }
+
+  const heroCourse =
+    catalog.find((course) => course.slug === "classic-set-essentials") ||
+    catalog.find((course) => course.is_free);
+  const slug = heroCourse?.slug || "classic-set-essentials";
+  const hero = document.querySelector(".continue-hero");
+  const heroImage = document.getElementById("continueHeroImage");
+
+  if (hero) hero.dataset.course = slug;
+  if (heroCourse?.cover_url && heroImage instanceof HTMLImageElement) {
+    heroImage.src = heroCourse.cover_url;
+    heroImage.hidden = false;
+  }
+
+  try {
+    const course = await loadCourse(slug);
+    if (course) {
+      const progress = await loadProgress(course);
+      const lessons = course.lessons || [];
+      const completed = lessons.filter((lesson) => progress[lesson.id]?.completed).length;
+      const percent = lessons.length ? Math.round((completed / lessons.length) * 100) : 0;
+      const fill = document.getElementById("continueProgressFill");
+      const label = document.getElementById("continueProgressLabel");
+      const bar = document.querySelector(".continue-hero .progress-bar");
+      const title = document.getElementById("continueCourseTitle");
+      const subtitle = document.getElementById("continueCourseSub");
+
+      if (fill) {
+        fill.style.width = `${percent}%`;
+        fill.classList.toggle("is-green", percent > 70);
+      }
+      if (label) label.textContent = `${percent}%`;
+      if (bar) bar.setAttribute("aria-valuenow", String(percent));
+      if (title) title.textContent = course.course.title;
+      if (subtitle) subtitle.textContent = `${completed} of ${lessons.length} lessons completed`;
+    }
+  } catch (progressError) {
+    console.error("Academy: could not load course progress for the dashboard.", progressError);
+    const label = document.getElementById("continueProgressLabel");
+    const subtitle = document.getElementById("continueCourseSub");
+    const bar = document.querySelector(".continue-hero .progress-bar");
+    if (label) label.textContent = "—";
+    if (subtitle) subtitle.textContent = "Progress couldn't be loaded.";
+    if (bar) bar.setAttribute("aria-label", "Course progress unavailable");
+  }
+</script>

@@ -40,12 +40,27 @@ CLI if you have it set up (`supabase db push`).
    `update public.lessons set is_preview = false where course_id = '62eebf2d-79e9-5ada-ab79-9102d999a4cd';`
    The other courses can use the same script.
 
+8. `0008_admin_courses.sql` — powers the admin **Courses** screen: adds `course_type`,
+   `compare_price` and `hero_path` to `courses`; `course_bundles` + `course_bundle_items`;
+   the public `course-media` storage bucket (hero images, story images, short videos up to 50 MB;
+   **only academy admins can upload**); and the transactional `admin_save_course()` /
+   `admin_save_bundle()` functions. Run after 0005.
+   Outside the editor: `node scripts/course-to-json.mjs <course.js>` makes an importable .json, and
+   `node scripts/course-to-sql.mjs <course.json>` makes SQL from an exported course.
+   Self-test of the import code: `node scripts/test-course-import.mjs`.
+9. `0009_courses_anon_admin.sql` — removes the Supabase Auth gate from the admin Courses section
+   and enables course editing with the public anon key, matching Products. **This makes all course
+   catalog, bundle, and lesson content publicly readable and writable, including paid lesson
+   material and uploads.** Run after 0008. Anyone with the public anon key can read, create, edit,
+   or delete this data until proper Supabase Auth is implemented. Do not use this temporary setup
+   to protect paid course content.
+
 **Security note:** all of this uses permissive RLS policies that let the
-public anon key read *and write*. That's because the admin panel is a
-static site with only a client-side password gate — there's no real
-server-side session to scope policies to. Full detail is in the comments
-at the top of `0001_products_schema.sql`. It's an acceptable tradeoff for
-a low-stakes internal catalog; flag it to me if you want real auth later.
+public anon key read *and write*. The admin panel is a static site with no
+server-side session to scope policies to. The temporary course policy also
+makes paid lesson content publicly readable; full detail is in
+`0009_courses_anon_admin.sql`. Replace these policies with real Supabase Auth
+before using them to protect paid content.
 
 **After running migrations:** since the storefront pages are statically
 generated at build time (not server-rendered), any product change you

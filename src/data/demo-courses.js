@@ -254,18 +254,18 @@ export const DEMO_COURSES = [
 
 DEMO_COURSES.unshift(CLASSIC_SET_ESSENTIALS);
 
-export function getDemoCourse(slug) {
-  const c = DEMO_COURSES.find((x) => x.slug === slug);
-  if (!c) return null;
+/** Turns a course object (modules -> lessons) into the { course, modules, lessons, content } the player reads. */
+export function buildCourseCtx(c) {
   const modules = [];
   const lessons = [];
   const content = {};
   let order = 0;
   c.modules.forEach((m, mi) => {
-    const mod = { id: `${c.slug}-m${mi + 1}`, title: m.title, sort_order: mi };
+    const mod = { id: m.id || `${c.slug}-m${mi + 1}`, title: m.title, sort_order: mi };
     modules.push(mod);
-    m.lessons.forEach((l, li) => {
-      const id = `${c.slug}-l${++order}`;
+    m.lessons.forEach((l) => {
+      order += 1;
+      const id = l.id || `${c.slug}-l${order}`;
       lessons.push({
         id,
         course_id: c.slug,
@@ -283,4 +283,9 @@ export function getDemoCourse(slug) {
   });
   const { modules: _m, ...course } = c;
   return { course: { id: c.slug, ...course }, modules, lessons, content };
+}
+
+export function getDemoCourse(slug) {
+  const c = DEMO_COURSES.find((x) => x.slug === slug);
+  return c ? buildCourseCtx(c) : null;
 }

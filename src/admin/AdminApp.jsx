@@ -30,9 +30,17 @@ const SECTIONS = {
   },
   courses: {
     title: "Courses",
-    subtitle: "Academy catalog",
+    subtitle: "Video & story courses, pricing and bundles",
     Component: Courses,
-    action: <button className="admin-btn" type="button" disabled title="Coming soon">+ Add Course</button>,
+    action: (
+      <button
+        className="admin-btn"
+        type="button"
+        onClick={() => window.dispatchEvent(new CustomEvent("admin:add-course"))}
+      >
+        + New Course
+      </button>
+    ),
   },
   customers: { title: "Customers", subtitle: "People who've bought from you", Component: Customers },
   orders: { title: "Orders", subtitle: "Ecommerce + Academy purchases", Component: Orders },

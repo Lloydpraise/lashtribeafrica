@@ -71,6 +71,7 @@
 
   .continue-hero{position:relative;border-radius:14px;overflow:hidden;min-height:340px;display:flex;align-items:flex-end;}
   .continue-bg{position:absolute;inset:0;background:linear-gradient(120deg,#241d1d 0%, #4a3336 45%, #caa3a8 100%);}
+  .continue-hero-image{position:absolute;inset:0 0 0 auto;width:58%;height:100%;object-fit:cover;object-position:center;opacity:.82;mix-blend-mode:soft-light;-webkit-mask-image:linear-gradient(to right,transparent 0%,rgba(0,0,0,.35) 24%,#000 58%);mask-image:linear-gradient(to right,transparent 0%,rgba(0,0,0,.35) 24%,#000 58%);}
   .continue-bg svg{position:absolute;bottom:-10%;right:-4%;width:56%;opacity:.4;}
   .continue-overlay{position:absolute;inset:0;background:linear-gradient(0deg, rgba(0,0,0,.72) 10%, rgba(0,0,0,.15) 70%);}
   .continue-content{position:relative;z-index:1;padding:34px 36px;color:var(--warm-white);width:100%;}
@@ -80,6 +81,7 @@
   .progress-row{display:flex;align-items:center;gap:12px;max-width:320px;margin-bottom:22px;}
   .progress-bar{flex:1;height:5px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;}
   .progress-fill{height:100%;background:var(--blush);}
+  .progress-fill.is-green{background:#56c271;}
   .progress-row span{font-size:11px;font-weight:700;}
   .play-btn{display:inline-flex;align-items:center;gap:12px;background:var(--warm-white);color:var(--black);border:none;padding:12px 22px 12px 12px;border-radius:32px;cursor:pointer;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;transition:transform .2s ease;}
   .play-btn:hover{transform:translateY(-2px);}
@@ -104,6 +106,7 @@
   .course-card:hover{transform:translateY(-4px);box-shadow:0 14px 28px rgba(0,0,0,.08);}
   .course-card .module-cover{aspect-ratio:4/3;}
   .advanced-grid .course-card .module-cover{aspect-ratio:16/9;}
+  .course-card .module-cover img{width:100%;height:100%;object-fit:cover;display:block;}
   .course-card .module-lock{}
   .course-body{padding:16px;display:flex;flex:1;flex-direction:column;}
   .course-body h4{font-size:13.5px;margin:0 0 6px;}
@@ -131,9 +134,9 @@
   .video-caption{position:absolute;left:18px;bottom:14px;z-index:1;color:var(--warm-white);font-family:var(--serif);font-size:16px;}
   .scrub{height:4px;background:var(--grey);border-radius:2px;margin-top:10px;overflow:hidden;}
   .scrub-fill{height:100%;background:var(--black);}
-  .transcript{margin-top:26px;border-top:1px solid var(--grey);padding-top:18px;}
-  .transcript h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;color:var(--charcoal);}
-  .transcript p{font-family:Georgia, "Times New Roman", serif; font-size:18px; line-height:1.85; color:var(--charcoal); margin:0 0 22px; max-width:62ch;}
+  .transcript{margin-top:26px;}
+  .transcript h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;color:var(--charcoal);}
+  .transcript p{font-size:14px;line-height:1.8;color:var(--charcoal);margin:0 0 22px;}
   .main-reward{display:none;background:var(--blush);border-radius:14px;padding:44px 36px;text-align:center;}
   .main-reward .badge{width:64px;height:64px;border-radius:50%;background:var(--warm-white);display:grid;place-items:center;margin:0 auto 18px;font-size:24px;}
   .main-reward h3{font-size:22px;margin:0 0 10px;}
@@ -203,6 +206,7 @@
     .auth-submit{padding:13px 18px;}
     .section-head{flex-direction:column;align-items:flex-start;gap:8px;margin:28px 0 16px;}
     .continue-hero{min-height:280px;}
+    .continue-hero-image{width:68%;opacity:.68;}
     .continue-content{padding:22px 18px;}
     .continue-content h1{font-size:24px;line-height:1.15;}
     .progress-row{max-width:100%;}

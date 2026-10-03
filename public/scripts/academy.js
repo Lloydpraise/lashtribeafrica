@@ -96,7 +96,11 @@
 
   const continuePlayBtn = document.getElementById('continuePlayBtn');
   if (continuePlayBtn) continuePlayBtn.addEventListener('click', showPlayer);
-  document.querySelectorAll('[data-open-player]').forEach(card => card.addEventListener('click', showPlayer));
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.course-buy')) return;
+    const card = e.target.closest('[data-open-player]');
+    if (card) showPlayer(e);
+  });
   const backToDash = document.getElementById('backToDash');
   if (backToDash) backToDash.addEventListener('click', showDashboard);
 
@@ -209,10 +213,11 @@
   const checkoutModal = document.getElementById('checkoutModal');
   let pendingCourseCard = null;
 
-  document.querySelectorAll('.course-buy').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.course-buy');
+    if (btn) {
       e.stopPropagation();
-      if (btn.classList.contains('owned')) { showPlayer(); return; }
+      if (btn.classList.contains('owned')) { showPlayer(e); return; }
       pendingCourseCard = btn;
       const courseTitle = document.getElementById('coCourseTitle');
       const coursePrice = document.getElementById('coCoursePrice');
@@ -222,7 +227,7 @@
       if (coTotal) coTotal.textContent = 'Ksh ' + parseInt(btn.dataset.price, 10).toLocaleString();
       if (checkoutModal) checkoutModal.classList.add('open');
       if (overlay) overlay.classList.add('open');
-    });
+    }
   });
 
   const checkoutClose = document.getElementById('checkoutClose');
@@ -242,7 +247,7 @@
         const card = pendingCourseCard.closest('.course-card');
         const lock = card?.querySelector('.module-lock');
         if (lock) lock.remove();
-        card?.addEventListener('click', showPlayer);
+        if (card) card.dataset.openPlayer = '1';
       }
       closeCheckout();
       if (window.LashtribeCart) {

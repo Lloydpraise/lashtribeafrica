@@ -3,7 +3,7 @@
 // demo courses in src/data/demo-courses.js with progress/notes kept in localStorage.
 
 import { supabase } from "./service.js";
-import { getDemoCourse, DEMO_PRODUCTS } from "../data/demo-courses.js";
+import { getDemoCourse, buildCourseCtx, DEMO_PRODUCTS } from "../data/demo-courses.js";
 
 export const HAS_DB = Boolean(import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
 
@@ -42,7 +42,22 @@ export async function signUp(name, email, password) {
 }
 
 // ---------- course ----------
+/** The admin course builder writes the course being edited here, then opens ?course=__preview__. */
+export const PREVIEW_SLUG = "__preview__";
+export const PREVIEW_KEY = "lashtribe_course_preview";
+
+function loadPreviewCourse() {
+  try {
+    const c = JSON.parse(localStorage.getItem(PREVIEW_KEY) || "null");
+    if (!c || !Array.isArray(c.modules)) return null;
+    return { source: "demo", preview: true, ...buildCourseCtx({ ...c, slug: PREVIEW_SLUG }), access: true, user: null };
+  } catch {
+    return null;
+  }
+}
+
 export async function loadCourse(slug) {
+  if (slug === PREVIEW_SLUG) return loadPreviewCourse();
   if (HAS_DB) {
     try {
       const { data: course, error } = await supabase
@@ -84,8 +99,9 @@ export async function loadLessonContent(ctx, lesson) {
 // ---------- progress ----------
 export async function loadProgress(ctx) {
   if (ctx.source === "demo" || !ctx.user) return readLS()[ctx.course.slug]?.progress || {};
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("lesson_progress").select("lesson_id, completed, position_seconds").eq("course_id", ctx.course.id);
+  if (error) throw error;
   const map = {};
   (data || []).forEach((r) => (map[r.lesson_id] = { completed: r.completed, position: r.position_seconds }));
   return map;

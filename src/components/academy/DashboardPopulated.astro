@@ -50,44 +50,31 @@ const advancedCourses = [
 ---
 
 <div id="dashboardPopulated" class="wrap dash-wrap">
-  <div class="continue-hero reveal">
+  <div class="continue-hero reveal" data-course="classic-set-essentials">
     <div class="continue-bg">
-      <svg viewBox="0 0 300 300"
-        ><path
-          d="M20 200 Q100 150 180 190 Q230 215 280 170"
-          stroke="white"
-          stroke-width="1"
-          fill="none"></path><ellipse
-          cx="170"
-          cy="110"
-          rx="70"
-          ry="26"
-          stroke="white"
-          stroke-width="1"
-          fill="none"></ellipse></svg
-      >
+      <img class="continue-hero-image" id="continueHeroImage" alt="" aria-hidden="true" hidden />
     </div>
     <div class="continue-overlay"></div>
     <div class="continue-content">
       <div class="eyebrow">Continue Learning</div>
-      <h1>Classic Set Essentials</h1>
-      <p class="continue-sub">Module 1 of 4 · Lash History & Foundations</p>
+      <h1 id="continueCourseTitle">Classic Set Essentials</h1>
+      <p class="continue-sub" id="continueCourseSub">Continue where you left off.</p>
       <div class="progress-row">
-        <div class="progress-bar"><div class="progress-fill" style="width:46%;"></div></div>
-        <span>46%</span>
+        <div class="progress-bar" role="progressbar" aria-label="Course progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="continueProgressFill" style="width:0%;"></div></div>
+        <span id="continueProgressLabel">0%</span>
       </div>
       <button class="play-btn" id="continuePlayBtn"><span class="play-circle">▶</span> Continue Course</button>
     </div>
   </div>
 
   <div class="section-head reveal"><h2>Your Next Module</h2></div>
-  <div class="module-row reveal">
-    <NextModuleCard />
+  <div class="course-grid reveal" id="courseGridPopulated">
+    {moreCourses.map((c) => <CourseCard icon={c.icon} title={c.title} blurb={c.blurb} />)}
   </div>
 
   <div class="section-head reveal"><h2>More Courses</h2></div>
-  <div class="course-grid reveal" id="courseGridPopulated">
-    {moreCourses.map((c) => <CourseCard icon={c.icon} title={c.title} blurb={c.blurb} />)}
+  <div class="module-row reveal">
+    <NextModuleCard />
   </div>
 
   <div class="section-head adv-head reveal">
