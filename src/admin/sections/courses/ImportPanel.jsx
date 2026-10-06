@@ -4,6 +4,10 @@ import { toExport } from "./courseModel.js";
 import { courseToMarkdown } from "./courseMarkdown.js";
 import { Notice, Toggle } from "./fields.jsx";
 import { TEMPLATE_MD } from "./courseTemplate.js";
+import { applyImageUrls } from "./courseImages.js";
+import ImageSlots from "./ImageSlots.jsx";
+import AiPromptCard from "./AiPromptCard.jsx";
+import PreviewModal from "./PreviewModal.jsx";
 
 function download(name, text, type) {
   const url = URL.createObjectURL(new Blob([text], { type }));
@@ -25,10 +29,13 @@ export default function ImportPanel({ course, onApply }) {
   const [restyle, setRestyle] = useState(true);
   const [details, setDetails] = useState(blank);
   const [mode, setMode] = useState(blank ? "replace" : "append");
+  const [urls, setUrls] = useState({});
+  const [preview, setPreview] = useState(false);
 
   function read(src, opts = {}) {
     setError("");
     setResult(null);
+    setUrls({});
     if (!src.trim()) return;
     try {
       setResult(parseImport(src, { restyle: opts.restyle ?? restyle }));
@@ -52,6 +59,16 @@ export default function ImportPanel({ course, onApply }) {
     read(src);
   }
 
+  // the imported course with every picture the admin has attached so far (unattached ones are left out)
+  const finished = result ? applyImageUrls(result.course, urls, { clearMissing: true }) : null;
+  const previewCourse = finished ? {
+    ...course,
+    title: details && finished.title ? finished.title : course.title,
+    cover_url: finished.hero_url || course.cover_url,
+    course_type: details && finished.course_type ? finished.course_type : course.course_type,
+    modules: finished.modules,
+  } : null;
+
   const slug = course.slug || "course";
   const exported = () => toExport(course);
 
@@ -68,11 +85,10 @@ export default function ImportPanel({ course, onApply }) {
             Choose a file
             <input type="file" accept=".json,.md,.markdown,.txt,application/json,text/markdown,text/plain" onChange={onFile} hidden />
           </label>
-          <button type="button" className="admin-btn secondary" onClick={() => download("course-template.md", TEMPLATE_MD, "text/markdown")}>Download a Markdown template</button>
           {fileName && <span className="form-hint">Loaded {fileName}</span>}
         </div>
         <div className="form-field" style={{ marginTop: 12 }}>
-          <span>…or paste it here</span>
+          <span>…or paste what the AI gave you</span>
           <textarea className="cs-quick" rows={8} value={text} placeholder="Paste Markdown or course JSON" onChange={(e) => setText(e.target.value)} />
         </div>
         <div className="cs-toggles">
@@ -105,16 +121,20 @@ export default function ImportPanel({ course, onApply }) {
                 <ul>{result.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
               </Notice>
             )}
+            {result.slots?.length > 0 && <ImageSlots courseId={course.id} slots={result.slots} urls={urls} onUrls={setUrls} />}
             <div className="cs-radio-row" role="radiogroup" aria-label="How to import">
               <label><input type="radio" checked={mode === "replace"} onChange={() => setMode("replace")} /> Replace the current curriculum</label>
               <label><input type="radio" checked={mode === "append"} onChange={() => setMode("append")} /> Add after the current modules</label>
             </div>
             <div className="cs-row">
+              <button type="button" className="admin-btn secondary" disabled={!result.stats.lessons} onClick={() => setPreview(true)}>
+                Preview first
+              </button>
               <button
                 type="button"
                 className="admin-btn"
                 disabled={!result.stats.lessons}
-                onClick={() => { onApply({ imported: result.course, mode, details }); setResult(null); setText(""); setFileName(""); }}
+                onClick={() => { onApply({ imported: finished, mode, details }); setResult(null); setUrls({}); setText(""); setFileName(""); }}
               >
                 Import into this course
               </button>
@@ -124,11 +144,14 @@ export default function ImportPanel({ course, onApply }) {
         )}
       </section>
 
+      <AiPromptCard defaultType={course.course_type} />
+
       <section className="admin-card cs-card">
         <h3>Export</h3>
         <p className="form-hint">
           Download the course to back it up, edit it elsewhere, or rebuild it. The JSON file imports straight back in and also works with
-          <code> scripts/course-to-sql.mjs</code>.
+          <code> scripts/course-to-sql.mjs</code>. Pictures are exported as links to where they are stored, not as files, so a re-import
+          shows them straight away as long as the originals still exist.
         </p>
         <div className="cs-row">
           <button type="button" className="admin-btn secondary" onClick={() => download(`${slug}.json`, JSON.stringify(exported(), null, 2), "application/json")}>Download .json</button>
@@ -143,6 +166,7 @@ export default function ImportPanel({ course, onApply }) {
           <pre className="cs-code">{TEMPLATE_MD}</pre>
         </details>
       </section>
+      {preview && previewCourse && <PreviewModal course={previewCourse} onClose={() => setPreview(false)} />}
     </div>
   );
 }

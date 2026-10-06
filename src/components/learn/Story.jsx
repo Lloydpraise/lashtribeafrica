@@ -51,6 +51,7 @@ export function buildScreens(blocks, meta) {
           screens.push({ type: "quote", sec: si, theme: "rose", text: b.text, by: b.by });
           break;
         case "figure":
+          if (!b.url) break;
           screens.push({ type: "figure", sec: si, theme: "paper", url: b.url, caption: b.caption });
           break;
         case "checkpoint":

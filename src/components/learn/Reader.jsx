@@ -81,6 +81,7 @@ export function Block({ b }) {
     case "quote":
       return <blockquote className="rd-quote"><p>{inline(b.text)}</p>{b.by && <cite>{b.by}</cite>}</blockquote>;
     case "figure":
+      if (!b.url) return null;
       return (
         <figure className="rd-figure">
           <img src={b.url} alt={b.caption || ""} loading="lazy" draggable={false} onContextMenu={(e) => e.preventDefault()} />

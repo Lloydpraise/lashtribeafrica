@@ -55,6 +55,10 @@ CLI if you have it set up (`supabase db push`).
    or delete this data until proper Supabase Auth is implemented. Do not use this temporary setup
    to protect paid course content.
 
+10. `0010_course_pdf.sql` — one reference PDF per course (`course_resources` table + private
+    `course-files` bucket), uploaded and downloaded from the admin course editor. Students never
+    read it. Run after 0009. Open to the anon key like 0009 until admin sign-in exists.
+
 **Security note:** all of this uses permissive RLS policies that let the
 public anon key read *and write*. The admin panel is a static site with no
 server-side session to scope policies to. The temporary course policy also

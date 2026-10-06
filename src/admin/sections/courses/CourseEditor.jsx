@@ -5,6 +5,7 @@ import {
 import { saveCourse, explain } from "./courses.api.js";
 import { Field, Segmented, Toggle, StatusBadge, Notice, ConfirmModal } from "./fields.jsx";
 import ImageField from "./ImageField.jsx";
+import PdfField from "./PdfField.jsx";
 import LessonEditor from "./LessonEditor.jsx";
 import ImportPanel from "./ImportPanel.jsx";
 import PreviewModal from "./PreviewModal.jsx";
@@ -211,6 +212,11 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
               <ImageField url={course.cover_url} folder={`courses/${course.id}/hero`} label="hero image" maxWidth={1600}
                 onChange={({ url, path }) => set({ cover_url: url, hero_path: path })} />
               <p className="form-hint">Shown on the course card and page. Large photos are shrunk and converted to WebP automatically.</p>
+            </section>
+
+            <section className="admin-card cs-card">
+              <h3>Course PDF</h3>
+              <PdfField courseId={course.id} disabled={!!course.isNew} />
             </section>
 
             <section className="admin-card cs-card">

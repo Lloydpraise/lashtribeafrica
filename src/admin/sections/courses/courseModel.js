@@ -488,6 +488,7 @@ export function validateCourse(course, { publishing = false } = {}) {
         });
       }
       l.blocks.forEach((b, bi) => {
+        if (b.type === "figure" && !b.url) warnings.push(`${where}: an image block has no picture yet.`);
         if (b.type === "checkpoint" && (!b.question?.trim() || b.options.filter((o) => o.trim()).length < 2)) {
           warnings.push(`${where}: quick check ${bi + 1} needs a question and at least two options.`);
         }

@@ -10,7 +10,8 @@ import { blocksToMarkdown, parseBody, courseToMarkdown } from "../src/admin/sect
 import { parseImport } from "../src/admin/sections/courses/importCourse.js";
 import { parseVideoLink, parseDuration, fmtDuration, toSavePayload, toExport, validateCourse, normalizeImported } from "../src/admin/sections/courses/courseModel.js";
 import { restyleBlocks, splitStatement } from "../src/admin/sections/courses/restyle.js";
-import { TEMPLATE_MD } from "../src/admin/sections/courses/courseTemplate.js";
+import { TEMPLATE_MD, TEMPLATE_STORY_MD, TEMPLATE_VIDEO_MD, buildAiPrompt } from "../src/admin/sections/courses/courseTemplate.js";
+import { collectImageSlots, applyImageUrls, matchFiles } from "../src/admin/sections/courses/courseImages.js";
 
 let passed = 0;
 const test = (name, fn) => {
@@ -72,7 +73,7 @@ test("the whole course survives the portable JSON file", () => {
   const { course, warnings, stats } = parseImport(JSON.stringify(C), { restyle: false });
   assert.deepEqual(warnings, []);
   assert.equal(stats.lessons, 13);
-  assert.equal(stats.questions, 10 + lessons.flatMap((l) => l.blocks).filter((b) => b.type === "checkpoint").length);
+  assert.equal(stats.questions, lessons.flatMap((l) => l.blocks).filter((b) => b.type === "quiz").reduce((n, b) => n + b.questions.length, 0) + lessons.flatMap((l) => l.blocks).filter((b) => b.type === "checkpoint").length);
   assert.deepEqual(norm(course.modules[0].lessons[0].blocks), norm(lessons[0].blocks));
 });
 
@@ -228,6 +229,58 @@ test("other JSON shapes normalise", () => {
   assert.throws(() => normalizeImported({ nothing: true }));
   assert.throws(() => parseImport("export const x = {}"), /JavaScript data file/);
   assert.throws(() => parseImport("{ nope"), /valid JSON/);
+});
+
+test("story template parses, with image slots and no other warnings", () => {
+  const { course, warnings, slots, stats } = parseImport(TEMPLATE_STORY_MD);
+  assert.equal(course.course_type, "story");
+  assert.deepEqual(slots.map((x) => x.key).sort(), ["course-hero", "first-picture"]);
+  assert.deepEqual(warnings.filter((w) => !/need a file|needs a file/.test(w)), []);
+  assert.ok(stats.questions >= 2 && stats.lessons === 3);
+  const types = course.modules[0].lessons[0].blocks.map((b) => b.type);
+  ["figure", "compare", "flip", "steps", "checkpoint"].forEach((t) => assert.ok(types.includes(t), t));
+});
+
+test("video template: placeholder links become a friendly warning, not an error", () => {
+  const { course, warnings } = parseImport(TEMPLATE_VIDEO_MD);
+  assert.equal(course.course_type, "video");
+  const vids = course.modules[0].lessons.filter((l) => l.kind === "video");
+  assert.equal(vids.length, 2);
+  assert.ok(vids.every((l) => l.video === null && l.duration_seconds > 0));
+  assert.equal(warnings.filter((w) => /add the video link/.test(w)).length, 2);
+  // a real link in the same slot still works
+  const ok = parseImport(TEMPLATE_VIDEO_MD.replace("PASTE_VIDEO_LINK_HERE", "https://youtu.be/dQw4w9WgXcQ"));
+  assert.equal(ok.course.modules[0].lessons[0].video.id, "dQw4w9WgXcQ");
+});
+
+test("image slots: collect, match by file name, apply, leave missing ones out", () => {
+  const md = `# T\nhero: image:course-hero\n\n## M\n\n### L\nkind: reading\n\n![Parts of the eye](image:Eye-Anatomy)\n\n![Cat eye](images/cat-eye.webp)\n\n![Real](https://x.test/a.jpg)\n\n![Blank]()\n`;
+  const { course, slots } = parseImport(md, { restyle: false });
+  assert.deepEqual(slots.map((x) => x.key), ["course-hero", "eye-anatomy", "cat-eye", "unnamed-4"]);
+  const { matched, extra } = matchFiles(slots, [{ name: "Eye anatomy.JPG" }, { name: "cat-eye.png" }, { name: "other.png" }]);
+  assert.deepEqual(Object.keys(matched).sort(), ["cat-eye", "eye-anatomy"]);
+  assert.equal(extra.length, 1);
+  const done = applyImageUrls(course, { "eye-anatomy": "https://cdn/eye.webp", "course-hero": "https://cdn/hero.webp" });
+  const figs = done.modules[0].lessons[0].blocks.filter((b) => b.type === "figure");
+  assert.deepEqual(figs.map((f) => f.url), ["https://cdn/eye.webp", "", "https://x.test/a.jpg", ""]);
+  assert.equal(done.hero_url, "https://cdn/hero.webp");
+  assert.equal(collectImageSlots(done).length, 2); // the two left unattached stay empty slots
+  // the export of a course with an unattached picture still round-trips
+  assert.equal(parseImport(courseToMarkdown(toExport({ ...done, id: "x", slug: "t", cover_url: "", is_free: true, price: 0 })), { restyle: false }).stats.figures, 4);
+});
+
+test("restyle keeps figure slots", () => {
+  const { course } = parseImport(`# T\n\n## M\n\n### L\nkind: reading\n\nShort text.\n\n![Pic](image:pic)\n`);
+  assert.equal(course.modules[0].lessons[0].blocks.filter((b) => b.type === "figure").length, 1);
+});
+
+test("AI prompt covers type, scope and the format", () => {
+  const full = buildAiPrompt({ type: "story", scope: "full" });
+  const sum = buildAiPrompt({ type: "video", scope: "summary", audience: "beginners" });
+  assert.match(full, /STORY course/); assert.match(full, /KEEP EVERYTHING/); assert.match(full, /image:/);
+  assert.match(sum, /VIDEO course/); assert.match(sum, /PASTE_VIDEO_LINK_HERE/); assert.match(sum, /BREAK IT DOWN/); assert.match(sum, /AUDIENCE: beginners/);
+  // the example inside the prompt is the real template
+  assert.ok(sum.includes(TEMPLATE_VIDEO_MD.trim()) && full.includes(TEMPLATE_STORY_MD.trim()));
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ", with failures" : ""}`);

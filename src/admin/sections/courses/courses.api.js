@@ -261,3 +261,45 @@ async function copyFolder(from, to) {
     if (error) throw error;
   }
 }
+
+// ---------------------------------------------------------------------
+// Course PDF (private "course-files" bucket + course_resources row, migration 0010)
+// Saved immediately, independent of the course Save button.
+// ---------------------------------------------------------------------
+const PDF_BUCKET = "course-files";
+export const MAX_PDF_MB = 50;
+
+export async function fetchCoursePdf(courseId) {
+  const { data, error } = await supabase.from("course_resources").select("pdf_path, pdf_name, pdf_size").eq("course_id", courseId).maybeSingle();
+  if (error) throw error;
+  return data?.pdf_path ? data : null;
+}
+
+export async function uploadCoursePdf(courseId, file, old) {
+  if (file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) throw new Error("Please choose a PDF file.");
+  if (file.size > MAX_PDF_MB * 1048576) throw new Error(`That PDF is over ${MAX_PDF_MB} MB.`);
+  const path = `${courseId}/${uid()}.pdf`;
+  const { error } = await supabase.storage.from(PDF_BUCKET).upload(path, file, { contentType: "application/pdf", upsert: false });
+  if (error) throw error;
+  const row = { course_id: courseId, pdf_path: path, pdf_name: file.name, pdf_size: file.size, updated_at: new Date().toISOString() };
+  const { error: e2 } = await supabase.from("course_resources").upsert(row, { onConflict: "course_id" });
+  if (e2) { await supabase.storage.from(PDF_BUCKET).remove([path]); throw e2; }
+  if (old?.pdf_path) await supabase.storage.from(PDF_BUCKET).remove([old.pdf_path]);
+  return { pdf_path: path, pdf_name: file.name, pdf_size: file.size };
+}
+
+export async function removeCoursePdf(courseId, old) {
+  const { error } = await supabase.from("course_resources").delete().eq("course_id", courseId);
+  if (error) throw error;
+  if (old?.pdf_path) await supabase.storage.from(PDF_BUCKET).remove([old.pdf_path]);
+}
+
+/** Admin-only: saves the private PDF to the admin's computer. */
+export async function downloadCoursePdf(pdf) {
+  const { data, error } = await supabase.storage.from(PDF_BUCKET).download(pdf.pdf_path);
+  if (error) throw error;
+  const url = URL.createObjectURL(data);
+  const a = document.createElement("a");
+  a.href = url; a.download = pdf.pdf_name || "course.pdf"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

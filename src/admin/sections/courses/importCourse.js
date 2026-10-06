@@ -5,6 +5,7 @@
 import { normalizeImported, parseVideoLink, parseDuration } from "./courseModel.js";
 import { parseCourseMarkdown } from "./courseMarkdown.js";
 import { restyleCourse } from "./restyle.js";
+import { collectImageSlots } from "./courseImages.js";
 
 export function summarize(course) {
   let lessons = 0, blocks = 0, videos = 0, questions = 0, figures = 0;
@@ -29,6 +30,14 @@ function resolveVideos(portable, warnings) {
       if (!l.video) return;
       let v = l.video;
       if (typeof v === "string") v = { link: v };
+      const raw = String(v.link || v.src || v.url || "").trim();
+      if (!v.provider && (!raw || /^(paste|todo|tbd|add|your|link|video[-_ ]?link|https?:\/\/(example|\.\.\.))/i.test(raw) || /paste|your[-_ ]link|placeholder/i.test(raw))) {
+        warnings.push(`“${l.title}”: add the video link for this lesson (in the lesson editor, or in the file).`);
+        const d = typeof v.duration === "string" ? parseDuration(v.duration) : v.duration;
+        if (d) l.duration_seconds = Math.round(d);
+        l.video = null;
+        return;
+      }
       if (v.link || (!v.provider && (v.src || v.url))) {
         const { video, error } = parseVideoLink(v.link || v.src || v.url);
         if (error) {
@@ -90,5 +99,7 @@ export function parseImport(text, { restyle = true } = {}) {
     styled = r.stats;
   }
   if (!course.modules.some((m) => m.lessons.length)) warnings.push("No lessons were found in this file.");
-  return { course, warnings, stats: summarize(course), restyle: styled };
+  const slots = collectImageSlots(course);
+  if (slots.length) warnings.push(`${slots.length} image${slots.length === 1 ? " needs" : "s need"} a file. Add them below, or leave them and add them later.`);
+  return { course, warnings, stats: summarize(course), restyle: styled, slots };
 }

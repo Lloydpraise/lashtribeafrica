@@ -39,7 +39,7 @@ const clean = (s) => String(s).replace(/\s+/g, " ").trim();
 const RE = {
   heading: /^#{1,6}\s+(.*)$/,
   divider: /^(-{3,}|\*{3,}|_{3,})$/,
-  figure: /^!\[(.*?)\]\((\S+?)\)\s*$/,
+  figure: /^!\[(.*?)\]\((\S*?)\)\s*$/,
   steps: /^steps(?:\[(\d+)\s*\/\s*(\d+)\])?\s*:\s*$/i,
   compare: /^compare(?:\[(.*?)\])?\s*:\s*(.*)$/i,
   flip: /^flip(?:\[(.*?)\])?\s*:\s*(.+?)\s*\|\|\s*(.+)$/i,
