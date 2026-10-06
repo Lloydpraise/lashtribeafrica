@@ -1,0 +1,149 @@
+---
+interface Product {
+  id?: string;
+  slug?: string;
+  icon?: string;
+  image?: string;
+  name: string;
+  marketPrice: string;
+  nowPrice: string;
+  offerPrice?: string;
+  hasOffer?: boolean;
+  offerBadge?: string;
+  note: string;
+  moq?: number;
+}
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const minimum = Math.max(1, Number(product.moq) || 1);
+---
+
+<article class="card kit-product-card">
+  <a class="card-link" href={product.slug ? `/ecommerce/product/${product.slug}` : "/shop"}>
+    <div class="card-img">
+      <div class="card-badges">
+        {product.hasOffer && <span class="badge-offer">{product.offerBadge}</span>}
+        <span class="badge-moq">MOQ {minimum}</span>
+      </div>
+      {product.image ? (
+        <img src={product.image} alt={product.name} loading="lazy" />
+      ) : (
+        <svg viewBox="0 0 100 100" set:html={product.icon || ""} />
+      )}
+    </div>
+    <div class="card-body">
+      <h4>{product.name}</h4>
+      <div class="price-row">
+        {product.hasOffer ? (
+          <>
+            <span class="price-market price-was">{product.nowPrice}</span>
+            <span class="price-now price-offer">{product.offerPrice}</span>
+          </>
+        ) : (
+          <>
+            <span class="price-market">{product.marketPrice}</span>
+            <span class="price-now">{product.nowPrice}</span>
+          </>
+        )}
+      </div>
+      <div class="card-note">{product.note}</div>
+    </div>
+  </a>
+  <div class="kit-card-actions">
+    <div class="kit-quantity-control" aria-label={`Quantity for ${product.name}`}>
+      <button type="button" data-qty-step="-1" aria-label={`Decrease ${product.name} quantity`}>−</button>
+      <input
+        type="number"
+        min={minimum}
+        step="1"
+        value={minimum}
+        data-kit-qty={product.id}
+        aria-label={`Quantity for ${product.name}`}
+      />
+      <button type="button" data-qty-step="1" aria-label={`Increase ${product.name} quantity`}>+</button>
+    </div>
+    <button
+      class="kit-add-button"
+      type="button"
+      data-add-kit-product={product.id}
+      disabled={!product.id}
+    >
+      Add to Cart
+    </button>
+  </div>
+</article>
+
+<style>
+  .kit-product-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kit-product-card .card-link {
+    flex: 1;
+  }
+
+  .kit-card-actions {
+    display: grid;
+    gap: 10px;
+    padding: 0 16px 16px;
+  }
+
+  .kit-quantity-control {
+    display: grid;
+    grid-template-columns: 40px 1fr 40px;
+    height: 38px;
+    border: 1px solid var(--grey);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .kit-quantity-control button {
+    border: 0;
+    background: var(--blush);
+    cursor: pointer;
+    font-size: 18px;
+  }
+
+  .kit-quantity-control input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    border-left: 1px solid var(--grey);
+    border-right: 1px solid var(--grey);
+    text-align: center;
+    font: inherit;
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .kit-quantity-control input::-webkit-inner-spin-button,
+  .kit-quantity-control input::-webkit-outer-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+  }
+
+  .kit-add-button {
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid var(--black);
+    border-radius: var(--radius);
+    background: var(--warm-white);
+    color: var(--black);
+    cursor: pointer;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .kit-add-button:hover:not(:disabled) {
+    background: var(--black);
+    color: var(--warm-white);
+  }
+</style>

@@ -1,0 +1,213 @@
+---
+import Layout from "../../layouts/ecommerce/Layout.astro";
+import SiteHeader from "../../components/ecommerce/SiteHeader.astro";
+import KitProductCard from "../../components/ecommerce/KitProductCard.astro";
+import SiteFooter from "../../components/ecommerce/SiteFooter.astro";
+import CartDrawer from "../../components/ecommerce/CartDrawer.astro";
+import { getEcommerceProducts } from "../../data/ecommerce-products.js";
+import { getKits, resolveKitProducts, slugifyKitTitle } from "../../data/kits.js";
+
+export async function getStaticPaths() {
+  const kits = await getKits();
+  const seenSlugs = new Set();
+
+  return kits.flatMap((kit) => {
+    const slug = slugifyKitTitle(kit.title);
+    if (!slug || seenSlugs.has(slug)) return [];
+    seenSlugs.add(slug);
+    return { params: { slug }, props: { kit } };
+  });
+}
+
+type Product = {
+  id: string;
+  slug: string;
+  name: string;
+  icon?: string;
+  note?: string;
+  marketPrice?: number;
+  nowPrice?: number;
+  effectivePrice?: number;
+  hasOffer?: boolean;
+  offerBadge?: string;
+  moq?: number;
+  images?: { url?: string }[];
+  category?: { name?: string; slug?: string } | null;
+};
+
+const { kit } = Astro.props;
+const allProducts = (await getEcommerceProducts()) as Product[];
+const kitProducts = resolveKitProducts(kit, allProducts) as Product[];
+
+function toSearchCard(product: Product) {
+  return {
+    id: product.id,
+    slug: product.slug,
+    image: product.images?.[0]?.url,
+    icon: product.icon || "",
+    name: product.name,
+    marketPrice: `Ksh ${Number(product.marketPrice || 0).toLocaleString()}`,
+    nowPrice: `Ksh ${Number(product.effectivePrice ?? product.nowPrice ?? 0).toLocaleString()}`,
+    hasOffer: product.hasOffer,
+    offerPrice: `Ksh ${Number(product.effectivePrice ?? 0).toLocaleString()}`,
+    offerBadge: product.offerBadge,
+    note: product.note || "",
+    moq: product.moq,
+  };
+}
+---
+
+<Layout title={`${kit.title} | Lashtribe Africa`}>
+  <SiteHeader />
+
+  <main class="shop-page kit-page">
+    <header class="kit-page-heading wrap">
+      <div class="eyebrow">{kit.eyebrow || "Curated for your studio"}</div>
+      <h1>{kit.title}</h1>
+      {kit.description && <p>{kit.description}</p>}
+    </header>
+
+    {kitProducts.length > 0 ? (
+      <section class="shop wrap kit-products">
+        <div class="kit-product-grid">
+          {kitProducts.map((product) => (
+            <KitProductCard product={toSearchCard(product)} />
+          ))}
+        </div>
+      </section>
+    ) : (
+      <p class="kit-page-empty wrap">There are no products available in this kit right now.</p>
+    )}
+
+    {kitProducts.length > 0 && (
+      <div class="kit-buy-bar wrap">
+        <button class="btn-primary kit-buy-button" type="button" data-buy-kit>
+          Buy Kit
+        </button>
+      </div>
+    )}
+  </main>
+
+  <SiteFooter />
+  <CartDrawer />
+  <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/cart-render.js" is:inline></script>
+  <script src="/scripts/main.js" is:inline></script>
+  <script is:inline>
+    (() => {
+      function getSelectedQty(id) {
+        const input = document.querySelector(`[data-kit-qty="${CSS.escape(id)}"]`);
+        const minimum = Number(input?.min) || 1;
+        return Math.max(minimum, Number(input?.value) || minimum);
+      }
+
+      function addSelectedProducts(productIds) {
+        const cart = window.LashtribeCart?.getCart() || {};
+        for (const id of productIds) {
+          cart[id] = (Number(cart[id]) || 0) + getSelectedQty(id);
+        }
+        window.LashtribeCart?.setCart(cart);
+        window.LashtribeCart?.syncCartBadges();
+
+        document.getElementById("cartDrawer")?.classList.add("open");
+        document.getElementById("overlay")?.classList.add("open");
+      }
+
+      document.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        const stepper = target.closest("[data-qty-step]");
+        if (stepper) {
+          const input = stepper.parentElement?.querySelector("[data-kit-qty]");
+          if (!(input instanceof HTMLInputElement)) return;
+          const minimum = Number(input.min) || 1;
+          input.value = String(Math.max(minimum, (Number(input.value) || minimum) + Number(stepper.dataset.qtyStep)));
+          return;
+        }
+
+        const addButton = target.closest("[data-add-kit-product]");
+        if (addButton instanceof HTMLElement) {
+          const id = addButton.dataset.addKitProduct;
+          if (id) addSelectedProducts([id]);
+          return;
+        }
+
+        if (target.closest("[data-buy-kit]")) {
+          const productIds = [...document.querySelectorAll("[data-kit-qty]")]
+            .map((input) => input.getAttribute("data-kit-qty"))
+            .filter(Boolean);
+          addSelectedProducts(productIds);
+        }
+      });
+
+      document.addEventListener("change", (event) => {
+        const input = event.target;
+        if (!(input instanceof HTMLInputElement) || !input.matches("[data-kit-qty]")) return;
+        input.value = String(Math.max(Number(input.min) || 1, Number(input.value) || Number(input.min) || 1));
+      });
+    })();
+  </script>
+</Layout>
+
+<style>
+  .kit-page-heading {
+    padding-top: 42px;
+    padding-bottom: 8px;
+  }
+
+  .kit-page-heading .eyebrow {
+    color: var(--rose-deep);
+    margin-bottom: 8px;
+  }
+
+  .kit-page-heading h1 {
+    font-size: clamp(30px, 4vw, 46px);
+    line-height: 1.1;
+    margin: 0 0 12px;
+  }
+
+  .kit-page-heading p {
+    max-width: 680px;
+    color: var(--charcoal);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .kit-product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 22px;
+  }
+
+  .kit-products {
+    padding-top: 0;
+  }
+
+  .kit-buy-bar {
+    display: flex;
+    justify-content: center;
+    padding-top: 12px;
+    padding-bottom: 72px;
+  }
+
+  .kit-buy-button {
+    min-width: min(100%, 320px);
+    background: var(--black);
+    color: var(--warm-white);
+    border-color: var(--black);
+  }
+
+  .kit-page-empty {
+    padding-top: 28px;
+    padding-bottom: 64px;
+    color: var(--charcoal);
+  }
+
+  @media (max-width: 880px) {
+    .kit-product-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+  }
+</style>

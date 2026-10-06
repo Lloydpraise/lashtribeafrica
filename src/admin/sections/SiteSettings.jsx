@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import EmptyState from "../components/EmptyState.jsx";
 import { fetchSiteSettings, saveSiteSettings, uploadSiteMedia } from "./settings/settings.api.js";
+import { fetchProducts } from "./products/products.api.js";
 
 function ListEditor({ label, hint, items, onChange, placeholder }) {
   const [draft, setDraft] = useState("");
@@ -48,9 +49,12 @@ function ListEditor({ label, hint, items, onChange, placeholder }) {
 
 export default function SiteSettings() {
   const [form, setForm] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [bgMode, setBgMode] = useState("image");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [productsError, setProductsError] = useState("");
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -61,22 +65,55 @@ export default function SiteSettings() {
   async function load() {
     setLoading(true);
     setError("");
-    try {
-      const row = await fetchSiteSettings();
+    setProductsError("");
+    const [settingsResult, productsResult] = await Promise.allSettled([
+      fetchSiteSettings(),
+      fetchProducts(),
+    ]);
+
+    if (settingsResult.status === "fulfilled") {
+      const row = settingsResult.value;
       setForm(row);
-    } catch (err) {
+      setBgMode(row.hero_bg_image?.source === "product" ? "product" : "image");
+    } else {
+      const err = settingsResult.reason;
       setError(
         err.message ||
           "Couldn't load site settings. Has migration 0004_site_settings_kits_offers.sql been run yet?"
       );
-    } finally {
-      setLoading(false);
     }
+
+    if (productsResult.status === "fulfilled") {
+      setProducts(productsResult.value);
+    } else {
+      setProductsError(productsResult.reason.message || "Couldn't load products.");
+    }
+
+    setLoading(false);
   }
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
     setSaved(false);
+  }
+
+  function changeBgMode(mode) {
+    setBgMode(mode);
+    set("hero_bg_image", null);
+  }
+
+  function selectProduct(productId) {
+    const product = products.find((item) => item.id === productId);
+    const image = product?.images?.find((item) => item.url);
+    if (!product || !image) return;
+
+    set("hero_bg_image", {
+      ...image,
+      source: "product",
+      productId: product.id,
+    });
+    set("hero_photo_tag", product.name);
+    set("hero_cta_primary_link", `/ecommerce/product/${product.slug}`);
   }
 
   async function handleBgUpload(e) {
@@ -85,7 +122,7 @@ export default function SiteSettings() {
     setUploading(true);
     try {
       const media = await uploadSiteMedia(file, "hero");
-      set("hero_bg_image", media);
+      set("hero_bg_image", { ...media, source: "upload" });
     } catch (err) {
       setError(err.message || "Couldn't upload image.");
     } finally {
@@ -168,21 +205,52 @@ export default function SiteSettings() {
           <div className="form-field span-2">
             <span>Background image</span>
             <p className="form-hint" style={{ margin: "0 0 8px" }}>
-              Leave empty to keep the default line-art background.
+              Add an image yourself or use a product image with its product link and name.
             </p>
+            <label className="form-field" style={{ maxWidth: 320, marginBottom: 12 }}>
+              <span>Image source</span>
+              <select value={bgMode} onChange={(e) => changeBgMode(e.target.value)}>
+                <option value="image">Add image</option>
+                <option value="product">Select product</option>
+              </select>
+            </label>
+            {bgMode === "product" ? (
+              <label className="form-field" style={{ maxWidth: 480, marginBottom: 12 }}>
+                <span>Product</span>
+                <select
+                  value={form.hero_bg_image?.source === "product" ? form.hero_bg_image.productId : ""}
+                  onChange={(e) => selectProduct(e.target.value)}
+                >
+                  <option value="">Choose a product</option>
+                  {products.map((product) => {
+                    const hasImage = product.images?.some((image) => image.url);
+                    return (
+                      <option key={product.id} value={product.id} disabled={!hasImage}>
+                        {product.name}{hasImage ? "" : " (no image)"}
+                      </option>
+                    );
+                  })}
+                </select>
+                {productsError && <p className="admin-gate-error">{productsError}</p>}
+                {!productsError && products.length === 0 && (
+                  <p className="form-hint">No products are available to select.</p>
+                )}
+              </label>
+            ) : (
+              <div className="inline-add-row" style={{ marginBottom: 12 }}>
+                <input type="file" accept="image/*" onChange={handleBgUpload} disabled={uploading} />
+                {form.hero_bg_image && (
+                  <button type="button" className="admin-btn secondary" onClick={() => set("hero_bg_image", null)}>
+                    Remove
+                  </button>
+                )}
+              </div>
+            )}
             {form.hero_bg_image?.url && (
               <div className="table-thumb" style={{ marginBottom: 8, width: 120, height: 80 }}>
                 <img src={form.hero_bg_image.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
             )}
-            <div className="inline-add-row">
-              <input type="file" accept="image/*" onChange={handleBgUpload} disabled={uploading} />
-              {form.hero_bg_image && (
-                <button type="button" className="admin-btn secondary" onClick={() => set("hero_bg_image", null)}>
-                  Remove
-                </button>
-              )}
-            </div>
             {uploading && <p className="form-hint">Uploading…</p>}
           </div>
 

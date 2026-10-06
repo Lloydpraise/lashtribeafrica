@@ -95,9 +95,11 @@
       linear-gradient(120deg, #2b2222 0%, #4a3336 42%, #caa3a8 100%);
   }
   .hero-bg svg{position:absolute;bottom:0;right:0;width:62%;opacity:.5;}
-  .hero-bg-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-  .hero-overlay{position:absolute;inset:0;background:linear-gradient(90deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.38) 40%, rgba(0,0,0,.12) 75%);}
-  .hero-photo-tag{position:absolute;bottom:22px;right:26px;background:rgba(255,253,251,.9);padding:8px 14px;border-radius:var(--radius);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;z-index:1;}
+  .hero-bg-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;}
+  .hero-overlay{position:absolute;inset:0;z-index:1;background:
+      linear-gradient(90deg, rgba(0,0,0,.82) 0%, rgba(0,0,0,.66) 35%, rgba(0,0,0,.32) 72%, rgba(0,0,0,.08) 100%);
+  }
+  .hero-photo-tag{position:absolute;bottom:22px;right:26px;background:rgba(255,253,251,.9);padding:8px 14px;border-radius:var(--radius);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;z-index:2;}
   .hero-content{position:relative;z-index:2;padding:80px 0;max-width:640px;margin-left:5vw;}
   .hero-eyebrow{color:var(--blush);margin-bottom:6px;}
   .hero-cycle-wrap{height:1.15em;margin-bottom:38px;display:block;width:100%;max-width:100%;overflow:visible;}

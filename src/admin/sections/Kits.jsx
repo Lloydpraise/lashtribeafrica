@@ -3,6 +3,7 @@ import EmptyState from "../components/EmptyState.jsx";
 import KitForm from "./kits/KitForm.jsx";
 import { fetchKits, createKit, updateKit, deleteKit, setActiveKit } from "./kits/kits.api.js";
 import { fetchProducts } from "./products/products.api.js";
+import { slugifyKitTitle } from "../../data/kits.js";
 
 function emptyKit() {
   return {
@@ -10,7 +11,7 @@ function emptyKit() {
     eyebrow: "You Should Have",
     description: "",
     cta_label: "Shop The Set",
-    cta_link: "#shop",
+    cta_link: "/kit/",
     product_ids: [],
   };
 }
@@ -110,6 +111,7 @@ export default function Kits() {
                   <td>
                     <div className="table-primary">{k.title}</div>
                     <div className="table-secondary">{k.eyebrow}</div>
+                    <div className="table-secondary">/kit/{slugifyKitTitle(k.title)}</div>
                   </td>
                   <td className="table-secondary">{(k.product_ids || []).length} product(s)</td>
                   <td>

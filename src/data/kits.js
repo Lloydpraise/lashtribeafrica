@@ -5,6 +5,14 @@
 
 import { supabase } from "../services/service.js";
 
+export function slugifyKitTitle(title = "") {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function mapKit(row) {
   return {
     id: row.id,
@@ -14,7 +22,29 @@ function mapKit(row) {
     ctaLabel: row.cta_label,
     ctaLink: row.cta_link,
     productIds: row.product_ids || [],
+    isActive: row.is_active,
   };
+}
+
+export async function getKits() {
+  try {
+    const { data, error } = await supabase
+      .from("kits")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return (data || []).map(mapKit);
+  } catch (err) {
+    console.warn("[kits] Couldn't load kits for the kit pages.", err?.message || err);
+    return [];
+  }
+}
+
+export async function getKitBySlug(slug) {
+  const kits = await getKits();
+  return kits.find((kit) => slugifyKitTitle(kit.title) === slug) || null;
 }
 
 export async function getActiveKit() {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { slugifyKitTitle } from "../../../data/kits.js";
 
 export default function KitForm({ kit, products, onSave, onCancel }) {
   const [form, setForm] = useState({ ...kit });
@@ -27,7 +28,7 @@ export default function KitForm({ kit, products, onSave, onCancel }) {
         eyebrow: form.eyebrow || "",
         description: form.description || "",
         cta_label: form.cta_label || "Shop The Set",
-        cta_link: form.cta_link || "#shop",
+        cta_link: `/kit/${slugifyKitTitle(form.title)}`,
         product_ids: form.product_ids || [],
       });
     } catch (err) {
@@ -70,7 +71,8 @@ export default function KitForm({ kit, products, onSave, onCancel }) {
 
             <label className="form-field">
               <span>CTA link</span>
-              <input type="text" value={form.cta_link || ""} onChange={(e) => set("cta_link", e.target.value)} />
+              <input type="text" value={`/kit/${slugifyKitTitle(form.title)}`} readOnly />
+              <span className="form-hint">Customers will see the products and categories included in this kit.</span>
             </label>
 
             <div className="form-field span-2">
