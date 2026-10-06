@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Sidebar, { NAV_ITEMS } from "./components/Sidebar.jsx";
 import Topbar from "./components/Topbar.jsx";
+import MobileTabs from "./components/MobileTabs.jsx";
 import Dashboard from "./sections/Dashboard.jsx";
 import Products from "./sections/Products.jsx";
 import Courses from "./sections/Courses.jsx";
@@ -11,6 +12,7 @@ import Kits from "./sections/Kits.jsx";
 import Offers from "./sections/Offers.jsx";
 import Policies from "./sections/Policies.jsx";
 import "./admin.css";
+import "./admin-mobile.css";
 
 const SECTIONS = {
   dashboard: { title: "Dashboard", subtitle: "Ecommerce + Academy overview", Component: Dashboard },
@@ -57,6 +59,7 @@ function sectionFromHash() {
 
 export default function AdminApp() {
   const [active, setActive] = useState("dashboard");
+  const contentRef = useRef(null);
 
   useEffect(() => {
     setActive(sectionFromHash());
@@ -66,9 +69,31 @@ export default function AdminApp() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
+  // Phone layout turns tables into stacked cards; each cell needs its column
+  // name for that, so copy the header text onto the cells (cheap, idempotent).
+  useEffect(() => {
+    const root = contentRef.current;
+    if (!root) return undefined;
+    const labelCells = () => {
+      root.querySelectorAll(".admin-table").forEach((table) => {
+        const heads = Array.from(table.querySelectorAll("thead th")).map((th) => th.textContent.trim());
+        table.querySelectorAll("tbody tr").forEach((row) => {
+          Array.from(row.children).forEach((cell, i) => {
+            if (cell.dataset.label === undefined) cell.dataset.label = heads[i] || "";
+          });
+        });
+      });
+    };
+    labelCells();
+    const observer = new MutationObserver(labelCells);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   function navigate(key) {
     window.location.hash = key;
     setActive(key);
+    window.scrollTo(0, 0);
   }
 
   const { title, subtitle, Component, action } = SECTIONS[active] ?? SECTIONS.dashboard;
@@ -79,11 +104,12 @@ export default function AdminApp() {
         <Sidebar active={active} onNavigate={navigate} />
         <div className="admin-main">
           <Topbar title={title} subtitle={subtitle} action={action} />
-          <div className="admin-content">
+          <div className="admin-content" ref={contentRef}>
             <Component />
           </div>
         </div>
       </div>
+      <MobileTabs active={active} onNavigate={navigate} />
     </div>
   );
 }

@@ -44,10 +44,10 @@
   @keyframes scroll{ from{transform:translateX(0);} to{transform:translateX(-100%);} }
 
   /* ---------- Header ---------- */
-  header{position:sticky;top:0;z-index:50;background:rgba(255,253,251,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--grey);transition:background .2s ease, box-shadow .2s ease, border-color .2s ease, transform .2s ease;}
-  header.scrolled{background:rgba(255,253,251,.58);backdrop-filter:blur(18px);border-color:rgba(17,17,17,.08);box-shadow:0 12px 30px rgba(17,17,17,.05);transform:translateY(-4px);}
+  #siteHeader{position:sticky;top:0;z-index:50;background:rgba(255,253,251,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--grey);transition:background .2s ease, box-shadow .2s ease, border-color .2s ease, transform .2s ease;}
+  #siteHeader.scrolled{background:rgba(255,253,251,.58);backdrop-filter:blur(18px);border-color:rgba(17,17,17,.08);box-shadow:0 12px 30px rgba(17,17,17,.05);transform:translateY(-4px);}
   .nav-row{display:flex;align-items:center;justify-content:space-between;padding:18px 0;transition:padding .2s ease;}
-  header.scrolled .nav-row{padding:12px 0;}
+  #siteHeader.scrolled .nav-row{padding:12px 0;}
   .logo{font-family:var(--serif);font-size:22px;letter-spacing:.02em;font-weight:700;}
   .logo em{font-family:var(--script);font-style:normal;font-weight:400;font-size:24px;padding:0 2px;}
   nav.links{display:flex;gap:34px;align-items:center;}
@@ -471,10 +471,10 @@
 
   @media (max-width:880px){
     .wrap{padding:0 18px;}
-    header{background:rgba(255,253,251,.74);backdrop-filter:blur(18px);}
-    header.scrolled{background:rgba(255,253,251,.52);box-shadow:0 8px 18px rgba(0,0,0,.06);transform:translateY(-2px);}
+    #siteHeader{background:rgba(255,253,251,.74);backdrop-filter:blur(18px);}
+    #siteHeader.scrolled{background:rgba(255,253,251,.52);box-shadow:0 8px 18px rgba(0,0,0,.06);transform:translateY(-2px);}
     .nav-row{padding:12px 0;min-height:58px;}
-    header.scrolled .nav-row{padding:8px 0;}
+    #siteHeader.scrolled .nav-row{padding:8px 0;}
     .logo{font-size:18px;line-height:1.1;}
     .logo em{font-size:20px;}
     .hero{min-height:auto;padding-top:20px;}

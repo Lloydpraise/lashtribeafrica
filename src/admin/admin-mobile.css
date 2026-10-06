@@ -1,0 +1,310 @@
+/* =====================================================================
+   Admin — phone layer. Imported after admin.css (see AdminApp.jsx).
+   Everything visual sits inside media queries, so the desktop admin is
+   unchanged. Main breakpoint 860px (matches the existing shell breakpoint),
+   modals/tables switch at 640px, the course editor at 980px.
+   ===================================================================== */
+
+/* Phone-only elements: hidden on desktop. */
+.m-tabs,
+.m-sheet-backdrop,
+.cs-back-lessons { display: none; }
+
+@media (max-width: 860px) {
+  .admin-root {
+    --admin-topbar-h: 56px;
+    --m-tabs-h: 60px;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .admin-shell { min-height: 100vh; min-height: 100dvh; }
+
+  /* ---------- Navigation: bottom tabs replace the sidebar ---------- */
+  .admin-sidebar { display: none; }
+  .admin-main { padding-bottom: calc(var(--m-tabs-h) + env(safe-area-inset-bottom, 0px)); }
+
+  .m-tabs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    background: var(--warm-white);
+    border-top: 1px solid var(--admin-card-border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.05);
+  }
+  .m-tab {
+    min-height: var(--m-tabs-h);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    border-top: 2px solid transparent;
+    color: #7c7a7a;
+    font: 600 10.5px var(--sans);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .m-tab svg { width: 21px; height: 21px; }
+  .m-tab.active { color: var(--rose-deep); border-top-color: var(--rose-deep); }
+
+  .m-sheet-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 95;
+    background: rgba(0, 0, 0, 0.45);
+  }
+  .m-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--warm-white);
+    border-radius: 18px 18px 0 0;
+    padding: 8px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+    max-height: 80vh;
+    max-height: 80dvh;
+    overflow-y: auto;
+  }
+  .m-sheet-grip {
+    width: 40px;
+    height: 4px;
+    border-radius: 4px;
+    background: #d6d2d2;
+    margin: 4px auto 10px;
+  }
+  .m-sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 52px;
+    padding: 0 12px;
+    background: none;
+    border: none;
+    border-radius: var(--radius);
+    font: 600 14.5px var(--sans);
+    color: var(--charcoal);
+    text-align: left;
+    cursor: pointer;
+  }
+  .m-sheet-item svg { width: 20px; height: 20px; color: var(--rose-deep); flex: none; }
+  .m-sheet-item.active { background: var(--blush); }
+
+  /* ---------- Sticky compact top bar ---------- */
+  .admin-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    align-items: center;
+    height: calc(var(--admin-topbar-h) + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 14px 0 16px;
+    gap: 10px;
+  }
+  .admin-topbar > div:first-child { min-width: 0; }
+  .admin-title {
+    font-size: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .admin-subtitle { display: none; }
+  .admin-topbar-action { margin-top: 0; flex: none; }
+  .admin-topbar-action .admin-btn { padding: 9px 14px; font-size: 12px; white-space: nowrap; }
+
+  .admin-content { padding: 16px 14px 28px; }
+
+  /* ---------- iOS: no zoom-on-focus, comfortable taps ---------- */
+  .admin-root input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  .admin-root select,
+  .admin-root textarea { font-size: 16px; }
+  .cs-filters input { min-width: 0; flex: 1 1 100%; }
+
+  .admin-btn { min-height: 40px; }
+  .cs-block-actions button { width: 36px; height: 36px; font-size: 12px; }
+  .cs-x { min-width: 36px; min-height: 36px; }
+  .cs-chip { min-height: 36px; padding: 8px 14px; }
+  .cs-seg button { min-height: 38px; }
+  .cs-tabs button { min-height: 44px; }
+  .checkbox-pill { min-height: 40px; }
+  .media-remove { min-height: 34px; min-width: 34px; }
+
+  /* Block rows in the lesson editor: let the header wrap instead of squeezing. */
+  .cs-block-head { flex-wrap: wrap; row-gap: 4px; }
+  .cs-grip { display: none; }
+  .cs-block-type { min-width: 0; }
+  .cs-block-sum { flex-basis: 100%; order: 3; white-space: normal; }
+  .cs-option { flex-wrap: wrap; }
+
+  /* Inline "span 2" styles from the JSX must not create a phantom column. */
+  .form-grid > [style*="span 2"] { grid-column: 1 / -1 !important; }
+}
+
+/* ---------- Modals -> full-screen sheets ---------- */
+@media (max-width: 640px) {
+  .admin-modal-backdrop { padding: 0; align-items: stretch; }
+  .admin-modal {
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+  .admin-modal.confirm-modal {
+    min-height: 0;
+    margin: auto 16px;
+    border-radius: 14px;
+  }
+  .admin-modal-backdrop:has(.confirm-modal) { align-items: center; padding: 16px; }
+
+  .admin-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--warm-white);
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 8px 8px 16px;
+  }
+  .admin-modal-close {
+    width: 44px;
+    height: 44px;
+    font-size: 30px;
+    display: grid;
+    place-items: center;
+  }
+  .admin-modal-body { flex: 1; max-height: none; overflow: visible; padding: 16px; }
+  .admin-modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: var(--warm-white);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .admin-modal-footer .admin-btn { flex: 1; min-height: 46px; }
+
+  /* Course preview: full-bleed, drop the phone/desktop frame toggle. */
+  .cs-preview-backdrop { padding: 0; }
+  .cs-preview { height: 100vh; height: 100dvh; border-radius: 0; max-width: none; }
+  .cs-preview-stage { padding: 0; }
+  .cs-preview-stage iframe,
+  .cs-preview-stage.phone iframe { border: 0; border-radius: 0; box-shadow: none; width: 100%; }
+  .cs-preview-bar .cs-seg { display: none; }
+
+  /* ---------- Tables -> stacked cards ---------- */
+  .table-card { overflow: visible; background: none; border: none; padding: 0; box-shadow: none; }
+  .admin-table { display: block; min-width: 0; }
+  .admin-table thead { display: none; }
+  .admin-table tbody { display: grid; gap: 10px; }
+  .admin-table tr {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 12px;
+    background: var(--warm-white);
+    border: 1px solid var(--admin-card-border);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .admin-table td {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+    border: none;
+    min-width: 0;
+    text-align: right;
+  }
+  .admin-table td::before {
+    content: attr(data-label);
+    flex: none;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #918f8f;
+    text-align: left;
+  }
+  /* Primary cell (and a thumbnail cell) sit on the first row, unlabelled. */
+  .admin-table td:first-child::before,
+  .admin-table td:has(.table-thumb) + td::before,
+  .admin-table td[data-label=""]::before { content: none; }
+  .admin-table td:first-child { text-align: left; justify-content: flex-start; }
+  .admin-table td:has(.table-thumb) { grid-column: 1; grid-row: 1; }
+  .admin-table td:has(.table-thumb) + td { grid-column: 2; grid-row: 1; text-align: left; justify-content: flex-start; }
+  .admin-table td[data-label=""]:last-child { justify-content: stretch; }
+  .admin-table .table-actions { width: 100%; }
+  .admin-table .table-actions .admin-btn { flex: 1; min-height: 42px; }
+}
+
+/* ---------- Course editor ---------- */
+@media (max-width: 860px) {
+  /* Back + title stay pinned under the top bar; Preview/Save/Publish sit in a
+     bar above the tab bar so they are always one tap away. */
+  .cs-editor { padding-bottom: 72px; }
+  .cs-editor-bar {
+    position: sticky;
+    top: calc(var(--admin-topbar-h) + env(safe-area-inset-top, 0px));
+    z-index: 25;
+    flex-wrap: nowrap;
+    gap: 8px;
+    background: var(--admin-bg);
+    margin: 0 -14px 12px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--grey);
+  }
+  .cs-editor-title {
+    min-width: 0;
+    gap: 8px;
+    font-size: 15px;
+    flex-wrap: wrap;
+  }
+  .cs-editor-title b {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .cs-editor-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--m-tabs-h) + env(safe-area-inset-bottom, 0px));
+    z-index: 55;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--warm-white);
+    border-top: 1px solid var(--admin-card-border);
+  }
+  .cs-editor-actions .admin-btn { min-height: 44px; padding-left: 6px; padding-right: 6px; }
+}
+
+@media (max-width: 980px) {
+  /* Lesson list OR lesson, not both stacked. */
+  .cs-curr .cs-lesson-pane { display: none; }
+  .cs-curr.show-lesson .cs-outline { display: none; }
+  .cs-curr.show-lesson .cs-lesson-pane { display: block; padding: 14px; }
+  .cs-back-lessons {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    margin-bottom: 12px;
+    padding: 0 14px;
+    background: var(--blush);
+    border: none;
+    border-radius: 100px;
+    font: 600 12.5px var(--sans);
+    color: var(--charcoal);
+    cursor: pointer;
+  }
+}

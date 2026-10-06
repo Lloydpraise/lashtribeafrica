@@ -61,6 +61,12 @@ function toSearchCard(product: Product) {
 <Layout title="Shop | Lashtribe Africa">
   <SiteHeader />
 
+  <nav class="shop-chips" id="shopChips" aria-label="Product categories">
+    {groupedProducts.map(([category]) => (
+      <a href={`#${slugify(category)}`} data-chip-target={slugify(category)}>{category}</a>
+    ))}
+  </nav>
+
   <main class="shop-page">
     <div id="fullCatalog">
       {groupedProducts.map(([category, products], index) => (
@@ -69,6 +75,7 @@ function toSearchCard(product: Product) {
           title={category}
           products={products.map(toSearchCard)}
           viewAllHref="/shop"
+          showViewAll={false}
           noTopPadding={index === 0}
         />
       ))}
@@ -80,6 +87,7 @@ function toSearchCard(product: Product) {
         title="Search Results"
         products={allProducts.map(toSearchCard)}
         viewAllHref="/shop"
+        showViewAll={false}
       />
       <p class="shop wrap search-no-results" id="searchNoResults" hidden>No products found.</p>
     </div>
@@ -119,6 +127,34 @@ function toSearchCard(product: Product) {
       });
 
       if (searchNoResults) searchNoResults.hidden = matchingProducts > 0;
+    }
+
+    // Mobile category chips: highlight the category currently in view.
+    const chipBar = document.querySelector<HTMLElement>("#shopChips");
+    if (chipBar && "IntersectionObserver" in window) {
+      const chips = Array.from(chipBar.querySelectorAll<HTMLAnchorElement>("a[data-chip-target]"));
+      const setActive = (id: string) => {
+        chips.forEach((chip) => {
+          const on = chip.dataset.chipTarget === id;
+          chip.classList.toggle("active", on);
+          if (on) {
+            const left = chip.offsetLeft - (chipBar.clientWidth - chip.offsetWidth) / 2;
+            chipBar.scrollTo({ left, behavior: "smooth" });
+          }
+        });
+      };
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries.filter((entry) => entry.isIntersecting);
+          if (visible.length) setActive((visible[0].target as HTMLElement).id);
+        },
+        { rootMargin: "-120px 0px -60% 0px", threshold: 0 }
+      );
+      chips.forEach((chip) => {
+        const section = document.getElementById(chip.dataset.chipTarget || "");
+        if (section) observer.observe(section);
+      });
+      if (chips[0]) chips[0].classList.add("active");
     }
   </script>
 </Layout>

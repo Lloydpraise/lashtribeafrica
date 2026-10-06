@@ -1,0 +1,110 @@
+/* =====================================================================
+   Academy — phone fixes. The academy already has a solid 880/640/420
+   breakpoint ladder and a phone-first player, so this file only patches
+   the rough edges (keyboard zoom, tap targets, iOS viewport units, modal
+   height, a hover-only hint). Imported after academy.css by the academy
+   Layout. Selectors are prefixed with `body` so they still win when
+   learn.css (loaded by the lesson page) lands later in the cascade.
+   ===================================================================== */
+
+/* Locked-course hint is hover-only; on touch it can never be seen. */
+@media (hover: none), (max-width: 880px) {
+  body .module-card.locked .lock-tip {
+    position: static;
+    opacity: 1;
+    transform: none;
+    border-radius: 0;
+    text-align: center;
+    padding: 8px 12px;
+    font-size: 11.5px;
+  }
+}
+
+@media (max-width: 880px) {
+  /* iOS zoom-on-focus: inputs must be 16px. */
+  body .field input,
+  body .lx-card input,
+  body .lx-note-form textarea,
+  body .lx-root textarea { font-size: 16px; }
+  body .field label { font-size: 12px; }
+
+  /* Viewport units that follow the iOS toolbar. */
+  body .auth-view { min-height: 100vh; min-height: 100dvh; }
+  body .academy-cart-drawer { height: 100vh; height: 100dvh; }
+  body .academy-cart-foot { padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+  body .lx-root,
+  body .lx-center { min-height: 100vh; min-height: 100dvh; }
+
+  /* Safe areas (needs viewport-fit=cover, now set in the layout). */
+  body .app-header { padding-top: env(safe-area-inset-top, 0px); }
+  body .toast { top: calc(14px + env(safe-area-inset-top, 0px)); }
+  body .dash-wrap,
+  body .player-wrap { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+  body .lx-toast { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+  body .lx-drawer { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* Course purchase modal -> bottom sheet that can scroll. */
+  body .checkout-modal {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    max-height: 92dvh;
+    overflow-y: auto;
+    border-radius: 18px 18px 0 0;
+    transform: translateY(28px);
+  }
+  body .checkout-modal.open { transform: translateY(0); }
+  body .checkout-head { position: sticky; top: 0; background: var(--warm-white); z-index: 2; padding: 16px 18px; }
+  body .checkout-body { padding: 18px; }
+  body .checkout-foot { padding: 14px 18px calc(16px + env(safe-area-inset-bottom, 0px)); }
+  body .co-course .module-cover { width: 64px; height: 64px; }
+
+  /* Tap targets (>= 40px) and readable small text. */
+  body .checkout-close,
+  body .academy-cart-close { width: 44px; height: 44px; font-size: 22px; }
+  body .stepper .qty-btn { width: 36px; height: 36px; }
+  body .ps-add { width: 36px; height: 36px; }
+  body .course-buy,
+  body .course-start { min-height: 40px; padding: 11px 16px; font-size: 11.5px; }
+  body .auth-tab { padding: 12px 0; }
+  body .cart-mini { width: 42px; height: 42px; }
+  body .ps-info span,
+  body .cart-mini-badge { font-size: 11px; }
+  body .lock-tip,
+  body .stat-label { font-size: 11.5px; }
+  body .course-body p { font-size: 12.5px; -webkit-line-clamp: 2; }
+}
+
+/* ---------- Lesson player (learn.css) ---------- */
+@media (max-width: 699px) {
+  body .lx-root .lx-top { padding: 0 12px; gap: 8px; }
+  body .lx-root .lx-preview-tag { display: none; }
+  body .lx-root .lx-back { font-size: 11px; letter-spacing: 0.04em; }
+  body .lx-root .lx-top-right { gap: 6px; }
+
+  body .lx-iconbtn { min-height: 40px; }
+  body .lx-modes button { padding: 10px 16px; }
+  body .lx-note-del,
+  body .lx-prodpop-x,
+  body .lx-panel-close { min-width: 40px; min-height: 40px; }
+  body .lx-ctrl-row button { padding: 10px; }
+  body .lx-prodpop-add { padding: 11px 16px; }
+
+  body .lx-panel-close,
+  body .lx-ring b,
+  body .lx-prodpop-body small,
+  body .lx-mod-title span { font-size: 11px; }
+
+  /* Flip cards: faces are absolutely positioned, so give the card more room
+     on wider phones rather than letting it collapse. */
+  body .fx-card { height: clamp(230px, 62vw, 280px); }
+  /* Story figures follow the dynamic viewport. */
+  body .st-fig img { max-height: 54vh; max-height: 54dvh; }
+
+  /* Mini player (normally off on phones) must never be wider than the screen. */
+  body .lx-stage.is-mini { width: min(340px, calc(100vw - 24px)); inset: auto 12px 12px auto; }
+}

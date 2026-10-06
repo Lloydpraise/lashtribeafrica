@@ -138,8 +138,20 @@ const ctaLink = activeKit ? `/kit/${slugifyKitTitle(activeKit.title)}` : "/shop"
   }
 
   @media (max-width: 880px) {
+    .kit-items {
+      gap: 10px;
+    }
+
     .kit-item {
-      flex-basis: calc((100% - 14px) / 2);
+      flex-basis: calc((100% - 10px) / 2.25);
+    }
+
+    .kit-showcase::before {
+      display: none;
+    }
+
+    .kit-item-price {
+      font-size: 10px;
     }
   }
 </style>

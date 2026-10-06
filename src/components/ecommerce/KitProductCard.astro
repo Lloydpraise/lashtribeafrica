@@ -146,4 +146,26 @@ const minimum = Math.max(1, Number(product.moq) || 1);
     background: var(--black);
     color: var(--warm-white);
   }
+
+  @media (max-width: 880px) {
+    .kit-card-actions {
+      padding: 0 10px 10px;
+      gap: 8px;
+    }
+
+    .kit-quantity-control {
+      grid-template-columns: 44px 1fr 44px;
+      height: 44px;
+    }
+
+    .kit-quantity-control input {
+      font-size: 16px;
+    }
+
+    .kit-add-button {
+      min-height: 44px;
+      font-size: 10px;
+      letter-spacing: .06em;
+    }
+  }
 </style>

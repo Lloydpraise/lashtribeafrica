@@ -20,6 +20,7 @@ interface Props {
   viewAllHref?: string;
   products: Product[];
   noTopPadding?: boolean;
+  showViewAll?: boolean;
 }
 
 const {
@@ -28,6 +29,7 @@ const {
   viewAllHref = "/shop",
   products,
   noTopPadding = false,
+  showViewAll = true,
 } = Astro.props;
 
 const delayClasses = ["", "d1", "d2", "d3"];
@@ -41,7 +43,7 @@ const delayClasses = ["", "d1", "d2", "d3"];
 >
   <div class="section-head reveal">
     <h2>{title}</h2>
-    <a class="view-all" href={viewAllHref}>View All Products</a>
+    {showViewAll && <a class="view-all" href={viewAllHref}>View All Products</a>}
   </div>
   <div class="rail">
     {

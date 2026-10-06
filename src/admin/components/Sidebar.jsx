@@ -65,4 +65,4 @@ export default function Sidebar({ active, onNavigate }) {
   );
 }
 
-export { NAV_ITEMS };
+export { NAV_ITEMS, ICONS };

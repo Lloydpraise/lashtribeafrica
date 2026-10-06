@@ -17,6 +17,8 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
   const [dirty, setDirty] = useState(!!initial.isNew);
   const [tab, setTab] = useState(startTab);
   const [selected, setSelected] = useState(() => initial.modules[0]?.lessons[0]?.id || null);
+  // Phones show either the lesson list or the open lesson (master/detail).
+  const [lessonOpen, setLessonOpen] = useState(false);
   const [slugTouched, setSlugTouched] = useState(!initial.isNew);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState(null); // { kind, text }
@@ -62,6 +64,7 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
     const l = newLesson(kind);
     mapModules((ms) => ms.map((m) => (m.id === mid ? { ...m, lessons: [...m.lessons, l] } : m)));
     setSelected(l.id);
+    setLessonOpen(true);
   }
   const moveIn = (arr, i, d) => {
     const j = i + d;
@@ -250,7 +253,7 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
       )}
 
       {tab === "curriculum" && (
-        <div className="cs-curr">
+        <div className={`cs-curr${lessonOpen ? " show-lesson" : ""}`}>
           <aside className="cs-outline">
             {course.modules.map((m, mi) => (
               <div className="cs-module" key={m.id}>
@@ -266,7 +269,7 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
                 <ul className="cs-lessons">
                   {m.lessons.map((l, li) => (
                     <li key={l.id} className={(selected === l.id ? "on " : "") + (l.status === "draft" ? "hidden" : "")}>
-                      <button type="button" className="cs-lesson-pick" onClick={() => setSelected(l.id)}>
+                      <button type="button" className="cs-lesson-pick" onClick={() => { setSelected(l.id); setLessonOpen(true); }}>
                         <i aria-hidden>{KIND_ICON[l.kind]}</i>
                         <span>{l.title || "Untitled lesson"}</span>
                         {l.is_preview && <em>free</em>}
@@ -291,6 +294,7 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
           </aside>
 
           <div className="cs-lesson-pane">
+            <button type="button" className="cs-back-lessons" onClick={() => setLessonOpen(false)}>← Lessons</button>
             {lessonRef ? (
               <LessonEditor key={lessonRef.l.id} lesson={lessonRef.l} courseId={course.id} onChange={patchLesson}
                 onPreview={() => setPreview({ lessonId: lessonRef.l.id })} />
