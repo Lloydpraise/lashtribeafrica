@@ -26,3 +26,9 @@ Phone breakpoint is 880px (admin shell 860px, modals/tables 640px, course editor
 - Academy progress rail vs sticky video overlap: suspected, not confirmed, left alone.
 - Flip cards use absolutely positioned faces, so they get a taller height on phones rather than auto height.
 - lashtribe-academy-astro/ (older copy inside the repo) untouched.
+
+# Customers, profile, certificates, orders
+
+New: `supabase/migrations/0011_customers_orders.sql` (run after 0010; see migrations/README.md for the
+one-time Supabase setup), `/profile`, `/verify`, admin sign-in, admin Customers + Orders.
+Public `public/certificate-template.pdf` is optional (your own certificate template).

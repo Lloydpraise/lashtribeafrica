@@ -1,0 +1,89 @@
+---
+import Layout from "../layouts/ecommerce/Layout.astro";
+import SiteHeader from "../components/ecommerce/SiteHeader.astro";
+import SiteFooter from "../components/ecommerce/SiteFooter.astro";
+---
+
+<Layout title="Verify a Certificate | Lashtribe Academy">
+  <SiteHeader />
+  <main>
+    <div class="vf-wrap">
+      <div class="vf-eyebrow">Lashtribe Academy</div>
+      <h1>Verify a certificate</h1>
+      <p class="vf-sub">Enter the certificate number or verification code printed on the certificate.</p>
+      <form id="vfForm" class="vf-form">
+        <input id="vfCode" type="text" placeholder="e.g. LTA-2026-00001 or a1b2c3d4e5f6" autocomplete="off" />
+        <button type="submit">Verify</button>
+      </form>
+      <div id="vfResult" class="vf-result" role="status" aria-live="polite"></div>
+    </div>
+  </main>
+  <SiteFooter />
+
+  <style is:global>
+    .vf-wrap { max-width: 560px; margin: 0 auto; padding: 56px 20px 90px; text-align: center; font-family: var(--sans); }
+    .vf-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: var(--rose-deep); font-weight: 700; margin-bottom: 8px; }
+    .vf-wrap h1 { font-family: var(--serif); font-size: 34px; margin: 0 0 8px; }
+    .vf-sub { color: #777; font-size: 14px; margin: 0 0 24px; line-height: 1.6; }
+    .vf-form { display: flex; gap: 8px; }
+    .vf-form input { flex: 1; padding: 13px 14px; border: 1px solid var(--grey); border-radius: 100px; font: 400 14px var(--sans); }
+    .vf-form button { background: var(--black); color: #fff; border: none; border-radius: 100px; padding: 0 24px; font: 600 12px var(--sans); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+    .vf-result { margin-top: 26px; }
+    .vf-card { border: 1px solid var(--grey); border-left: 4px solid var(--green); border-radius: 9px; padding: 20px; text-align: left; background: #fff; }
+    .vf-card.bad { border-left-color: #b23a3a; }
+    .vf-card h2 { font-family: var(--serif); font-size: 20px; margin: 0 0 10px; }
+    .vf-card p { margin: 4px 0; font-size: 14px; color: #444; }
+  </style>
+
+  <script>
+    import { verifyCertificate, HAS_DB } from "../services/customers.js";
+
+    const form = document.getElementById("vfForm") as HTMLFormElement;
+    const input = document.getElementById("vfCode") as HTMLInputElement;
+    const out = document.getElementById("vfResult") as HTMLElement;
+
+    function card(good: boolean, title: string, lines: string[]) {
+      out.replaceChildren();
+      const box = document.createElement("div");
+      box.className = "vf-card" + (good ? "" : " bad");
+      const h = document.createElement("h2");
+      h.textContent = title;
+      box.append(h);
+      lines.forEach((text) => {
+        const p = document.createElement("p");
+        p.textContent = text;
+        box.append(p);
+      });
+      out.append(box);
+    }
+
+    async function run(code: string) {
+      if (!code.trim()) return;
+      if (!HAS_DB) return card(false, "Not available", ["Verification isn't connected to the database yet."]);
+      try {
+        const cert = await verifyCertificate(code);
+        if (!cert) return card(false, "No certificate found", ["Check the number or code and try again."]);
+        card(true, "Genuine certificate", [
+          `Awarded to: ${cert.holder_name}`,
+          `Course: ${cert.course_title}`,
+          `Certificate no: ${cert.certificate_no}`,
+          `Issued: ${new Date(cert.issued_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`,
+        ]);
+      } catch (err: any) {
+        card(false, "Couldn't check", [err.message || "Please try again."]);
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      run(input.value);
+    });
+    const initial = new URLSearchParams(window.location.search).get("code");
+    if (initial) {
+      input.value = initial;
+      run(initial);
+    }
+  </script>
+  <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/main.js" is:inline></script>
+</Layout>

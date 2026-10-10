@@ -112,6 +112,7 @@ export async function saveProgress(ctx, lessonId, patch) {
     const all = readLS();
     const c = (all[ctx.course.slug] ||= { progress: {}, notes: {} });
     c.progress[lessonId] = { ...(c.progress[lessonId] || {}), ...patch };
+    c.lastActive = Date.now();
     writeLS(all);
     return;
   }
@@ -129,6 +130,60 @@ export async function saveProgress(ctx, lessonId, patch) {
   }
   const { error } = await supabase.from("lesson_progress").upsert(row, { onConflict: "user_id,lesson_id" });
   if (error) console.warn("Academy: could not save progress", error.message);
+}
+
+// ---------- "last course the student touched" (drives the dashboard hero) ----------
+const TOUCH_KEY = "lashtribe_last_course_v1";
+const readTouch = () => {
+  try { return JSON.parse(localStorage.getItem(TOUCH_KEY) || "{}"); } catch { return {}; }
+};
+
+/** Call when a student opens a course, so the dashboard hero follows what they last used,
+ *  even before they have finished or even started a lesson. */
+export function touchCourse(ctx) {
+  if (!ctx?.course?.slug || ctx.preview) return;
+  const all = readTouch();
+  all[ctx.user?.id || "anon"] = { slug: ctx.course.slug, t: Date.now() };
+  try { localStorage.setItem(TOUCH_KEY, JSON.stringify(all)); } catch { /* storage blocked */ }
+}
+
+/** Slug of the course the student interacted with most recently: the later of their latest lesson
+ *  activity (saved in the database), the last course opened on this device, and, failing both, their
+ *  newest enrolment. Returns null when there is nothing to go on. */
+export async function getLastActiveCourseSlug() {
+  const user = await getUser();
+  let best = null; // { slug, t }
+  const consider = (slug, t) => { if (slug && Number.isFinite(t) && (!best || t > best.t)) best = { slug, t }; };
+
+  const touched = readTouch()[user?.id || "anon"];
+  if (touched) consider(touched.slug, touched.t);
+
+  if (HAS_DB && user) {
+    try {
+      const { data: prog } = await supabase
+        .from("lesson_progress").select("course_id, updated_at")
+        .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1);
+      if (prog?.[0]) {
+        const { data: c } = await supabase.from("courses").select("slug").eq("id", prog[0].course_id).maybeSingle();
+        consider(c?.slug, new Date(prog[0].updated_at).getTime());
+      }
+      if (!best) {
+        const { data: enr } = await supabase
+          .from("enrollments").select("course_id, created_at")
+          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1);
+        if (enr?.[0]) {
+          const { data: c } = await supabase.from("courses").select("slug").eq("id", enr[0].course_id).maybeSingle();
+          consider(c?.slug, new Date(enr[0].created_at).getTime());
+        }
+      }
+    } catch (err) {
+      console.warn("Academy: couldn't work out the last course", err?.message || err);
+    }
+  } else if (!user) {
+    const all = readLS();
+    Object.entries(all).forEach(([slug, v]) => consider(slug, v?.lastActive));
+  }
+  return best?.slug || null;
 }
 
 /** Best effort: record a free self-enrolment so the course shows up under "My courses". */

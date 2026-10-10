@@ -1,0 +1,88 @@
+---
+// Shown ONCE per profile, the first time a student enters the Academy.
+// AcademyBridge fires "lashtribe:academy-welcome" with the student's name; pressing the button
+// records that they've been welcomed (so it never shows again) and scrolls to the course list.
+---
+
+<div class="wl-screen" id="welcomeScreen" role="dialog" aria-modal="true" aria-labelledby="wlTitle" hidden>
+  <div class="wl-bg"></div>
+  <div class="wl-card">
+    <div class="wl-hello">Hello <span id="wlName">there</span>,</div>
+    <h1 id="wlTitle">Welcome To Lashtribe Academy!</h1>
+    <p>We hope you will have fun and enjoy your learning experience! Browse courses below to start.</p>
+    <button type="button" class="btn-primary wl-btn" id="wlBrowse">Browse Courses</button>
+  </div>
+</div>
+
+<style is:global>
+  .wl-screen { position: fixed; inset: 0; z-index: 250; display: grid; place-items: center; padding: 20px; overflow-y: auto; }
+  .wl-screen[hidden] { display: none; }
+  .wl-bg { position: absolute; inset: 0; background: linear-gradient(120deg, #1c1c1c 0%, #4a3336 45%, #caa3a8 100%); }
+  .wl-card {
+    position: relative; background: var(--warm-white); border-radius: 16px; width: 520px; max-width: 100%;
+    padding: 52px 40px 44px; text-align: center; box-shadow: 0 30px 80px rgba(0, 0, 0, .35);
+    animation: wlRise .55s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .wl-hello { font-family: var(--script, cursive); font-size: 30px; color: var(--rose-deep); margin-bottom: 8px; }
+  .wl-card h1 { font-family: var(--serif); font-size: clamp(26px, 5vw, 36px); line-height: 1.15; margin: 0 0 16px; }
+  .wl-card p { font-size: 15px; line-height: 1.7; color: var(--charcoal); margin: 0 auto 28px; max-width: 400px; }
+  .wl-btn { min-width: 220px; }
+  @keyframes wlRise { from { opacity: 0; transform: translateY(22px) scale(.97); } to { opacity: 1; transform: none; } }
+  .wl-confetti { position: fixed; top: -14px; width: 9px; height: 14px; border-radius: 2px; z-index: 260; pointer-events: none;
+    animation: wlFall var(--dur, 3s) ease-in forwards; }
+  @keyframes wlFall {
+    0%   { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 1; }
+    100% { transform: translate3d(var(--dx, 0px), 105vh, 0) rotate(var(--rot, 540deg)); opacity: .9; }
+  }
+  @media (max-width: 480px) { .wl-card { padding: 40px 24px 34px; } .wl-hello { font-size: 26px; } }
+</style>
+
+<script>
+  import { markWelcomed } from "../../services/customers.js";
+
+  const screen = document.getElementById("welcomeScreen");
+  const nameEl = document.getElementById("wlName");
+
+  function confetti() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const colors = ["#E8B4BC", "#C9707F", "#111111", "#F5E6E8", "#B98A4B", "#3F7A54"];
+    const pieces: HTMLElement[] = [];
+    for (let i = 0; i < 90; i++) {
+      const el = document.createElement("span");
+      el.className = "wl-confetti";
+      el.style.left = Math.random() * 100 + "vw";
+      el.style.background = colors[i % colors.length];
+      el.style.animationDelay = Math.random() * 0.9 + "s";
+      el.style.setProperty("--dur", 2.4 + Math.random() * 1.6 + "s");
+      el.style.setProperty("--dx", (Math.random() * 2 - 1) * 180 + "px");
+      el.style.setProperty("--rot", Math.random() * 900 - 450 + "deg");
+      document.body.appendChild(el);
+      pieces.push(el);
+    }
+    setTimeout(() => pieces.forEach((el) => el.remove()), 5200);
+  }
+
+  let userId: string | null = null;
+
+  window.addEventListener("lashtribe:academy-welcome", (event) => {
+    const detail = (event as CustomEvent).detail || {};
+    if (!screen) return;
+    userId = detail.userId || null;
+    if (nameEl) nameEl.textContent = detail.firstName || "there";
+    screen.hidden = false;
+    document.body.style.overflow = "hidden";
+    confetti();
+  });
+
+  document.getElementById("wlBrowse")?.addEventListener("click", () => {
+    if (!screen) return;
+    screen.hidden = true;
+    document.body.style.overflow = "";
+    markWelcomed(userId);
+    // open the Academy at the full, scrollable course list
+    const empty = document.getElementById("dashboardEmpty");
+    const emptyVisible = !!empty && empty.style.display !== "none";
+    const target = document.getElementById(emptyVisible ? "courseCatalog" : "courseGridPopulated");
+    window.setTimeout(() => target?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  });
+</script>

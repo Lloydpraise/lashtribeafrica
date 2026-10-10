@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "../../styles/learn.css";
 import {
   HAS_DB, loadCourse, loadLessonContent, loadProgress, saveProgress, enrollFree,
-  loadNotes, addNote, deleteNote, resolveProducts, addToShopCart, getUser, signIn, signUp, hasAcademyDemoSession,
+  loadNotes, addNote, deleteNote, resolveProducts, addToShopCart, getUser, signIn, signUp, hasAcademyDemoSession, touchCourse,
 } from "../../services/academy.js";
+import { issueCertificate } from "../../services/customers.js";
 import { createTimeStore, useMedia, burstConfetti, fmtMinutes } from "./util.js";
 import VideoStage from "./VideoStage.jsx";
 import Reader, { Block, groupSections } from "./Reader.jsx";
@@ -61,14 +62,60 @@ function Locked({ course, preview, demoSession }) {
   );
 }
 
-function Certificate({ course, onBack }) {
+function Certificate({ ctx, onBack }) {
+  const course = ctx.course;
+  const [cert, setCert] = useState(null);
+  const [state, setState] = useState("loading"); // loading | ready | demo | error
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    if (ctx.source !== "db" || !ctx.user || !course.certificate_enabled) {
+      setState("demo");
+      return undefined;
+    }
+    issueCertificate(course.id)
+      .then((row) => { if (live) { setCert(row); setState("ready"); } })
+      .catch((err) => { if (live) { setError(err.message); setState("error"); } });
+    return () => { live = false; };
+  }, [ctx, course]);
+
+  async function download() {
+    setBusy(true);
+    setError("");
+    try {
+      const { downloadCertificatePdf } = await import("../../services/certificatePdf.js");
+      await downloadCertificatePdf(cert);
+    } catch (err) {
+      setError(err.message || "Couldn't build the PDF.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="lx-cert">
       <div className="lx-cert-seal">★</div>
       <div className="lx-eyebrow">Course complete</div>
       <h1>You finished {course.title}</h1>
-      <p>Every lesson is done. You are eligible for your Lashtribe Academy certificate{course.bonus_points ? ` and ${course.bonus_points} bonus points` : ""}.</p>
-      <button className="lx-btn dark" onClick={onBack}>Back to the academy</button>
+      {state === "ready" && cert ? (
+        <>
+          <p>Your certificate <b>{cert.certificate_no}</b> is ready{course.bonus_points ? `, and ${course.bonus_points} bonus points are on their way` : ""}.</p>
+          <button className="lx-btn dark" onClick={download} disabled={busy}>{busy ? "Preparing PDF…" : "Download certificate (PDF)"}</button>
+          <p style={{ marginTop: 14 }}><a href="/profile#certificates">See all my certificates</a></p>
+        </>
+      ) : state === "loading" ? (
+        <p>Preparing your certificate…</p>
+      ) : state === "demo" ? (
+        <p>Every lesson is done. Sign in to a course account to receive a downloadable certificate{course.bonus_points ? ` and ${course.bonus_points} bonus points` : ""}.</p>
+      ) : (
+        <p>{error}</p>
+      )}
+      {state === "ready" && error && <p>{error}</p>}
+      <div style={{ marginTop: 14 }}>
+        <button className="lx-btn" onClick={onBack}>Back to the academy</button>
+      </div>
     </div>
   );
 }
@@ -126,6 +173,7 @@ export default function LearnApp() {
       setLessonId(c.lessons.some((l) => l.id === want) || want === "__certificate" ? want : first?.id || null);
       setBoot("ready");
       enrollFree(c);
+      touchCourse(c);
     } catch (error) {
       console.error("Academy: could not start course", error);
       setBoot("error");
@@ -225,7 +273,7 @@ export default function LearnApp() {
   );
   const hasShop = timed.length > 0;
   const hasTranscript = !!video?.transcript?.length;
-  const watermark = ctx?.user?.email || (ctx?.source === "demo" ? "Lashtribe Academy · Preview" : "Lashtribe Academy");
+  const watermark = "lashtribeafrica.com";
 
   // ---------- progress ----------
   const complete = useCallback((id, quiet) => {
@@ -389,7 +437,7 @@ export default function LearnApp() {
 
         <main className="lx-main">
           {isCert ? (
-            certReady ? <Certificate course={course} onBack={() => (window.location.href = "/academy/")} />
+            certReady ? <Certificate ctx={ctx} onBack={() => (window.location.href = "/academy/")} />
               : <div className="lx-locked"><div className="lx-lock-ic">★</div><h2>Almost there</h2><p>Complete every lesson to unlock your course completion.</p></div>
           ) : lesson ? (
             <>

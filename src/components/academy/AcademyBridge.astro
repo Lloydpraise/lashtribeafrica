@@ -1,0 +1,152 @@
+---
+// Connects the Academy page to real Supabase accounts: sign in / create account / sign out,
+// buying courses (creates an order), and unlocking the courses a student owns.
+// academy.js (the old inline script) still drives the screens; this talks to the database.
+---
+
+<script>
+  import {
+    HAS_DB, getSession, signInProfile, signUpProfile, signOutProfile, sendPasswordReset,
+    fetchMyCustomer, fetchMyCourses, placeOrder, formatKsh, startAuthBridge,
+    hasBeenWelcomed, firstNameOf,
+  } from "../../services/customers.js";
+
+  const authView = document.getElementById("viewAuth");
+  const real = HAS_DB && authView?.dataset.realAuth === "1";
+
+  if (real) {
+    startAuthBridge();
+    let owned = new Map<string, string>(); // course_id -> slug
+    let customer: any = null;
+
+    const $ = (id: string) => document.getElementById(id) as HTMLInputElement | null;
+    const toast = (msg: string) => {
+      const t = document.getElementById("toast");
+      const m = document.getElementById("toastMsg");
+      if (!t || !m) return;
+      m.textContent = msg;
+      t.classList.add("show");
+      clearTimeout((window as any)._toastTimer);
+      (window as any)._toastTimer = setTimeout(() => t.classList.remove("show"), 5200);
+    };
+    const showError = (which: "Signin" | "Create", text: string, ok = false) => {
+      const el = document.getElementById("authError" + which);
+      if (!el) return;
+      el.textContent = text;
+      el.style.display = text ? "block" : "none";
+      el.className = "auth-error" + (ok ? " ok" : "");
+    };
+
+    function markOwned() {
+      document.querySelectorAll<HTMLElement>(".course-buy").forEach((btn) => {
+        const slug = owned.get(btn.dataset.courseId || "");
+        if (!slug) return;
+        btn.textContent = "Start Course";
+        btn.classList.add("owned");
+        const card = btn.closest<HTMLElement>(".course-card");
+        card?.querySelector(".module-lock")?.remove();
+        if (card) {
+          card.dataset.course = slug;
+          card.dataset.openPlayer = "1";
+        }
+      });
+    }
+    // the catalog is rendered asynchronously, so re-apply whenever cards appear
+    new MutationObserver(() => { if (owned.size) markOwned(); }).observe(document.body, { childList: true, subtree: true });
+
+    async function enter(isNewProfile = false) {
+      const session = await getSession();
+      if (!session) return;
+      try {
+        customer = await fetchMyCustomer();
+        const courses = await fetchMyCourses();
+        owned = new Map(courses.map((c: any) => [c.course_id, c.course_slug]));
+      } catch (err) {
+        console.warn("Academy: couldn't load your courses", err);
+      }
+      const name = customer?.full_name || session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "there";
+      window.dispatchEvent(new CustomEvent("lashtribe:academy-enter", { detail: { name, isNew: isNewProfile || owned.size === 0 } }));
+      markOwned();
+      // first time in the Academy: greet them once, with confetti
+      if (!hasBeenWelcomed(session)) {
+        window.dispatchEvent(new CustomEvent("lashtribe:academy-welcome", {
+          detail: { firstName: firstNameOf(name), userId: session.user.id },
+        }));
+      }
+    }
+
+    $("signinBtn")?.addEventListener("click", async () => {
+      showError("Signin", "");
+      const email = $("siEmail")?.value || "";
+      const pass = $("siPass")?.value || "";
+      if (!email || !pass) return showError("Signin", "Enter your email and password.");
+      try {
+        await signInProfile(email, pass);
+        await enter(false);
+      } catch (err: any) {
+        showError("Signin", err.message);
+      }
+    });
+
+    $("createBtn")?.addEventListener("click", async () => {
+      showError("Create", "");
+      const name = $("crName")?.value.trim() || "";
+      const email = $("crEmail")?.value.trim() || "";
+      const phone = $("crPhone")?.value.trim() || "";
+      const password = $("crPass")?.value || "";
+      if (!name) return showError("Create", "Please enter your full name.");
+      if (!email) return showError("Create", "Please enter your email.");
+      if (!phone) return showError("Create", "Please enter your phone / WhatsApp number.");
+      if (password.length < 8) return showError("Create", "Choose a password of at least 8 characters.");
+      try {
+        await signUpProfile({ name, email, phone, password });
+        await enter(true);
+      } catch (err: any) {
+        showError("Create", err.message);
+      }
+    });
+
+    document.getElementById("forgotLink")?.addEventListener("click", async (event) => {
+      event.preventDefault();
+      const email = $("siEmail")?.value.trim() || "";
+      if (!email) return showError("Signin", "Type your email above, then press 'Forgot password?'.");
+      try {
+        await sendPasswordReset(email);
+        showError("Signin", "If that email has a profile, a reset link is on its way.", true);
+      } catch (err: any) {
+        showError("Signin", err.message);
+      }
+    });
+
+    window.addEventListener("lashtribe:academy-signout", async () => {
+      await signOutProfile();
+      owned = new Map();
+      customer = null;
+    });
+
+    window.addEventListener("lashtribe:buy-course", async (event) => {
+      const detail = (event as CustomEvent).detail || {};
+      const session = await getSession();
+      if (!session) return toast("Please sign in to buy a course.");
+      if (!detail.courseId) return toast("That course isn't available to buy yet.");
+      try {
+        customer = customer || (await fetchMyCustomer());
+        const result = await placeOrder({
+          customer: {
+            full_name: customer?.full_name || session.user.user_metadata?.full_name || "",
+            email: session.user.email,
+            phone: customer?.phone || "",
+            delivery_area: customer?.delivery_area || "",
+          },
+          items: [{ type: "course", id: detail.courseId, qty: 1 }],
+        });
+        toast(`Order ${result.order_no} placed (${formatKsh(result.total)}). Your course unlocks as soon as payment is confirmed.`);
+      } catch (err: any) {
+        toast(err.message || "We couldn't place that order. Please try again.");
+      }
+    });
+
+    // already signed in? skip the sign-in screen
+    enter(false);
+  }
+</script>

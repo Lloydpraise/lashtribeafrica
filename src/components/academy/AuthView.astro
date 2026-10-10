@@ -1,7 +1,10 @@
 ---
+// With a database configured this is a real Supabase sign-in (the same profile the shop uses).
+// Without one it falls back to the old demo behaviour in public/scripts/academy.js.
+const hasDb = Boolean(import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
 ---
 
-<section class="auth-view" id="viewAuth">
+<section class="auth-view" id="viewAuth" data-real-auth={hasDb ? "1" : "0"}>
   <div class="auth-bg"></div>
   <div class="auth-overlay"></div>
   <div class="auth-card">
@@ -14,31 +17,38 @@
     <div class="auth-panel active" id="panelSignin">
       <div class="field">
         <label>Email</label>
-        <input type="email" id="siEmail" value="amina@lashtribe.africa" />
+        <input type="email" id="siEmail" value={hasDb ? "" : "amina@lashtribe.africa"} autocomplete="email" />
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" id="siPass" value="demo1234" />
+        <input type="password" id="siPass" value={hasDb ? "" : "demo1234"} autocomplete="current-password" />
       </div>
+      <p class="auth-error" id="authErrorSignin" role="alert" style="display:none;"></p>
       <button class="btn-primary auth-submit" id="signinBtn">Sign In</button>
       <p class="auth-switch">
         New here? <a href="#" data-switch="create">Create an account</a>
+        {hasDb && <span> · <a href="#" id="forgotLink">Forgot password?</a></span>}
       </p>
     </div>
 
     <div class="auth-panel" id="panelCreate">
       <div class="field">
         <label>Full Name</label>
-        <input type="text" id="crName" placeholder="e.g. Wanjiru Kamau" />
+        <input type="text" id="crName" placeholder="e.g. Wanjiru Kamau" autocomplete="name" />
       </div>
       <div class="field">
         <label>Email</label>
-        <input type="email" placeholder="you@example.com" />
+        <input type="email" id="crEmail" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="field">
+        <label>Phone / WhatsApp</label>
+        <input type="tel" id="crPhone" placeholder="07xx xxx xxx" autocomplete="tel" />
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" placeholder="Create a password" />
+        <input type="password" id="crPass" placeholder="At least 8 characters" autocomplete="new-password" />
       </div>
+      <p class="auth-error" id="authErrorCreate" role="alert" style="display:none;"></p>
       <button class="btn-primary auth-submit" id="createBtn">Create Account</button>
       <p class="auth-switch">
         Already learning with us? <a href="#" data-switch="signin">Sign in</a>
@@ -46,3 +56,8 @@
     </div>
   </div>
 </section>
+
+<style is:global>
+  .auth-error { color: #b23a3a; font-size: 13px; line-height: 1.5; margin: 0 0 12px; }
+  .auth-error.ok { color: #3f7a54; }
+</style>

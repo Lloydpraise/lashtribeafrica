@@ -32,8 +32,12 @@
   const viewAuth = document.getElementById('viewAuth');
   const accountMenu = document.getElementById('accountMenu');
 
-  if (signinBtn) signinBtn.addEventListener('click', () => enterApp(false, 'Amina'));
-  if (createBtn) createBtn.addEventListener('click', () => {
+  // With a database configured, sign in / sign up / sign out are handled by AcademyBridge.astro
+  // (real Supabase accounts). The demo handlers below only run when there is no database.
+  const realAuth = !!viewAuth && viewAuth.dataset.realAuth === '1';
+
+  if (!realAuth && signinBtn) signinBtn.addEventListener('click', () => enterApp(false, 'Amina'));
+  if (!realAuth && createBtn) createBtn.addEventListener('click', () => {
     const name = document.getElementById('crName')?.value.trim() || 'there';
     enterApp(true, name);
   });
@@ -43,11 +47,17 @@
     if (viewAuth) viewAuth.style.display = 'flex';
     if (accountMenu) accountMenu.classList.remove('open');
     try { sessionStorage.removeItem('lashtribe_academy_session'); } catch (err) { /* ignore */ }
+    window.dispatchEvent(new CustomEvent('lashtribe:academy-signout'));
+  });
+  // AcademyBridge announces a real signed-in student here.
+  window.addEventListener('lashtribe:academy-enter', (e) => {
+    const d = (e && e.detail) || {};
+    enterApp(!!d.isNew, d.name || 'there', true);
   });
 
-  function enterApp(isNew, name){
+  function enterApp(isNew, name, real){
     // remember the (demo) session so coming back from a lesson doesn't show sign-in again
-    try { sessionStorage.setItem('lashtribe_academy_session', JSON.stringify({ isNew, name })); } catch (err) { /* ignore */ }
+    if (!real) { try { sessionStorage.setItem('lashtribe_academy_session', JSON.stringify({ isNew, name })); } catch (err) { /* ignore */ } }
     if (viewAuth) viewAuth.style.display = 'none';
     if (appShell) appShell.style.display = 'block';
     const avatarInitial = document.getElementById('avatarInitial');
@@ -64,10 +74,12 @@
     showDashboard();
   }
 
-  try {
-    const saved = JSON.parse(sessionStorage.getItem('lashtribe_academy_session') || 'null');
-    if (saved && saved.name) enterApp(!!saved.isNew, saved.name);
-  } catch (err) { /* ignore */ }
+  if (!realAuth) {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('lashtribe_academy_session') || 'null');
+      if (saved && saved.name) enterApp(!!saved.isNew, saved.name);
+    } catch (err) { /* ignore */ }
+  }
 
   // ---------- Account menu ----------
   const accountBtn = document.getElementById('accountBtn');
@@ -241,13 +253,21 @@
   const payCourseBtn = document.getElementById('payCourseBtn');
   if (payCourseBtn) {
     payCourseBtn.addEventListener('click', () => {
-      if (pendingCourseCard) {
+      if (pendingCourseCard && !realAuth) {
         pendingCourseCard.textContent = 'Start Course';
         pendingCourseCard.classList.add('owned');
         const card = pendingCourseCard.closest('.course-card');
         const lock = card?.querySelector('.module-lock');
         if (lock) lock.remove();
         if (card) card.dataset.openPlayer = '1';
+      }
+      if (realAuth && pendingCourseCard) {
+        // Real account: AcademyBridge places the order (course purchases need a signed-in profile).
+        window.dispatchEvent(new CustomEvent('lashtribe:buy-course', {
+          detail: { courseId: pendingCourseCard.dataset.courseId, title: pendingCourseCard.dataset.title }
+        }));
+        closeCheckout();
+        return;
       }
       closeCheckout();
       if (window.LashtribeCart) {

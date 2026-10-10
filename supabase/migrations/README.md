@@ -59,6 +59,33 @@ CLI if you have it set up (`supabase db push`).
     `course-files` bucket), uploaded and downloaded from the admin course editor. Students never
     read it. Run after 0009. Open to the anon key like 0009 until admin sign-in exists.
 
+11. `0011_customers_orders.sql` — **customers, orders and certificates.** Adds `customers`,
+    `orders`, `order_items`, `course_certificates`; the `place_order()` function (the only way an
+    order is created; prices are read on the server, courses need a signed-in profile);
+    `admin_set_order_status()` (marking an order paid unlocks its courses, refund/cancel removes
+    them); `update_my_profile()`, `issue_certificate()` (only once every lesson is done) and the
+    public `verify_certificate()`; plus the reporting views `customer_stats`,
+    `customer_product_stats` (repeat purchases across separate orders) and
+    `customer_course_progress`. A trigger links every new login to its customer record (matching
+    on email or phone, so earlier guest orders follow them). Run after 0010. Safe to re-run.
+    **Unlike products and courses, none of these tables are open to the anon key.** Admins must be
+    signed in (see below); students only ever see their own rows.
+
+### One-time Supabase setup for customers + admin sign-in
+1. Authentication → Providers → Email → turn **off** "Confirm email" (so a first-time buyer can
+   buy a course straight away).
+2. Create your admin login: Authentication → Users → Add user (email + password), then in the
+   SQL editor run
+   `insert into public.academy_admins (user_id) select id from auth.users where email = 'you@example.com';`
+   The admin page (`/admin`) now asks for this login.
+3. Authentication → URL Configuration → add your site URL (used by "Forgot password" links).
+4. Certificate template: put your PDF at `public/certificate-template.pdf`. The student's name and
+   the serial number are written onto page 1; adjust `TEMPLATE_LAYOUT` at the top of
+   `src/services/certificatePdf.js` to move them. With no template file a built-in design is used.
+5. Payments (M-Pesa / Pesapal, later): `place_order()` creates a *pending* order. Your payment
+   callback should call `admin_set_order_status(order_id, 'paid', 'mpesa', '<receipt>')` using the
+   service role key from a server function. Until then, use **Mark as paid** in admin → Orders.
+
 **Security note:** all of this uses permissive RLS policies that let the
 public anon key read *and write*. The admin panel is a static site with no
 server-side session to scope policies to. The temporary course policy also

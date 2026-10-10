@@ -48,10 +48,19 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
             <span>Send me preorder updates and stock alerts for future batches.</span>
           </label>
 
-          <label class="checkbox-row small-checkbox">
-            <input type="checkbox" />
-            <span>Create account for easier checkout</span>
-          </label>
+          <div id="profileBlock">
+            <p class="summary-note" style="margin:0 0 8px;">Already have a profile? <a href="/profile">Sign in</a> and your details fill in automatically.</p>
+            <label class="checkbox-row small-checkbox">
+              <input type="checkbox" id="createProfile" />
+              <span>Create a profile to track orders and access the Academy</span>
+            </label>
+            <div class="field" id="profilePasswordField" style="display:none;">
+              <label for="profilePassword">Choose a password</label>
+              <input id="profilePassword" name="profilePassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" />
+            </div>
+          </div>
+          <p id="signedInNote" class="summary-note" style="display:none;"></p>
+          <p id="checkoutStatus" class="checkout-status" role="status" aria-live="polite"></p>
 
           <div class="checkout-form-footer">
             <div class="saved-row">
@@ -72,8 +81,8 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
               <span id="checkoutTotalMobile">Ksh 13,750</span>
             </div>
 
-            <button class="pay-now-btn mobile-pay-now" type="button">Pay now</button>
-            <p class="summary-note">Secure payment processing will be connected here once your gateway is ready.</p>
+            <button class="pay-now-btn mobile-pay-now" type="button">Place order</button>
+            <p class="summary-note">Place your order and we will confirm payment (M-Pesa or card) with you straight away.</p>
             <p class="summary-note">By placing your order you agree to our <a href="/terms-and-conditions">Terms & Conditions</a> and <a href="/shipping-policy">Shipping Policy</a>.</p>
           </div>
         </form>
@@ -118,8 +127,8 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
           <strong id="checkoutFooterTotal">Ksh 13,750</strong>
         </div>
 
-        <button class="pay-now-btn" type="button">Pay now</button>
-        <p class="summary-note">Secure payment processing will be connected here once your gateway is ready.</p>
+        <button class="pay-now-btn" type="button">Place order</button>
+        <p class="summary-note">Place your order and we will confirm payment (M-Pesa or card) with you straight away.</p>
         <p class="summary-note">By placing your order you agree to our <a href="/terms-and-conditions">Terms & Conditions</a> and <a href="/shipping-policy">Shipping Policy</a>.</p>
       </aside>
     </div>
@@ -128,4 +137,177 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
   <CartCatalogScript />
   <script src="/scripts/shared-cart.js" is:inline></script>
   <script src="/scripts/cart-render.js" is:inline></script>
+  <script>
+    import {
+      HAS_DB, formatKsh, getSession, fetchMyCustomer, placeOrder, signUpProfile, startAuthBridge,
+    } from "../../services/customers.js";
+
+    const $ = (id: string) => document.getElementById(id) as HTMLInputElement | null;
+    const statusEl = document.getElementById("checkoutStatus");
+    const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".pay-now-btn"));
+    let signedIn = false;
+    let placing = false;
+
+    function say(text: string, kind: "error" | "ok" | "" = "") {
+      if (!statusEl) return;
+      statusEl.textContent = text;
+      statusEl.className = "checkout-status" + (kind ? " " + kind : "");
+    }
+
+    function cartItems() {
+      const cart = (window as any).LashtribeCart?.getCart?.() || {};
+      let catalog: any = { products: {} };
+      try {
+        catalog = JSON.parse(document.getElementById("lashtribe-catalog")?.textContent || "{}");
+      } catch { /* ignore */ }
+      return Object.entries(cart)
+        .filter(([id]) => catalog.products?.[id])
+        .map(([id, qty]) => ({ type: "product", id, qty: Number(qty) }));
+    }
+
+    async function syncSignedIn() {
+      if (!HAS_DB) return;
+      const session = await getSession();
+      signedIn = Boolean(session);
+      const block = document.getElementById("profileBlock");
+      const note = document.getElementById("signedInNote");
+      if (block) block.style.display = signedIn ? "none" : "";
+      if (note) {
+        note.style.display = signedIn ? "" : "none";
+        note.textContent = signedIn ? "You're signed in. This order will be saved to your profile." : "";
+      }
+      if (signedIn) {
+        try {
+          const c = await fetchMyCustomer();
+          const fill = (id: string, value?: string | null) => {
+            const el = $(id);
+            if (el && !el.value && value) el.value = value;
+          };
+          const meta = session?.user?.user_metadata || {};
+          fill("fullName", c?.full_name || meta.full_name);
+          fill("email", c?.email || session?.user?.email);
+          fill("phone", c?.phone || meta.phone);
+          fill("area", c?.delivery_area);
+          const email = $("email");
+          if (email && session?.user?.email) { email.value = session.user.email; email.readOnly = true; }
+        } catch { /* the form still works without prefill */ }
+      }
+    }
+
+    // Guests: remember the details on this device so they aren't retyped next time.
+    const GUEST_KEY = "lashtribe_checkout_details_v1";
+    function loadGuest() {
+      try {
+        const d = JSON.parse(localStorage.getItem(GUEST_KEY) || "null");
+        if (!d) return;
+        (["fullName", "email", "phone", "area"] as const).forEach((id) => {
+          const el = $(id);
+          if (el && !el.value && d[id]) el.value = d[id];
+        });
+      } catch { /* ignore */ }
+    }
+    function saveGuest() {
+      try {
+        localStorage.setItem(GUEST_KEY, JSON.stringify({
+          fullName: $("fullName")?.value.trim() || "",
+          email: $("email")?.value.trim() || "",
+          phone: $("phone")?.value.trim() || "",
+          area: $("area")?.value.trim() || "",
+        }));
+      } catch { /* ignore */ }
+    }
+
+    $("createProfile")?.addEventListener("change", (event) => {
+      const on = (event.target as HTMLInputElement).checked;
+      const field = document.getElementById("profilePasswordField");
+      if (field) field.style.display = on ? "" : "none";
+    });
+
+    async function submitOrder() {
+      if (placing) return;
+      say("");
+      if (!HAS_DB) return say("The store isn't connected to its database yet.", "error");
+
+      const items = cartItems();
+      if (!items.length) return say("Your cart is empty.", "error");
+
+      const name = $("fullName")?.value.trim() || "";
+      const email = $("email")?.value.trim() || "";
+      const phone = $("phone")?.value.trim() || "";
+      const area = $("area")?.value.trim() || "";
+      const notes = (document.getElementById("notes") as HTMLTextAreaElement | null)?.value.trim() || "";
+      if (!name) return say("Please enter your full name.", "error");
+      if (!phone) return say("Please enter your phone number so we can confirm your order.", "error");
+      if (!area) return say("Please enter your delivery area.", "error");
+
+      const wantsProfile = !signedIn && Boolean($("createProfile")?.checked);
+      const password = $("profilePassword")?.value || "";
+      if (wantsProfile) {
+        if (!email) return say("Add your email to create a profile.", "error");
+        if (password.length < 8) return say("Choose a password of at least 8 characters.", "error");
+      }
+
+      placing = true;
+      buttons.forEach((b) => { b.disabled = true; b.textContent = "Placing order…"; });
+      try {
+        if (wantsProfile) {
+          await signUpProfile({ name, email, phone, password });
+          signedIn = true;
+        }
+        const marketing = (document.querySelector('.checkout-form input[type="checkbox"]') as HTMLInputElement | null)?.checked ?? false;
+        const result = await placeOrder({
+          customer: { full_name: name, email, phone, delivery_area: area, marketing_opt_in: marketing },
+          items,
+          notes,
+        });
+        (window as any).LashtribeCart?.setCart?.({});
+        if (!signedIn) saveGuest();
+        showDone(result, wantsProfile);
+      } catch (err: any) {
+        say(err?.message || "We couldn't place your order. Please try again.", "error");
+        buttons.forEach((b) => { b.disabled = false; b.textContent = "Place order"; });
+        placing = false;
+      }
+    }
+
+    function showDone(result: any, createdProfile: boolean) {
+      const panel = document.querySelector(".checkout-panel");
+      if (!panel) return;
+      panel.innerHTML = "";
+      const wrap = document.createElement("div");
+      wrap.className = "checkout-done";
+      const h = document.createElement("h1");
+      h.textContent = "Order placed";
+      const p1 = document.createElement("p");
+      p1.textContent = `Thank you! Your order number is ${result.order_no} (${formatKsh(result.total)}).`;
+      const p2 = document.createElement("p");
+      p2.textContent = "We'll contact you shortly to confirm payment and your exact shipping dates and fee.";
+      wrap.append(h, p1, p2);
+      if (signedIn) {
+        const p3 = document.createElement("p");
+        p3.textContent = createdProfile ? "Your profile is ready too. " : "";
+        const a = document.createElement("a");
+        a.href = "/profile#orders";
+        a.textContent = "View this order in your profile →";
+        p3.append(a);
+        wrap.append(p3);
+      }
+      const back = document.createElement("a");
+      back.href = "/shop";
+      back.className = "pay-now-btn";
+      back.style.display = "inline-block";
+      back.style.textAlign = "center";
+      back.style.textDecoration = "none";
+      back.textContent = "Continue shopping";
+      wrap.append(back);
+      panel.append(wrap);
+      document.querySelectorAll(".mobile-pay-now, .order-summary .pay-now-btn").forEach((b) => ((b as HTMLElement).style.display = "none"));
+      window.scrollTo(0, 0);
+    }
+
+    buttons.forEach((b) => b.addEventListener("click", submitOrder));
+    startAuthBridge();
+    window.addEventListener("lashtribe:auth-changed", () => { syncSignedIn(); });
+    syncSignedIn().then(() => { if (!signedIn) loadGuest(); });
+  </script>
 </Layout>

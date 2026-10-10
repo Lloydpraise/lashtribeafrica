@@ -1,0 +1,21 @@
+---
+import Layout from "../layouts/ecommerce/Layout.astro";
+import SiteHeader from "../components/ecommerce/SiteHeader.astro";
+import SiteFooter from "../components/ecommerce/SiteFooter.astro";
+import CartDrawer from "../components/ecommerce/CartDrawer.astro";
+import ProfileApp from "../components/profile/ProfileApp.jsx";
+---
+
+<Layout title="My Profile | Lashtribe Africa">
+  <SiteHeader />
+  <main>
+    <ProfileApp client:only="react">
+      <div slot="fallback" class="pf-page"><p style="color:#918f8f;">Loading your profile…</p></div>
+    </ProfileApp>
+  </main>
+  <SiteFooter />
+  <CartDrawer />
+  <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/cart-render.js" is:inline></script>
+  <script src="/scripts/main.js" is:inline></script>
+</Layout>

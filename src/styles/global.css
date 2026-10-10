@@ -569,3 +569,12 @@
     .card-note{font-size:10px;line-height:1.45;}
     .hero-photo-tag{font-size:8.5px;right:12px;bottom:12px;padding:6px 10px;}
   }
+
+  /* checkout: order status line + confirmation */
+  .checkout-status{min-height:20px;margin:10px 0 0;font-size:13px;line-height:1.5;color:#666;}
+  .checkout-status.error{color:#b23a3a;}
+  .checkout-status.ok{color:var(--green);}
+  .checkout-done{padding:24px 0;}
+  .checkout-done h1{font-family:var(--serif);font-size:32px;margin:0 0 14px;}
+  .checkout-done p{font-size:15px;line-height:1.6;margin:0 0 12px;}
+  .checkout-done a{color:var(--rose-deep);}

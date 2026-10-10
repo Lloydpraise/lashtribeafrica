@@ -11,8 +11,13 @@ import SiteSettings from "./sections/SiteSettings.jsx";
 import Kits from "./sections/Kits.jsx";
 import Offers from "./sections/Offers.jsx";
 import Policies from "./sections/Policies.jsx";
+import AdminLogin from "./AdminLogin.jsx";
+import { supabase } from "../services/service.js";
 import "./admin.css";
 import "./admin-mobile.css";
+import "./admin-customers.css";
+
+const HAS_DB = Boolean(import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
 
 const SECTIONS = {
   dashboard: { title: "Dashboard", subtitle: "Ecommerce + Academy overview", Component: Dashboard },
@@ -57,7 +62,7 @@ function sectionFromHash() {
   return SECTIONS[key] ? key : "dashboard";
 }
 
-export default function AdminApp() {
+function AdminShell({ onLogout }) {
   const [active, setActive] = useState("dashboard");
   const contentRef = useRef(null);
 
@@ -103,7 +108,7 @@ export default function AdminApp() {
       <div className="admin-shell">
         <Sidebar active={active} onNavigate={navigate} />
         <div className="admin-main">
-          <Topbar title={title} subtitle={subtitle} action={action} />
+          <Topbar title={title} subtitle={subtitle} action={action} onLogout={onLogout} />
           <div className="admin-content" ref={contentRef}>
             <Component />
           </div>
@@ -112,6 +117,43 @@ export default function AdminApp() {
       <MobileTabs active={active} onNavigate={navigate} />
     </div>
   );
+}
+
+// Gate: the whole admin needs a Supabase sign-in by an account listed in academy_admins.
+// (If the site has no database configured, the admin opens as before.)
+export default function AdminApp() {
+  const [auth, setAuth] = useState(HAS_DB ? "checking" : "in");
+
+  async function check() {
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (!data?.session) return setAuth("out");
+      const { data: isAdmin } = await supabase.rpc("is_academy_admin");
+      setAuth(isAdmin === true ? "in" : "out");
+    } catch {
+      setAuth("out");
+    }
+  }
+
+  useEffect(() => {
+    if (!HAS_DB) return undefined;
+    check();
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") setAuth("out");
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  async function logout() {
+    await supabase.auth.signOut();
+    setAuth("out");
+  }
+
+  if (auth === "checking") {
+    return <div className="admin-root admin-login-root"><p className="form-hint">Checking your session…</p></div>;
+  }
+  if (auth === "out") return <AdminLogin onSignedIn={() => setAuth("in")} />;
+  return <AdminShell onLogout={HAS_DB ? logout : undefined} />;
 }
 
 export { NAV_ITEMS };

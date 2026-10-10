@@ -1,0 +1,180 @@
+/* Admin sign-in, Customers and Orders screens. Reuses the admin tokens from admin.css. */
+
+/* ---------- sign in ---------- */
+.admin-login-root {
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+.admin-login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--warm-white);
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--radius);
+  padding: 30px 28px 26px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.08);
+}
+.admin-login-tag {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #918f8f;
+  margin: 4px 0 20px;
+}
+
+/* ---------- toolbar ---------- */
+.cx-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.cx-toolbar input[type="search"],
+.cx-toolbar select {
+  padding: 10px 12px;
+  border: 1px solid var(--grey);
+  border-radius: var(--radius-sm);
+  font: 400 13.5px var(--sans);
+  background: #fff;
+  color: var(--charcoal);
+}
+.cx-toolbar input[type="search"] {
+  flex: 1;
+  min-width: 200px;
+}
+.cx-count {
+  font-size: 12.5px;
+  color: #918f8f;
+  margin-left: auto;
+}
+.cx-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.cx-chip {
+  border: 1px solid var(--grey);
+  background: #fff;
+  border-radius: 100px;
+  padding: 6px 14px;
+  font: 600 12px var(--sans);
+  cursor: pointer;
+  color: #6b6b6b;
+}
+.cx-chip.active {
+  background: var(--black);
+  border-color: var(--black);
+  color: #fff;
+}
+
+/* ---------- table bits ---------- */
+.cx-name {
+  font-weight: 600;
+}
+.cx-sub {
+  font-size: 12px;
+  color: #918f8f;
+  margin-top: 2px;
+}
+.cx-tags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.cx-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.06);
+  color: #666;
+  white-space: nowrap;
+}
+.cx-tag.shopper { background: var(--blush); color: var(--rose-deep); }
+.cx-tag.student { background: rgba(63, 122, 84, 0.14); color: var(--green); }
+.cx-tag.repeat { background: #111; color: #fff; }
+.cx-tag.warn { background: rgba(178, 58, 58, 0.12); color: #b23a3a; }
+.cx-money { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cx-row { cursor: pointer; }
+.cx-row:hover td { background: #fcf9f8; }
+
+/* ---------- order status ---------- */
+.cx-status {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.06);
+  color: #666;
+  white-space: nowrap;
+}
+.cx-status.pending { background: rgba(201, 138, 150, 0.2); color: var(--rose-deep); }
+.cx-status.paid, .cx-status.fulfilled { background: rgba(63, 122, 84, 0.15); color: var(--green); }
+.cx-status.cancelled, .cx-status.refunded { background: rgba(178, 58, 58, 0.12); color: #b23a3a; }
+
+/* ---------- detail modal ---------- */
+.cx-modal { max-width: 880px; }
+.cx-modal .admin-modal-body { max-height: 74vh; }
+.cx-head-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.cx-head-actions a { text-decoration: none; display: inline-block; }
+.cx-mini-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.cx-mini {
+  background: var(--blush);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.cx-mini span {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7a6a6e;
+  margin-bottom: 4px;
+}
+.cx-mini b { font-family: var(--serif); font-size: 18px; font-weight: 600; }
+.cx-section { margin-bottom: 22px; }
+.cx-section h3 { margin: 0 0 10px; }
+.cx-section .admin-table { min-width: 0; }
+.cx-empty { font-size: 13px; color: #918f8f; margin: 0; }
+
+.cx-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 120px;
+  padding-top: 6px;
+}
+.cx-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.cx-bar { width: 100%; max-width: 38px; background: var(--rose); border-radius: 4px 4px 0 0; min-height: 2px; }
+.cx-bar.zero { background: var(--grey); }
+.cx-bar-label { font-size: 10px; color: #918f8f; margin-top: 5px; white-space: nowrap; }
+.cx-bar-val { font-size: 10px; color: #555; margin-bottom: 3px; white-space: nowrap; }
+
+.cx-progress { width: 120px; height: 6px; background: var(--grey); border-radius: 6px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px; }
+.cx-progress i { display: block; height: 100%; background: var(--rose-deep); }
+.cx-progress.done i { background: var(--green); }
+
+.cx-order-items { font-size: 12.5px; color: #666; }
+.cx-notes-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.cx-pay-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.cx-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.cx-warn-note { font-size: 12.5px; color: #b23a3a; margin: 0 0 10px; }
+
+@media (max-width: 640px) {
+  .cx-pay-row { grid-template-columns: 1fr; }
+  .cx-count { margin-left: 0; width: 100%; }
+  .cx-progress { width: 90px; }
+}
