@@ -27,8 +27,12 @@ Phone breakpoint is 880px (admin shell 860px, modals/tables 640px, course editor
 - Flip cards use absolutely positioned faces, so they get a taller height on phones rather than auto height.
 - lashtribe-academy-astro/ (older copy inside the repo) untouched.
 
-# Customers, profile, certificates, orders
-
-New: `supabase/migrations/0011_customers_orders.sql` (run after 0010; see migrations/README.md for the
-one-time Supabase setup), `/profile`, `/verify`, admin sign-in, admin Customers + Orders.
-Public `public/certificate-template.pdf` is optional (your own certificate template).
+## Follow-up (Oct 9) — verified in a real browser at 360/390/430px
+- mobile-ecommerce.css:
+  - product page was ~495px wide (swipe rows stretched the grid) -> fixed
+  - section.shop padding shorthand wiped the .wrap side gutter, so cards/headings touched the screen edges -> side gutter kept
+  - hero content shrank to its widest child and sat flush left -> full width with gutter
+  - closed full-width cart drawer leaked a shadow down the right edge -> removed
+  - small spacing: chip bar -> first heading, bundle box -> "You may also like"
+- mobile-academy.css: same closed-drawer shadow fix for the academy cart
+- .github/workflows/astro.yml: Node 20 -> 22. Astro 7.2.8 requires Node >= 22.12 (package.json engines too), so the Pages build would fail on Node 20.

@@ -39,7 +39,9 @@
 
   /* ---------- Rhythm / spacing ---------- */
   .wrap { padding-left: var(--m-gutter); padding-right: var(--m-gutter); }
-  section.shop { padding: var(--m-section) 0; }
+  /* global.css sets `section.shop{padding:84px 0}`, which also wipes the .wrap
+     side gutter on phones (cards touched the screen edges). Keep the gutter. */
+  section.shop { padding: var(--m-section) var(--m-gutter); }
   .section-head {
     flex-direction: row;
     align-items: center;
@@ -105,7 +107,8 @@
     );
   }
   .hero-photo-tag { display: none; }
-  .hero-content { padding: 34px 0 32px; margin-left: 0; max-width: 100%; }
+  /* .hero is a flex row, so without width:100% the content shrinks to its widest child. */
+  .hero-content { width: 100%; padding: 34px var(--m-gutter) 32px; margin-left: 0; max-width: 100%; }
   .hero-eyebrow { font-size: 10px; margin-bottom: 4px; }
   .hero h1 { font-size: clamp(26px, 8.6vw, 38px); line-height: 1.1; }
   .hero-cycle-wrap { height: auto; min-height: 1.15em; margin-bottom: 18px; }
@@ -199,6 +202,7 @@
     white-space: nowrap;
     background: var(--warm-white);
   }
+  .shop-chips { margin-bottom: 14px; }
   .shop-chips a.active { background: var(--black); border-color: var(--black); color: var(--warm-white); }
   body:has(#searchResults:not([hidden])) .shop-chips { display: none; }
   .shop-page section.shop[id] { scroll-margin-top: calc(var(--header-h) + 56px); }
@@ -249,6 +253,8 @@
   .foot-bottom { flex-direction: column; gap: 6px; }
 
   /* ---------- Cart drawer ---------- */
+  /* Full-width drawer parks at translateX(100%); its shadow would bleed onto the page edge. */
+  .drawer:not(.open) { box-shadow: none; }
   .drawer {
     width: 100%;
     max-width: 100%;
@@ -313,6 +319,14 @@
   /* ---------- Product page ---------- */
   /* Reorder: photo -> thumbs -> title/price/buy -> bundle -> video. */
   .product-gallery { display: contents; }
+  /* display:contents drops the gallery's own min-width:0, so each promoted
+     child must be allowed to shrink or the swipe rows widen the whole page. */
+  .product-shell { grid-template-columns: minmax(0, 1fr); }
+  .product-visual,
+  .product-thumb-strip,
+  .product-panel,
+  .bundle-strip,
+  .product-video-block { min-width: 0; max-width: 100%; }
   .product-visual { order: 1; aspect-ratio: 1 / 1; min-height: 0; border-radius: 16px; }
   .product-visual img { object-fit: contain; }
   .product-thumb-strip {
@@ -344,6 +358,7 @@
   }
 
   /* Related products: one swipeable row instead of a 2+1 grid. */
+  .related-products { padding-top: 24px; }
   .related-grid {
     display: flex;
     overflow-x: auto;

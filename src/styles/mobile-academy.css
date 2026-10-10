@@ -43,6 +43,9 @@
   body .lx-toast { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
   body .lx-drawer { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
+  /* Closed drawer's shadow bleeds onto the page edge once it is full-width. */
+  body .academy-cart-drawer:not(.open) { box-shadow: none; border-left-color: transparent; }
+
   /* Course purchase modal -> bottom sheet that can scroll. */
   body .checkout-modal {
     top: auto;
