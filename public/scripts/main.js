@@ -104,9 +104,10 @@
   function closeDrawer(){
     if (drawer) drawer.classList.remove('open');
     if (overlay) overlay.classList.remove('open');
+    document.body.classList.remove('cart-open');
   }
   if (cartOpen && drawer && overlay) {
-    cartOpen.addEventListener('click', () => { drawer.classList.add('open'); overlay.classList.add('open'); });
+    cartOpen.addEventListener('click', () => { drawer.classList.add('open'); overlay.classList.add('open'); document.body.classList.add('cart-open'); });
   }
   if (drawerClose) {
     drawerClose.addEventListener('click', closeDrawer);

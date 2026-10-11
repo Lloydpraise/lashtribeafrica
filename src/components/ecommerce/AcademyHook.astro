@@ -1,28 +1,201 @@
 ---
+// Academy intro card on the shop home page. Styled like the academy dashboard hero (dark
+// gradient, course image on the right). The image is the cover of the first published course
+// that has one, read live from the database in the browser; with no database or no cover the
+// card simply shows the gradient.
 ---
 
-<section class="wing-break" id="academy">
-  <div class="wing-bg" aria-hidden="true"></div>
-  <div class="wing-overlay" aria-hidden="true"></div>
-  <div class="wrap reveal">
-    <div class="wing-icon">
-      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M50 90 C 30 70, 10 55, 12 20 C 30 30, 42 45, 50 60 C 58 45, 70 30, 88 20 C 90 55, 70 70, 50 90 Z"
-          stroke-width="1.3"></path>
-        <path d="M50 60 L50 88" stroke-width="1"></path>
-      </svg>
-    </div>
-    <div class="wing-copy">
-      <div class="eyebrow">One Wing Of Lashtribe</div>
-      <h2>The shop is one wing.<br />The <span class="script">training</span> wing is next.</h2>
-      <p>
-        Lashtribe Africa isn't just a place to restock — it's the beginning
-        of a home for lashtechs across the continent. This shop is where it
-        starts. Education is the wing we're building next, so the whole
-        brand can fly.
-      </p>
-      <a href="/academy" class="wing-link">Go to Lashtribe Academy →</a>
+<section class="academy-hook" id="academy">
+  <div class="wrap">
+    <div class="ah-hero reveal">
+      <div class="ah-bg" aria-hidden="true"></div>
+      <img class="ah-image" id="academyHookImage" alt="" hidden />
+      <div class="ah-overlay" aria-hidden="true"></div>
+      <div class="ah-content">
+        <h2>Lashtribe <span class="script">Academy</span></h2>
+        <p>
+          Learn from top tutors the tricks and turns of profitable lash artistry. Build your skill
+          into a profitable business.
+        </p>
+        <a href="/academy" class="ah-btn">
+          <span class="ah-btn-circle" aria-hidden="true">→</span>
+          Go To Academy
+        </a>
+      </div>
     </div>
   </div>
 </section>
+
+<style>
+  .academy-hook {
+    padding: 0 0 84px;
+  }
+
+  .ah-hero {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    min-height: 340px;
+    overflow: hidden;
+    border-radius: 14px;
+  }
+
+  .ah-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, #241d1d 0%, #4a3336 45%, #caa3a8 100%);
+  }
+
+  .ah-image {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 58%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    opacity: 0.82;
+    mix-blend-mode: soft-light;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.35) 24%, #000 58%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.35) 24%, #000 58%);
+  }
+
+  .ah-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.72) 10%, rgba(0, 0, 0, 0.15) 70%);
+  }
+
+  .ah-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding: 34px 36px;
+    color: var(--warm-white);
+  }
+
+  .ah-content h2 {
+    margin: 0 0 8px;
+    font-size: clamp(26px, 3.4vw, 38px);
+    line-height: 1.1;
+    color: var(--warm-white);
+  }
+
+  .ah-content h2 .script {
+    font-size: 1.1em;
+  }
+
+  .ah-content p {
+    max-width: 460px;
+    margin: 0 0 22px;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: #f1e6e6;
+  }
+
+  .ah-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 22px 12px 12px;
+    border-radius: 32px;
+    background: var(--warm-white);
+    color: var(--black);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: transform 0.2s ease;
+  }
+
+  .ah-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .ah-btn-circle {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--black);
+    color: var(--warm-white);
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  @media (max-width: 880px) {
+    .academy-hook {
+      padding-bottom: 40px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .ah-hero {
+      min-height: 280px;
+    }
+
+    .ah-image {
+      width: 68%;
+      opacity: 0.68;
+    }
+
+    .ah-content {
+      padding: 22px 18px;
+    }
+
+    .ah-content h2 {
+      font-size: 24px;
+      line-height: 1.15;
+    }
+
+    .ah-content p {
+      max-width: none;
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    .ah-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (hover: none) {
+    .ah-btn:hover {
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  import { supabase } from "../../services/service.js";
+
+  const image = document.getElementById("academyHookImage");
+  const hasDatabase = Boolean(
+    import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  );
+
+  async function loadPreview() {
+    if (!(image instanceof HTMLImageElement) || !hasDatabase) return;
+    try {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("title, cover_url")
+        .eq("status", "published")
+        .not("cover_url", "is", null)
+        .neq("cover_url", "")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const course = !error && data ? data[0] : null;
+      if (!course?.cover_url) return;
+      image.addEventListener("load", () => (image.hidden = false), { once: true });
+      image.alt = course.title || "";
+      image.src = course.cover_url;
+    } catch {
+      /* no preview: the gradient stays */
+    }
+  }
+
+  void loadPreview();
+</script>

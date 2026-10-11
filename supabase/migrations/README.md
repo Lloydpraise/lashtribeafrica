@@ -98,3 +98,7 @@ generated at build time (not server-rendered), any product change you
 make in the admin panel needs a rebuild + redeploy to show up on the live
 site. `npm run dev` picks up changes on the next save/refresh; a deployed
 site needs its normal deploy step re-run.
+
+12. `0012_public_stats.sql` — optional. A read-only function that returns the number of published
+   courses and distinct enrolled students, used by the academy footer. Without it the footer shows
+   only the course count.

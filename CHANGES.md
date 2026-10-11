@@ -36,3 +36,15 @@ Phone breakpoint is 880px (admin shell 860px, modals/tables 640px, course editor
   - small spacing: chip bar -> first heading, bundle box -> "You may also like"
 - mobile-academy.css: same closed-drawer shadow fix for the academy cart
 - .github/workflows/astro.yml: Node 20 -> 22. Astro 7.2.8 requires Node >= 22.12 (package.json engines too), so the Pages build would fail on Node 20.
+
+## Oct 11 — cart, academy fit, footer, hook card
+- Cart counter (shop + academy) = number of different products, not units (4 products at MOQ 5 shows 4). Ids no longer in the catalog are ignored. Checkout "N items" is now "N products".
+- Academy cart was a hardcoded 2-product demo (Volume Fans / Adhesive, fixed prices). It now uses the same live cart as the shop: real names, photos, MOQs, prices and totals. "Products used in this course" strip also reads the live catalog and adds at the product's MOQ.
+- Other hardcodes removed: footer stats (2,400+ / 38 / 4.9★) now come from the database and are hidden when there is no real number (optional supabase/migrations/0012_public_stats.sql adds "students taught"); academy header no longer ships a fake "Amina"; checkout placeholder totals (Ksh 13,750 / 7,250) are Ksh 0 until the cart loads; product cards no longer fall back to a fake product link or a fake "MOQ 5".
+- Academy fit: header (logo + cart + profile + menu) was wider than a phone, which made the browser zoom the page out. Smaller logo, tighter gaps, nothing fixed-width. Menu button sits on the far right next to the profile.
+- Both cart drawers fit 320-430px, lock page scroll while open, and use dvh/safe-area.
+- Footer: "Ecommerce" link (/ecommerce) added. The footer is one shared component, so the academy has it too.
+- Ecommerce Academy card: "Lashtribe Academy" + your copy + Go To Academy button, styled like the academy hero with the first published course cover on the right (read live; plain gradient if none).
+- "Rewards" removed from the top nav (still in the footer Community column — say if you want it gone there too).
+- Very narrow phones (320px): header row and the certificate verify input no longer overflow.
+Checked in a browser against a mock database: 11 pages x 320/360/390/430px, zero horizontal overflow.

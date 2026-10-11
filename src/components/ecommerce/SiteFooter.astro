@@ -6,18 +6,14 @@ const { showAcademyStats = false } = Astro.props;
   <div class="wrap">
     {
       showAcademyStats && (
-        <div class="foot-badges" aria-label="Academy stats">
-          <div class="foot-badge">
-            <span class="foot-badge-num">2,400+</span>
+        <div class="foot-badges" id="academyStats" aria-label="Academy stats">
+          <div class="foot-badge" data-stat="students" hidden>
+            <span class="foot-badge-num" data-stat-value>0</span>
             <span class="foot-badge-label">Students taught</span>
           </div>
-          <div class="foot-badge">
-            <span class="foot-badge-num">38</span>
+          <div class="foot-badge" data-stat="courses" hidden>
+            <span class="foot-badge-num" data-stat-value>0</span>
             <span class="foot-badge-label">Courses</span>
-          </div>
-          <div class="foot-badge">
-            <span class="foot-badge-num">4.9★</span>
-            <span class="foot-badge-label">Average rating</span>
           </div>
         </div>
       )
@@ -32,6 +28,7 @@ const { showAcademyStats = false } = Astro.props;
       </div>
       <div class="foot-col">
         <h5>Shop</h5>
+        <a href="/ecommerce">Ecommerce</a>
         <a href="/shop">All Products</a>
         <a href="/ecommerce#new-in">New In</a>
         <a href="/ecommerce#how-it-works">How Preorders Work</a>
@@ -56,3 +53,59 @@ const { showAcademyStats = false } = Astro.props;
     </div>
   </div>
 </footer>
+
+<style>
+  .foot-badge[hidden] {
+    display: none;
+  }
+</style>
+
+<script>
+  // Academy footer numbers come from the database. A number with no real source is simply not
+  // shown (nothing is invented). Students need the optional 0012_public_stats.sql function:
+  // without it only the course count appears.
+  import { supabase } from "../../services/service.js";
+
+  const wrap = document.getElementById("academyStats");
+  const hasDatabase = Boolean(
+    import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  );
+
+  function show(key: string, value: unknown) {
+    const badge = wrap?.querySelector<HTMLElement>(`[data-stat="${key}"]`);
+    const n = Number(value);
+    if (!badge || !Number.isFinite(n) || n <= 0) return;
+    const num = badge.querySelector("[data-stat-value]");
+    if (num) num.textContent = n.toLocaleString();
+    badge.hidden = false;
+  }
+
+  async function loadStats() {
+    let courses: number | null = null;
+    let students: number | null = null;
+    try {
+      const { data, error } = await supabase.rpc("academy_public_stats");
+      if (!error && data) {
+        courses = data.courses ?? null;
+        students = data.students ?? null;
+      }
+    } catch {
+      /* function not installed: fall back below */
+    }
+    if (courses == null) {
+      try {
+        const { count } = await supabase
+          .from("courses")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "published");
+        courses = count;
+      } catch {
+        /* leave hidden */
+      }
+    }
+    show("courses", courses);
+    show("students", students);
+  }
+
+  if (wrap && hasDatabase) void loadStats();
+</script>

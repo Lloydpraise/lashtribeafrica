@@ -9,6 +9,9 @@
     if (!cart || typeof cart !== 'object') return next;
 
     for (const [id, rawQty] of Object.entries(cart)) {
+      // Real product ids are never plain numbers. The old demo cart used "1" and "2"
+      // for two made-up products; they can't be priced, so they are dropped.
+      if (/^\d+$/.test(id)) continue;
       const qty = Math.round(Number(rawQty));
       if (Number.isFinite(qty) && qty > 0) next[id] = qty;
     }
@@ -39,8 +42,25 @@
     return nextCart;
   }
 
+  // Pages that price the cart embed the product catalog; use it to ignore ids
+  // that no longer exist (deleted products) so the badge matches what is listed.
+  function knownProducts() {
+    const node = document.getElementById('lashtribe-catalog');
+    if (!node) return null;
+    try {
+      const catalog = JSON.parse(node.textContent || '{}');
+      return catalog && catalog.products ? catalog.products : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // The badge shows how many different products are in the cart, not how many
+  // units: 4 products at MOQ 5 is "4", never "20".
   function getCartCount() {
-    return Object.values(getCart()).reduce((sum, value) => sum + Number(value || 0), 0);
+    const ids = Object.keys(getCart());
+    const known = knownProducts();
+    return known ? ids.filter((id) => known[id]).length : ids.length;
   }
 
   function syncCartBadges() {

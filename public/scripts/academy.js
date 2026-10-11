@@ -90,6 +90,27 @@
     });
   }
 
+  // ---------- Mobile menu ----------
+  const appMenuBtn = document.getElementById('appMenuBtn');
+  const appNav = document.getElementById('appNav');
+  if (appMenuBtn && appNav) {
+    const setMenu = (open) => {
+      appNav.classList.toggle('open', open);
+      appMenuBtn.setAttribute('aria-expanded', String(open));
+    };
+    appMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (accountMenu) accountMenu.classList.remove('open');
+      setMenu(!appNav.classList.contains('open'));
+    });
+    document.addEventListener('click', (e) => {
+      if (!appNav.contains(e.target) && !appMenuBtn.contains(e.target)) setMenu(false);
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+    appNav.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
+    if (accountBtn) accountBtn.addEventListener('click', () => setMenu(false));
+  }
+
   // ---------- View switching ----------
   function showDashboard(){
     const viewDashboard = document.getElementById('viewDashboard');
@@ -292,7 +313,9 @@
   }
   observeReveals();
 
-  // ---------- Shared cart badge ----------
+  // ---------- Shared cart ----------
+  // Same cart as the shop. The badge counts different products (not units); the drawer
+  // lines/prices come from the live catalog via /scripts/cart-render.js.
   const cartMiniBadge = document.getElementById('cartMiniBadge');
   function syncSharedCartBadge(){
     if (!window.LashtribeCart) return;
@@ -304,24 +327,16 @@
     }
   }
 
-  function addToSharedCart(name, price){
-    const cart = window.LashtribeCart ? window.LashtribeCart.getCart() : JSON.parse(localStorage.getItem('lashtribe_cart') || '{"1":5,"2":5}');
-    const key = /fans/i.test(name) ? 1 : /adhesive/i.test(name) ? 2 : null;
-
-    if (!key) {
+  function addToSharedCart(id, name, moq){
+    if (!window.LashtribeCart || !id) {
       showToast('This item is ready for checkout in the shop.');
       return;
     }
-
-    cart[key] = (Number(cart[key]) || 0) + 1;
-
-    if (window.LashtribeCart) {
-      window.LashtribeCart.setCart(cart);
-      window.LashtribeCart.syncCartBadges();
-    } else {
-      localStorage.setItem('lashtribe_cart', JSON.stringify(cart));
-    }
-
+    const cart = window.LashtribeCart.getCart();
+    // first add starts at the product's minimum order quantity, later adds go up by one
+    cart[id] = cart[id] ? Number(cart[id]) + 1 : Math.max(1, Number(moq) || 1);
+    window.LashtribeCart.setCart(cart);
+    window.LashtribeCart.syncCartBadges();
     syncSharedCartBadge();
     refreshAcademyCart();
     openAcademyCart();
@@ -337,7 +352,7 @@
       if (btn.classList.contains('added')) return;
       btn.classList.add('added');
       btn.textContent = '✓';
-      addToSharedCart(btn.dataset.name, btn.dataset.price);
+      addToSharedCart(btn.dataset.id, btn.dataset.name, btn.dataset.moq);
     });
   });
   const academyCartDrawer = document.getElementById('academyCartDrawer');
@@ -348,65 +363,21 @@
   function openAcademyCart(){
     if (academyCartDrawer) academyCartDrawer.classList.add('open');
     if (academyCartOverlay) academyCartOverlay.classList.add('open');
-    if (window.LashtribeCart) {
-      window.LashtribeCart.syncCartBadges();
-    }
+    document.body.classList.add('cart-open');
     refreshAcademyCart();
   }
 
   function closeAcademyCart(){
     if (academyCartDrawer) academyCartDrawer.classList.remove('open');
     if (academyCartOverlay) academyCartOverlay.classList.remove('open');
+    document.body.classList.remove('cart-open');
   }
 
   function refreshAcademyCart(){
-    const cart = window.LashtribeCart ? window.LashtribeCart.getCart() : JSON.parse(localStorage.getItem('lashtribe_cart') || '{"1":5,"2":5}');
-    const unitPrices = { 1: 1150, 2: 1600 };
-    const marketPrices = { 1: 1800, 2: 2400 };
-    let subtotal = 0;
-    let marketTotal = 0;
-
-    for (const line of [1, 2]) {
-      const qty = Math.max(5, Number(cart[line] || 5));
-      const lineTotal = unitPrices[line] * qty;
-      const marketValue = marketPrices[line] * qty;
-      subtotal += lineTotal;
-      marketTotal += marketValue;
-
-      const qtyNode = document.getElementById('academyQty' + line);
-      const priceNode = document.getElementById('academyLineTotal' + line);
-      if (qtyNode) qtyNode.textContent = String(qty);
-      if (priceNode) priceNode.textContent = 'Ksh ' + lineTotal.toLocaleString();
-    }
-
-    const marketTotalNode = document.getElementById('academyMarketTotal');
-    const savedTotalNode = document.getElementById('academySavedTotal');
-    const yourTotalNode = document.getElementById('academyYourTotal');
-    if (marketTotalNode) marketTotalNode.textContent = 'Ksh ' + marketTotal.toLocaleString();
-    if (savedTotalNode) savedTotalNode.textContent = 'Ksh ' + (marketTotal - subtotal).toLocaleString();
-    if (yourTotalNode) yourTotalNode.textContent = 'Ksh ' + subtotal.toLocaleString();
+    if (window.LashtribeCart) window.LashtribeCart.syncCartBadges();
+    if (window.LashtribeCartUI) window.LashtribeCartUI.renderDrawer();
     syncSharedCartBadge();
   }
-
-  document.querySelectorAll('.academy-qty-btn').forEach((button) => {
-    button.addEventListener('click', () => {
-      const cart = window.LashtribeCart ? window.LashtribeCart.getCart() : JSON.parse(localStorage.getItem('lashtribe_cart') || '{"1":5,"2":5}');
-      const line = Number(button.dataset.line || 0);
-      const direction = Number(button.dataset.dir || 0);
-      if (!line) return;
-
-      cart[line] = Math.max(5, Number(cart[line] || 5) + direction);
-
-      if (window.LashtribeCart) {
-        window.LashtribeCart.setCart(cart);
-        window.LashtribeCart.syncCartBadges();
-      } else {
-        localStorage.setItem('lashtribe_cart', JSON.stringify(cart));
-      }
-
-      refreshAcademyCart();
-    });
-  });
 
   const cartMiniBtn = document.getElementById('cartMiniBtn');
   if (cartMiniBtn) {

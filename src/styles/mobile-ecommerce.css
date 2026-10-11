@@ -13,6 +13,8 @@
 /* Mobile-only elements are hidden by default (desktop). */
 .shop-chips { display: none; }
 
+body.cart-open { overflow: hidden; }
+
 @media (max-width: 880px) {
   :root {
     --m-gutter: 16px;
@@ -59,6 +61,10 @@
 
   /* ---------- Header / menu / search ---------- */
   .nav-row { min-height: var(--header-h); }
+  /* `#siteHeader.scrolled .nav-row{padding:8px 0}` in global.css also zeroed the side
+     gutter once you scrolled, so the logo and buttons jumped to the screen edge. */
+  #siteHeader .nav-row,
+  #siteHeader.scrolled .nav-row { padding-left: var(--m-gutter); padding-right: var(--m-gutter); }
   .logo { font-size: 17px; white-space: nowrap; }
   .logo em { font-size: 19px; }
   .icon-btn,
@@ -213,12 +219,6 @@
   .kit-copy p { font-size: 13px; max-width: none; margin: 0 0 12px; }
   .kit-copy .btn-primary { width: 100%; text-align: center; }
 
-  .wing-break { padding: 48px 0; }
-  .wing-break .wrap { gap: 18px; }
-  .wing-icon { width: 54px; }
-  .wing-copy h2 { font-size: 23px; }
-  .wing-copy p { font-size: 13px; margin-left: auto; margin-right: auto; }
-
   .two-up > div { padding: 32px 20px; }
   .two-up h3 { font-size: 20px; }
   .two-up p { max-width: none; font-size: 13px; }
@@ -232,13 +232,13 @@
   /* ---------- Footer ---------- */
   footer { padding: 36px 0 22px; }
   .foot-badges {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
+    justify-content: center;
     gap: 8px;
     margin-bottom: 28px;
     padding: 0;
   }
-  .foot-badge { min-width: 0; padding: 10px 6px; border-radius: 14px; }
+  .foot-badge { flex: 1 1 0; min-width: 0; max-width: 150px; padding: 10px 6px; border-radius: 14px; }
   .foot-badge-num { font-size: 16px; }
   .foot-badge-label { font-size: 8.5px; letter-spacing: 0.06em; }
   .foot-top {
@@ -271,7 +271,9 @@
     font-size: 20px;
     margin-right: -10px;
   }
-  .drawer-body { padding: 14px 16px; }
+  .drawer-body { padding: 14px 16px; overscroll-behavior: contain; }
+  .line-info { min-width: 0; }
+  .line-info h5 { overflow-wrap: anywhere; }
   .line-item { gap: 12px; padding: 14px 0; }
   .line-thumb { width: 56px; height: 56px; }
   .stepper button { width: 34px; height: 34px; font-size: 16px; }
@@ -368,6 +370,10 @@
   }
   .related-card { flex: 0 0 62%; min-width: 0; scroll-snap-align: start; }
 
+  /* ---------- Certificate verify page ---------- */
+  .vf-form input { min-width: 0; font-size: 16px; }
+  .vf-form button { min-height: 46px; flex: none; }
+
   /* ---------- Policy pages ---------- */
   .policy-page { padding: 32px 0 56px; }
   .policy-body p { font-size: 13.5px; line-height: 1.75; }
@@ -382,4 +388,14 @@
   .logo em { font-size: 18px; }
   .foot-badges { gap: 6px; }
   .kit-strip { padding: 20px 14px; }
+}
+
+/* Very narrow phones (320px): logo + search + profile + cart + menu need to share one row. */
+@media (max-width: 360px) {
+  .logo { font-size: 13px; }
+  .logo em { font-size: 15px; }
+  .header-actions { gap: 4px; }
+  .icon-btn,
+  .cart-btn,
+  .burger { width: 34px; height: 34px; }
 }

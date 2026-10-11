@@ -169,7 +169,7 @@
         .join('');
     }
 
-    const { subtotal, saved, itemCount } = totalsFromLines(lines);
+    const { subtotal, saved } = totalsFromLines(lines);
     const shipping = shippingState(catalog, subtotal);
     const total = subtotal; // shipping fee (when due) is confirmed separately, not added here
 
@@ -178,7 +178,8 @@
       if (node) node.textContent = text;
     };
 
-    setText('summaryCount', String(itemCount));
+    setText('summaryCount', String(lines.length));
+    setText('summaryCountLabel', lines.length === 1 ? 'product' : 'products');
     setText('checkoutSubtotal', money(subtotal));
     setText('checkoutSaved', money(saved));
     setText('checkoutShipping', shipping.label);
@@ -208,4 +209,7 @@
     renderDrawer();
     renderCheckoutSummary();
   });
+
+  // Lets other pages (the academy) redraw the same drawer on demand.
+  window.LashtribeCartUI = { renderDrawer, renderCheckoutSummary };
 })();

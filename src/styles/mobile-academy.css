@@ -7,6 +7,15 @@
    learn.css (loaded by the lesson page) lands later in the cascade.
    ===================================================================== */
 
+/* Phone-only header pieces are hidden on desktop. */
+.app-menu-btn,
+.app-nav { display: none; }
+
+.ps-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+
+/* Cart open: the page behind it must not scroll. */
+body.cart-open { overflow: hidden; }
+
 /* Locked-course hint is hover-only; on touch it can never be seen. */
 @media (hover: none), (max-width: 880px) {
   body .module-card.locked .lock-tip {
@@ -110,4 +119,104 @@
 
   /* Mini player (normally off on phones) must never be wider than the screen. */
   body .lx-stage.is-mini { width: min(340px, calc(100vw - 24px)); inset: auto 12px 12px auto; }
+}
+
+/* ---------- Header: always fits, with a menu button next to the profile ---------- */
+@media (max-width: 880px) {
+  body .app-menu-btn {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--grey);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  body .app-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: absolute;
+    top: 100%;
+    left: 12px;
+    right: 12px;
+    margin-top: 8px;
+    padding: 12px;
+    background: #111;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
+    transform: translateY(-12px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.25s ease, opacity 0.25s ease, visibility 0.25s ease;
+    z-index: 45;
+  }
+  body .app-nav.open { transform: none; opacity: 1; visibility: visible; pointer-events: auto; }
+  body .app-nav a {
+    display: flex;
+    align-items: center;
+    min-height: 46px;
+    padding: 0 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--warm-white);
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  body .app-nav a.app-nav-shop { background: rgba(201, 138, 150, 0.18); color: #f8dfe5; }
+}
+
+@media (max-width: 640px) {
+  /* Logo + cart + profile + menu used to be wider than a phone, which made the browser
+     zoom the whole page out. Smaller logo, tighter gaps, nothing is fixed-width any more. */
+  body .app-header-row { gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+  body .app-header .logo {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+  }
+  body .app-header .logo em { font-size: 17px; }
+  body .header-actions { flex: none; gap: 8px; }
+  body .account-btn { gap: 6px; padding: 3px 9px 3px 3px; }
+  body .cart-mini,
+  body .app-menu-btn { width: 38px; height: 38px; }
+}
+
+@media (max-width: 360px) {
+  body .app-header .logo { font-size: 13px; }
+  body .app-header .logo em { font-size: 15px; }
+  body .header-actions { gap: 6px; }
+  body .account-btn svg { display: none; }
+  body .account-btn { padding: 3px; }
+}
+
+/* ---------- Cart drawer: real lines must never push past the screen ---------- */
+@media (max-width: 880px) {
+  body .academy-cart-drawer { border-left: 0; }
+  body .academy-cart-body { grid-template-columns: minmax(0, 1fr); padding: 14px 16px; overscroll-behavior: contain; }
+  body .academy-cart-body .line-item { gap: 12px; padding: 14px 0; }
+  body .academy-cart-body .line-thumb { width: 56px; height: 56px; }
+  body .academy-cart-body .line-info { min-width: 0; }
+  body .academy-cart-body .line-info h5 { overflow-wrap: anywhere; }
+  body .academy-cart-head { padding: 14px 16px; padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
+  body .academy-cart-foot { padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
+  body .academy-cart-summary { padding: 14px 16px; }
+}
+
+/* ---------- Footer stats (academy): numbers sit side by side and may be 1 or 2 ---------- */
+@media (max-width: 880px) {
+  body .foot-badges { display: flex; justify-content: center; gap: 8px; margin-bottom: 28px; padding: 0; }
+  body .foot-badge { flex: 1 1 0; min-width: 0; max-width: 150px; padding: 10px 6px; border-radius: 14px; }
+  body .foot-badge-num { font-size: 16px; }
+  body .foot-badge-label { font-size: 9px; letter-spacing: 0.06em; }
 }

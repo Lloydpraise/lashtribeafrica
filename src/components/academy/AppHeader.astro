@@ -17,8 +17,8 @@
       </button>
       <div class="account-wrap">
         <button class="account-btn" id="accountBtn">
-          <span class="avatar" id="avatarInitial">A</span>
-          <span class="account-name" id="accountNameLabel">Amina</span>
+          <span class="avatar" id="avatarInitial"></span>
+          <span class="account-name" id="accountNameLabel"></span>
           <svg width="10" height="6" viewBox="0 0 10 6"
             ><path d="M1 1 L5 5 L9 1" stroke="black" stroke-width="1.4" fill="none"
             ></path></svg
@@ -32,6 +32,18 @@
           <a href="#" id="signOutBtn">Sign Out</a>
         </div>
       </div>
+      <button class="app-menu-btn" id="appMenuBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="appNav">
+        <svg width="20" height="14" viewBox="0 0 22 16" aria-hidden="true"
+          ><path d="M0 1h22M0 8h22M0 15h22" stroke="black" stroke-width="1.6"></path></svg
+        >
+      </button>
     </div>
   </div>
+  <nav class="app-nav" id="appNav" aria-label="Academy menu">
+    <a href="/academy">My Courses</a>
+    <a href="/profile#certificates">Certificates</a>
+    <a href="/profile">My Profile</a>
+    <a href="/shop">Shop</a>
+    <a href="/ecommerce" class="app-nav-shop">Ecommerce →</a>
+  </nav>
 </header>

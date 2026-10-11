@@ -1,39 +1,33 @@
 ---
-const products = [
-  {
-    icon: '<path d="M8 40 Q30 20 52 35" stroke="black" stroke-width="1.2" fill="none"/>',
-    name: "0.07 Volume Fans",
-    price: 1150,
-  },
-  {
-    icon: '<ellipse cx="30" cy="30" rx="18" ry="8" stroke="black" stroke-width="1.2" fill="none"/>',
-    name: "Pro Bond Adhesive",
-    price: 1600,
-  },
-  {
-    icon: '<path d="M15 15 L45 45 M45 15 L15 45" stroke="black" stroke-width="1.2"/>',
-    name: "Isolation Tweezers",
-    price: 780,
-  },
-];
+// "Products used in this course": the first few real shop products (live catalog), so names,
+// prices, photos and minimum order quantities always match the shop.
+import { getEcommerceProducts, formatKsh } from "../../data/ecommerce-products.js";
+
+const products = (await getEcommerceProducts()).slice(0, 3);
 ---
 
-<div class="product-strip">
-  <div class="eyebrow">Products Used In This Course</div>
-  <div class="product-strip-row">
-    {
-      products.map((p) => (
-        <div class="ps-card">
-          <div class="ps-thumb">
-            <svg viewBox="0 0 60 60" set:html={p.icon} />
+{
+  products.length > 0 && (
+    <div class="product-strip">
+      <div class="eyebrow">Products Used In This Course</div>
+      <div class="product-strip-row">
+        {products.map((p) => (
+          <div class="ps-card">
+            <div class="ps-thumb">
+              {p.images?.[0]?.url ? (
+                <img src={p.images[0].url} alt="" loading="lazy" />
+              ) : (
+                <svg viewBox="0 0 60 60" set:html={p.icon} />
+              )}
+            </div>
+            <div class="ps-info">
+              <h6>{p.name}</h6>
+              <span>{formatKsh(p.effectivePrice ?? p.nowPrice)}</span>
+            </div>
+            <button class="ps-add" data-id={p.id} data-name={p.name} data-moq={p.moq}>+</button>
           </div>
-          <div class="ps-info">
-            <h6>{p.name}</h6>
-            <span>Ksh {p.price.toLocaleString()}</span>
-          </div>
-          <button class="ps-add" data-name={p.name} data-price={p.price}>+</button>
-        </div>
-      ))
-    }
-  </div>
-</div>
+        ))}
+      </div>
+    </div>
+  )
+}
