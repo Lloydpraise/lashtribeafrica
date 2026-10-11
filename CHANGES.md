@@ -48,3 +48,14 @@ Phone breakpoint is 880px (admin shell 860px, modals/tables 640px, course editor
 - "Rewards" removed from the top nav (still in the footer Community column — say if you want it gone there too).
 - Very narrow phones (320px): header row and the certificate verify input no longer overflow.
 Checked in a browser against a mock database: 11 pages x 320/360/390/430px, zero horizontal overflow.
+
+## Oct 11 — preorder batches (run migration 0013 first)
+How it works: suppliers ship twice a month (15th and month-end). Each date is a batch. A new order joins the first
+open batch that is MORE than 7 days away (exactly 7 days is too late). The batch is saved on the order, so editing dates
+later never moves old orders. Course-only orders have no batch.
+- Site Settings: new **Shipping batches** card (generate 15th + month-end for 6 months, add/edit/delete any date, set status open / closed / ordered from supplier / shipped, change the 7-day cutoff) and a **Suppliers** card. The old single "ordering window" date is gone; the hero bar now reads the next batch.
+- Hero: "ships in N days", "Next shipment Sat, 31 Oct" and "Order today → ships <the batch a new order would get>". Built into the page at deploy, then refreshed in the browser, so it is current without a redeploy.
+- Checkout: shows "This order ships with the <date> batch" (decided by the database, same rule as order time) and repeats it on the "Order placed" screen.
+- Products: required **Supplier** dropdown with a quick "new supplier" box; stock fields are hidden (nothing is held in stock; existing values are kept). The product list shows the supplier, and a bar offers one-click "set this supplier on all products that have none".
+- Orders: new default tab **By shipping batch**: a card per batch with countdown, "taking orders until", orders / units / value / unpaid, a status switch, and the orders inside (click to open). **Supplier PDF** per batch: a page per supplier (SKU, product, total quantity), optional "only this supplier", optional dispatch list (customer, phone, area, items), paid orders only unless you tick "include awaiting payment". Order detail has "Ships with" to move an order to another batch. The All orders table has a Ships column.
+Tested: migration on a clean Postgres 16 with migrations 0001-0013 (cutoff rule, closed batches skipped, no open batch = unassigned, admin-only functions, re-run safe); production bundle compiles; PDF checked visually (multi-page, long names, dispatch list). Not tested: the admin screens in a browser against your real project.

@@ -102,3 +102,13 @@ site needs its normal deploy step re-run.
 12. `0012_public_stats.sql` — optional. A read-only function that returns the number of published
    courses and distinct enrolled students, used by the academy footer. Without it the footer shows
    only the course count.
+
+13. `0013_preorder_batches.sql` — **preorder batching**. Adds `suppliers`, `products.supplier_id`, `batches`
+   (one row per supplier shipment date), `orders.batch_id` and `site_settings.batch_cutoff_days` (default 7),
+   plus `next_open_batch()`, `generate_batches()`, `admin_move_order_batch()` and `batch_supplier_lines()`.
+   `place_order()` is replaced so every order with products joins the first OPEN batch that is MORE than the
+   cutoff (7 days) away; the result also returns `batch_id` and `ship_date` for the checkout confirmation.
+   It seeds the 15th and month-end for the next 6 months. Run after 0012; safe to re-run.
+   After running it: add your suppliers in **Admin → Site Settings → Suppliers**, then in **Products** use the
+   "products have no supplier" bar to set one for all existing products (every product needs a supplier).
+   Course-only orders have no batch. With no open batch an order is saved as "Unassigned" (Orders → By shipping batch).

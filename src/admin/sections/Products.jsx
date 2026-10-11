@@ -7,16 +7,21 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  assignSupplier,
 } from "./products/products.api.js";
-import { emptyProduct, formatKsh, isLowStock } from "./products/utils.js";
+import { fetchSuppliers } from "./batches/batches.api.js";
+import { emptyProduct, formatKsh } from "./products/utils.js";
 
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(null); // null = closed, object = open
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [bulkSupplier, setBulkSupplier] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   useEffect(() => {
     load();
@@ -32,12 +37,14 @@ export default function Products() {
     setLoading(true);
     setError("");
     try {
-      const [productRows, categoryRows] = await Promise.all([
+      const [productRows, categoryRows, supplierRows] = await Promise.all([
         fetchProducts(),
         fetchCategories(),
+        fetchSuppliers().catch(() => []),
       ]);
       setProducts(productRows);
       setCategories(categoryRows);
+      setSuppliers(supplierRows);
     } catch (err) {
       setError(
         err.message ||
@@ -61,6 +68,25 @@ export default function Products() {
     setEditing(null);
   }
 
+  const unassigned = products.filter((p) => !p.supplier_id);
+
+  async function handleBulkAssign() {
+    if (!bulkSupplier || !unassigned.length) return;
+    setBulkBusy(true);
+    setError("");
+    try {
+      await assignSupplier(bulkSupplier, unassigned.map((p) => p.id));
+      const sup = suppliers.find((x) => x.id === bulkSupplier);
+      const ids = new Set(unassigned.map((p) => p.id));
+      setProducts((prev) => prev.map((p) => (ids.has(p.id) ? { ...p, supplier_id: bulkSupplier, supplier: sup ? { id: sup.id, name: sup.name } : null } : p)));
+      setBulkSupplier("");
+    } catch (err) {
+      setError(err.message || "Couldn't assign the supplier.");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   async function handleDelete() {
     if (!confirmDelete) return;
     try {
@@ -81,6 +107,28 @@ export default function Products() {
         </p>
       )}
 
+      {!loading && unassigned.length > 0 && (
+        <div className="admin-card bt-bulk">
+          <div>
+            <b>{unassigned.length} product{unassigned.length === 1 ? " has" : "s have"} no supplier.</b>
+            <div className="form-hint" style={{ margin: "2px 0 0" }}>
+              Batch PDFs group what to order by supplier. {suppliers.length === 0 ? "Add suppliers in Site Settings first." : "Set one for all of them, then fix any exceptions by editing the product."}
+            </div>
+          </div>
+          {suppliers.length > 0 && (
+            <div className="bt-inline">
+              <select value={bulkSupplier} onChange={(e) => setBulkSupplier(e.target.value)} aria-label="Supplier for products without one">
+                <option value="">— Choose supplier —</option>
+                {suppliers.map((sp) => <option key={sp.id} value={sp.id}>{sp.name}</option>)}
+              </select>
+              <button type="button" className="admin-btn" disabled={bulkBusy || !bulkSupplier} onClick={handleBulkAssign}>
+                {bulkBusy ? "Applying…" : "Apply"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <p className="form-hint">Loading…</p>
       ) : products.length === 0 ? (
@@ -97,7 +145,7 @@ export default function Products() {
                 <th>Name</th>
                 <th>Category</th>
                 <th>Price</th>
-                <th>Stock</th>
+                <th>Supplier</th>
                 <th>MOQ</th>
                 <th>Status</th>
                 <th>Shown in</th>
@@ -129,10 +177,8 @@ export default function Products() {
                       {formatKsh(p.market_price)}
                     </div>
                   </td>
-                  <td>
-                    <span className={isLowStock(p) ? "stock-low" : ""}>
-                      {p.stock_quantity}
-                    </span>
+                  <td className={p.supplier ? "" : "stock-low"}>
+                    {p.supplier?.name || "No supplier"}
                   </td>
                   <td>{p.moq}</td>
                   <td>
@@ -170,8 +216,10 @@ export default function Products() {
         <ProductForm
           product={editing}
           categories={categories}
+          suppliers={suppliers}
           allProducts={products}
           onCategoriesChange={setCategories}
+          onSuppliersChange={setSuppliers}
           onCancel={() => setEditing(null)}
           onSave={handleSave}
         />

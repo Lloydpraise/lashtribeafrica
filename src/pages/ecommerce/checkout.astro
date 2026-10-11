@@ -63,6 +63,11 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
           <p id="checkoutStatus" class="checkout-status" role="status" aria-live="polite"></p>
 
           <div class="checkout-form-footer">
+            <div class="batch-notice" data-batch-notice hidden>
+              <strong>Preorder shipment</strong>
+              <span data-batch-text></span>
+            </div>
+
             <div class="saved-row">
               <span>You saved</span>
               <strong id="checkoutSavedMobile">Ksh 0</strong>
@@ -101,6 +106,12 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
         </div>
 
         <div class="summary-items" id="summaryItems"></div>
+
+        <div class="batch-notice" data-batch-notice hidden>
+          <strong>Preorder shipment</strong>
+          <span data-batch-text></span>
+        </div>
+
 
         <div class="summary-totals">
           <div class="saved-row">
@@ -141,12 +152,34 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
     import {
       HAS_DB, formatKsh, getSession, fetchMyCustomer, placeOrder, signUpProfile, startAuthBridge,
     } from "../../services/customers.js";
+    import { supabase } from "../../services/service.js";
+    import { formatBatchDate } from "../../data/batches.js";
 
     const $ = (id: string) => document.getElementById(id) as HTMLInputElement | null;
     const statusEl = document.getElementById("checkoutStatus");
     const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".pay-now-btn"));
     let signedIn = false;
     let placing = false;
+
+    // Which batch this order will join: decided by the database with the same rule used at
+    // order time (first open batch more than 7 days away). Shown before and after ordering.
+    async function showBatchNotice() {
+      const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-batch-notice]"));
+      if (!nodes.length || !HAS_DB) return;
+      let text = "Wholesale stock ships from our supplier in batches. Your order joins the next available batch and we'll confirm the date with you.";
+      try {
+        const { data } = await supabase.rpc("next_open_batch");
+        const batch = Array.isArray(data) ? data[0] : data;
+        if (batch?.ship_date) {
+          text = `This order ships with the ${formatBatchDate(batch.ship_date)} batch. Wholesale stock is sourced from our supplier twice a month, and orders placed within a week of a batch go into the one after.`;
+        }
+      } catch { /* keep the generic text */ }
+      nodes.forEach((n) => {
+        const t = n.querySelector("[data-batch-text]");
+        if (t) t.textContent = text;
+        n.hidden = false;
+      });
+    }
 
     function say(text: string, kind: "error" | "ok" | "" = "") {
       if (!statusEl) return;
@@ -281,7 +314,9 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
       const p1 = document.createElement("p");
       p1.textContent = `Thank you! Your order number is ${result.order_no} (${formatKsh(result.total)}).`;
       const p2 = document.createElement("p");
-      p2.textContent = "We'll contact you shortly to confirm payment and your exact shipping dates and fee.";
+      p2.textContent = result?.ship_date
+        ? `Your order will ship with the ${formatBatchDate(result.ship_date)} batch. We'll contact you shortly to confirm payment and the shipping fee.`
+        : "We'll contact you shortly to confirm payment, your shipment date and the shipping fee.";
       wrap.append(h, p1, p2);
       if (signedIn) {
         const p3 = document.createElement("p");
@@ -307,6 +342,7 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
 
     buttons.forEach((b) => b.addEventListener("click", submitOrder));
     startAuthBridge();
+    showBatchNotice();
     window.addEventListener("lashtribe:auth-changed", () => { syncSignedIn(); });
     syncSignedIn().then(() => { if (!signedIn) loadGuest(); });
   </script>

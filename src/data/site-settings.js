@@ -21,6 +21,7 @@ const DEFAULTS = {
   countdownWindowDays: 7,
   countdownOpenedText: "Window opened Mon",
   countdownNextText: "Next batch ships soon",
+  batchCutoffDays: 7,
 
   tickerEnabled: true,
   tickerMessages: [
@@ -55,6 +56,7 @@ function mapRow(row) {
     countdownWindowDays: row.countdown_window_days || DEFAULTS.countdownWindowDays,
     countdownOpenedText: row.countdown_opened_text || DEFAULTS.countdownOpenedText,
     countdownNextText: row.countdown_next_text || DEFAULTS.countdownNextText,
+    batchCutoffDays: Number.isFinite(Number(row.batch_cutoff_days)) ? Number(row.batch_cutoff_days) : DEFAULTS.batchCutoffDays,
 
     tickerEnabled: row.ticker_enabled !== false,
     tickerMessages:
@@ -87,9 +89,9 @@ export async function getSiteSettings() {
   }
 }
 
-// Days-left + progress-bar % for the hero's order-cadence bar, derived
-// from countdownTarget/countdownWindowDays. Returns sensible fallbacks
-// (matches the old hardcoded "5 days left" / 40%) when no target is set.
+// LEGACY: the hero now reads the next shipping batch from the `batches` table
+// (see data/batches.js). This single-date countdown is only kept for old rows.
+// Days-left + progress-bar % derived from countdownTarget/countdownWindowDays.
 export function getCountdownState(settings) {
   const windowDays = Math.max(1, Number(settings.countdownWindowDays) || 7);
 

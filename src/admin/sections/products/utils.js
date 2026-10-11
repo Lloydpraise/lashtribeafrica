@@ -31,6 +31,7 @@ export function emptyProduct() {
     badge: "",
     icon: "",
     category_id: "",
+    supplier_id: "",
     complements: [],
     featured_sections: [],
     market_price: "",

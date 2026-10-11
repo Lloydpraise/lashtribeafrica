@@ -397,6 +397,10 @@
   .summary-note{margin-top:12px;font-size:10.5px;line-height:1.6;color:#666;text-align:center;}
   .summary-note a,.note a{color:inherit;text-decoration:underline;}
   .checkout-form-footer{display:none;}
+  /* preorder batch notice (checkout) */
+  .batch-notice{display:grid;gap:4px;margin:14px 0 4px;padding:12px 14px;border-radius:12px;background:rgba(201,138,150,.14);border:1px solid rgba(201,138,150,.4);font-size:12.5px;line-height:1.55;color:var(--charcoal,#2a2a2a);}
+  .batch-notice[hidden]{display:none;}
+  .batch-notice strong{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--rose-deep);}
 
   /* ---------- Checkout modal ---------- */
   .checkout-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%);width:440px;max-width:92vw;
@@ -540,6 +544,8 @@
     .pay-now-btn{margin-top:14px;}
     .summary-note{margin-top:10px;}
     .order-summary .summary-note{display:none;}
+    .order-summary .batch-notice{display:none;}
+    .checkout-form-footer .batch-notice{margin:0 0 14px;}
     .order-summary .pay-now-btn{display:none;}
     .checkout-form-footer .pay-now-btn{margin-top:18px;}
     .checkout-form-footer .summary-note{display:block;margin-top:10px;}

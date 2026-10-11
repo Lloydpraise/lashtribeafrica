@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import EmptyState from "../components/EmptyState.jsx";
 import { fetchSiteSettings, saveSiteSettings, uploadSiteMedia } from "./settings/settings.api.js";
 import { fetchProducts } from "./products/products.api.js";
+import { BatchesCard, SuppliersCard } from "./batches/BatchSettings.jsx";
 
 function ListEditor({ label, hint, items, onChange, placeholder }) {
   const [draft, setDraft] = useState("");
@@ -145,10 +146,6 @@ export default function SiteSettings() {
         hero_cta_secondary_label: form.hero_cta_secondary_label,
         hero_cta_secondary_link: form.hero_cta_secondary_link,
         countdown_label: form.countdown_label,
-        countdown_target: form.countdown_target || null,
-        countdown_window_days: Number(form.countdown_window_days) || 7,
-        countdown_opened_text: form.countdown_opened_text,
-        countdown_next_text: form.countdown_next_text,
         ticker_enabled: form.ticker_enabled,
         ticker_messages: form.ticker_messages,
       };
@@ -172,9 +169,6 @@ export default function SiteSettings() {
       />
     );
   }
-
-  // countdown_target comes back as an ISO timestamp; <input type="date"> wants YYYY-MM-DD
-  const targetDateValue = form.countdown_target ? String(form.countdown_target).slice(0, 10) : "";
 
   return (
     <div>
@@ -274,34 +268,20 @@ export default function SiteSettings() {
       </div>
 
       <div className="admin-card" style={{ marginBottom: 20 }}>
-        <div className="admin-card-header"><h3>Order countdown</h3></div>
+        <div className="admin-card-header"><h3>Hero shipping bar</h3></div>
         <div className="form-grid">
           <label className="form-field">
             <span>Label</span>
             <input type="text" value={form.countdown_label || ""} onChange={(e) => set("countdown_label", e.target.value)} />
           </label>
-          <label className="form-field">
-            <span>Ordering window closes on</span>
-            <input
-              type="date"
-              value={targetDateValue}
-              onChange={(e) => set("countdown_target", e.target.value ? new Date(e.target.value).toISOString() : null)}
-            />
-          </label>
-          <label className="form-field">
-            <span>Window length (days)</span>
-            <input type="number" min="1" value={form.countdown_window_days || 7} onChange={(e) => set("countdown_window_days", e.target.value)} />
-          </label>
-          <label className="form-field">
-            <span>"Window opened" text</span>
-            <input type="text" value={form.countdown_opened_text || ""} onChange={(e) => set("countdown_opened_text", e.target.value)} />
-          </label>
-          <label className="form-field">
-            <span>"Next batch" text</span>
-            <input type="text" value={form.countdown_next_text || ""} onChange={(e) => set("countdown_next_text", e.target.value)} />
-          </label>
         </div>
+        <p className="form-hint" style={{ margin: "10px 0 0" }}>
+          The date, countdown and progress bar come from the next shipping batch below. They update on their own.
+        </p>
       </div>
+
+      <BatchesCard />
+      <SuppliersCard />
 
       <div className="admin-card" style={{ marginBottom: 20 }}>
         <div className="admin-card-header"><h3>Announcement ticker</h3></div>

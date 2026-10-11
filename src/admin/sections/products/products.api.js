@@ -1,6 +1,6 @@
 import { supabase } from "../../../services/service.js";
 
-const PRODUCT_SELECT = "*, category:category_id(id,name,slug)";
+const PRODUCT_SELECT = "*, category:category_id(id,name,slug), supplier:supplier_id(id,name)";
 
 export async function fetchProducts() {
   const { data, error } = await supabase
@@ -61,6 +61,13 @@ export async function updateProduct(id, payload) {
 
   if (error) throw error;
   return data;
+}
+
+/** Sets one supplier on many products at once (used to fill in products created before suppliers existed). */
+export async function assignSupplier(supplierId, productIds) {
+  if (!productIds.length) return;
+  const { error } = await supabase.from("products").update({ supplier_id: supplierId }).in("id", productIds);
+  if (error) throw error;
 }
 
 export async function deleteProduct(id) {

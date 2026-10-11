@@ -1,6 +1,7 @@
 import { useState } from "react";
 import MediaUploader from "./MediaUploader.jsx";
 import { createCategory } from "./products.api.js";
+import { createSupplier } from "../batches/batches.api.js";
 import {
   slugify,
   formatKsh,
@@ -11,16 +12,20 @@ import {
 export default function ProductForm({
   product,
   categories,
+  suppliers = [],
   allProducts,
   onSave,
   onCancel,
   onCategoriesChange,
+  onSuppliersChange,
 }) {
   const [form, setForm] = useState({ ...product });
   const [slugTouched, setSlugTouched] = useState(false);
   const [newFeature, setNewFeature] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [addingCategory, setAddingCategory] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState("");
+  const [addingSupplier, setAddingSupplier] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -68,6 +73,22 @@ export default function ProductForm({
     );
   }
 
+  async function handleAddSupplier() {
+    if (!newSupplierName.trim()) return;
+    setAddingSupplier(true);
+    setError("");
+    try {
+      const created = await createSupplier({ name: newSupplierName.trim() });
+      onSuppliersChange?.((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      set("supplier_id", created.id);
+      setNewSupplierName("");
+    } catch (err) {
+      setError(err.message || "Couldn't create supplier.");
+    } finally {
+      setAddingSupplier(false);
+    }
+  }
+
   async function handleAddCategory() {
     if (!newCategoryName.trim()) return;
     setAddingCategory(true);
@@ -95,6 +116,10 @@ export default function ProductForm({
       setError("Slug is required.");
       return;
     }
+    if (!form.supplier_id) {
+      setError("Pick a supplier. Batch PDFs are grouped by supplier, so every product needs one.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -108,6 +133,7 @@ export default function ProductForm({
         badge: form.badge || null,
         icon: form.icon || null,
         category_id: form.category_id || null,
+        supplier_id: form.supplier_id || null,
         complements: form.complements || [],
         featured_sections: form.featured_sections || [],
         market_price: Number(form.market_price) || 0,
@@ -281,6 +307,41 @@ export default function ProductForm({
             </div>
 
             <label className="form-field">
+              <span>Supplier *</span>
+              <select
+                value={form.supplier_id || ""}
+                onChange={(e) => set("supplier_id", e.target.value)}
+              >
+                <option value="">— Choose supplier —</option>
+                {suppliers.map((sp) => (
+                  <option key={sp.id} value={sp.id}>
+                    {sp.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="form-field">
+              <span>New supplier</span>
+              <div className="inline-add-row">
+                <input
+                  type="text"
+                  placeholder="e.g. Seoul Lash Co"
+                  value={newSupplierName}
+                  onChange={(e) => setNewSupplierName(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="admin-btn secondary"
+                  onClick={handleAddSupplier}
+                  disabled={addingSupplier}
+                >
+                  {addingSupplier ? "Adding…" : "Add"}
+                </button>
+              </div>
+            </div>
+
+            <label className="form-field">
               <span>Market Price (Ksh)</span>
               <input
                 type="number"
@@ -342,26 +403,6 @@ export default function ProductForm({
                 min="1"
                 value={form.moq}
                 onChange={(e) => set("moq", e.target.value)}
-              />
-            </label>
-
-            <label className="form-field">
-              <span>Stock Quantity</span>
-              <input
-                type="number"
-                min="0"
-                value={form.stock_quantity}
-                onChange={(e) => set("stock_quantity", e.target.value)}
-              />
-            </label>
-
-            <label className="form-field">
-              <span>Low Stock Threshold</span>
-              <input
-                type="number"
-                min="0"
-                value={form.low_stock_threshold}
-                onChange={(e) => set("low_stock_threshold", e.target.value)}
               />
             </label>
 

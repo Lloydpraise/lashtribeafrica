@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import EmptyState from "../components/EmptyState.jsx";
 import { fetchOrders, setOrderStatus } from "./orders/orders.api.js";
+import BatchesView from "./batches/BatchesView.jsx";
+import { fetchAllBatches, fetchSuppliers, fetchCutoffDays, moveOrderToBatch } from "./batches/batches.api.js";
+import { formatBatchDate } from "../../data/batches.js";
 
 const ksh = (v) => `Ksh ${Number(v || 0).toLocaleString()}`;
 const when = (iso) =>
@@ -12,12 +15,14 @@ const STATUS_LABEL = { pending: "Awaiting payment", paid: "Paid", fulfilled: "Co
 const KIND_LABEL = { product: "Products", course: "Courses", mixed: "Products + courses" };
 const METHODS = ["M-Pesa", "Card", "Bank transfer", "Cash", "Other"];
 
-function OrderDetail({ order, onClose, onChanged }) {
+function OrderDetail({ order, batches, onClose, onChanged, onMoved }) {
   const [method, setMethod] = useState(order.payment_method || "M-Pesa");
   const [ref, setRef] = useState(order.payment_ref || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState(null); // status awaiting a second click
+  const [batchId, setBatchId] = useState(order.batch_id || "");
+  const hasProduct = order.order_items.some((i) => i.item_type === "product");
 
   const hasCourse = order.order_items.some((i) => i.item_type !== "product");
   const customer = order.customer;
@@ -36,6 +41,19 @@ function OrderDetail({ order, onClose, onChanged }) {
       onChanged(next);
     } catch (err) {
       setError(err.message || "Couldn't update the order.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function moveBatch() {
+    setBusy(true);
+    setError("");
+    try {
+      await moveOrderToBatch(order.id, batchId || null);
+      onMoved(order.id, batchId || null);
+    } catch (err) {
+      setError(err.message || "Couldn't move the order.");
     } finally {
       setBusy(false);
     }
@@ -97,6 +115,28 @@ function OrderDetail({ order, onClose, onChanged }) {
             </div>
           </div>
 
+          {hasProduct && (
+            <div className="cx-section">
+              <h3>Shipping batch</h3>
+              <div className="cx-pay-row">
+                <div className="form-field">
+                  <label htmlFor="orderBatch">Ships with</label>
+                  <select id="orderBatch" value={batchId} onChange={(e) => setBatchId(e.target.value)}>
+                    <option value="">Unassigned</option>
+                    {batches.filter((b) => b.status !== "shipped" || b.id === order.batch_id).map((b) => (
+                      <option key={b.id} value={b.id}>{formatBatchDate(b.ship_date, true)}{b.status !== "open" ? ` (${b.status})` : ""}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-field">
+                  <label>&nbsp;</label>
+                  <button type="button" className="admin-btn secondary" disabled={busy || batchId === (order.batch_id || "")} onClick={moveBatch}>Move order</button>
+                </div>
+              </div>
+              <p className="form-hint">Assigned automatically when the order was placed. Move it if the customer asks, or a supplier date changes.</p>
+            </div>
+          )}
+
           <div className="cx-section">
             <h3>Payment & status</h3>
             {order.status === "pending" && (
@@ -143,13 +183,31 @@ export default function Orders() {
   const [kind, setKind] = useState("all");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(null);
+  const [view, setView] = useState("batches");
+  const [batches, setBatches] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [cutoff, setCutoff] = useState(7);
 
   useEffect(() => {
     fetchOrders()
       .then(setRows)
       .catch((e) => setError(e.message || "Couldn't load orders. Has migration 0011 been run, and are you signed in as an admin?"))
       .finally(() => setLoading(false));
+    // batches need migration 0013; the order list still works without them
+    Promise.all([fetchAllBatches(), fetchSuppliers(), fetchCutoffDays()])
+      .then(([b, sp, c]) => { setBatches(b); setSuppliers(sp); setCutoff(c); })
+      .catch(() => {});
   }, []);
+
+  const batchById = useMemo(() => new Map(batches.map((b) => [b.id, b])), [batches]);
+
+  function moved(orderId, batchId) {
+    setRows((prev) => prev.map((o) => (o.id === orderId ? { ...o, batch_id: batchId } : o)));
+    setOpen((o) => (o && o.id === orderId ? { ...o, batch_id: batchId } : o));
+  }
+  function batchChanged(next) {
+    setBatches((prev) => prev.map((b) => (b.id === next.id ? next : b)));
+  }
 
   const counts = useMemo(() => {
     const c = { all: rows.length };
@@ -189,6 +247,15 @@ export default function Orders() {
         <div className="admin-stat-card"><div className="admin-stat-label">Paid revenue</div><div className="admin-stat-value">{ksh(paid)}</div></div>
       </div>
 
+      <div className="cx-chips bt-views">
+        <button type="button" className={`cx-chip${view === "batches" ? " active" : ""}`} onClick={() => setView("batches")}>By shipping batch</button>
+        <button type="button" className={`cx-chip${view === "all" ? " active" : ""}`} onClick={() => setView("all")}>All orders</button>
+      </div>
+
+      {view === "batches" ? (
+        <BatchesView rows={rows} batches={batches} suppliers={suppliers} cutoff={cutoff} onOpenOrder={setOpen} onBatchChanged={batchChanged} />
+      ) : (
+      <>
       <div className="cx-chips">
         {["all", ...STATUSES].map((s) => (
           <button key={s} type="button" className={`cx-chip${status === s ? " active" : ""}`} onClick={() => setStatus(s)}>
@@ -214,7 +281,7 @@ export default function Orders() {
         <div className="admin-card table-card">
           <table className="admin-table">
             <thead>
-              <tr><th>Order</th><th>Customer</th><th>Items</th><th>Type</th><th>Total</th><th>Status</th><th>Placed</th><th /></tr>
+              <tr><th>Order</th><th>Customer</th><th>Items</th><th>Type</th><th>Ships</th><th>Total</th><th>Status</th><th>Placed</th><th /></tr>
             </thead>
             <tbody>
               {visible.map((o) => (
@@ -226,6 +293,7 @@ export default function Orders() {
                   </td>
                   <td className="cx-order-items">{o.order_items.map((i) => `${i.name}${i.quantity > 1 ? ` ×${i.quantity}` : ""}`).join(", ")}</td>
                   <td>{KIND_LABEL[o.kind]}</td>
+                  <td>{o.batch_id && batchById.get(o.batch_id) ? formatBatchDate(batchById.get(o.batch_id).ship_date) : "—"}</td>
                   <td className="cx-money">{ksh(o.total)}</td>
                   <td><span className={`cx-status ${o.status}`}>{STATUS_LABEL[o.status]}</span></td>
                   <td>{when(o.placed_at)}</td>
@@ -237,7 +305,10 @@ export default function Orders() {
         </div>
       )}
 
-      {open && <OrderDetail key={open.id} order={open} onClose={() => setOpen(null)} onChanged={changed} />}
+      </>
+      )}
+
+      {open && <OrderDetail key={open.id} order={open} batches={batches} onClose={() => setOpen(null)} onChanged={changed} onMoved={moved} />}
     </div>
   );
 }

@@ -1,8 +1,18 @@
 ---
-import { getSiteSettings, getCountdownState } from "../../data/site-settings.js";
+import { getSiteSettings } from "../../data/site-settings.js";
+import { fetchBatches, batchState, formatBatchDate, daysLabel } from "../../data/batches.js";
 
 const settings = await getSiteSettings();
-const countdown = getCountdownState(settings);
+// Built into the page at deploy time; the script below refreshes it in the browser so the
+// date and countdown are always current without a redeploy.
+let batches = [];
+try { batches = await fetchBatches(); } catch { /* falls back to the old texts */ }
+const state = batchState(batches, settings.batchCutoffDays);
+const countdown = state.next
+  ? { label: daysLabel(state.daysLeft), percent: state.percent }
+  : { label: "Next batch soon", percent: 0 };
+const shipText = state.next ? `Next shipment ${formatBatchDate(state.next.ship_date)}` : settings.countdownOpenedText;
+const assignedText = state.assigned ? `Order today → ships ${formatBatchDate(state.assigned.ship_date)}` : settings.countdownNextText;
 const bgImageUrl = settings.heroBgImage?.url || null;
 ---
 
@@ -54,9 +64,33 @@ const bgImageUrl = settings.heroBgImage?.url || null;
       </div>
       <div class="cadence-bar"><div class="cadence-fill" id="cadenceFill" style={`width:${countdown.percent}%;`}></div></div>
       <div class="cadence-foot">
-        <span>{settings.countdownOpenedText}</span>
-        <span>{settings.countdownNextText}</span>
+        <span id="cadenceShip">{shipText}</span>
+        <span id="cadenceAssigned">{assignedText}</span>
       </div>
     </div>
   </div>
 </section>
+
+<script>
+  import { fetchBatches, fetchBatchCutoffDays, batchState, formatBatchDate, daysLabel } from "../../data/batches.js";
+
+  async function refreshCadence() {
+    try {
+      const [batches, cutoff] = await Promise.all([fetchBatches(), fetchBatchCutoffDays()]);
+      const state = batchState(batches, cutoff);
+      if (!state.next) return;
+      const set = (id: string, text: string) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+      set("cadenceDays", daysLabel(state.daysLeft ?? 0));
+      set("cadenceShip", `Next shipment ${formatBatchDate(state.next.ship_date)}`);
+      if (state.assigned) set("cadenceAssigned", `Order today → ships ${formatBatchDate(state.assigned.ship_date)}`);
+      const fill = document.getElementById("cadenceFill");
+      if (fill) fill.style.width = `${state.percent}%`;
+    } catch {
+      /* keep the server-rendered values */
+    }
+  }
+  refreshCadence();
+</script>
