@@ -22,6 +22,7 @@ import DashboardEmpty from "./DashboardEmpty.astro";
     card.className = paid ? "course-card advanced-card" : "course-card";
     card.dataset.course = course.slug;
     if (!paid) card.dataset.openPlayer = "1";
+    else card.dataset.info = `/academy/courses/${course.slug}`;
 
     const cover = document.createElement("div");
     cover.className = "module-cover";
@@ -70,7 +71,7 @@ import DashboardEmpty from "./DashboardEmpty.astro";
       buy.dataset.courseId = course.id;
       buy.dataset.price = String(Number(course.price || 0));
       buy.dataset.title = course.title;
-      buy.textContent = "Buy Course";
+      buy.textContent = "View Course";
       priceRow.append(price, buy);
       body.append(priceRow);
     } else {
@@ -115,7 +116,7 @@ import DashboardEmpty from "./DashboardEmpty.astro";
   if (hasDatabase) {
     const { data, error } = await supabase
       .from("courses")
-      .select("id, slug, title, subtitle, description, is_free, price, cover_url, sort_order")
+      .select("id, slug, title, subtitle, description, is_free, price, cover_url, sort_order, duration_label")
       .eq("status", "published")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });

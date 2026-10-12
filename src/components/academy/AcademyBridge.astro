@@ -41,6 +41,9 @@
       document.querySelectorAll<HTMLElement>(".course-buy").forEach((btn) => {
         const slug = owned.get(btn.dataset.courseId || "");
         if (!slug) return;
+        // Idempotent on purpose: this runs from a MutationObserver, and rewriting the button
+        // every time would itself trigger the observer again (an endless loop that freezes the tab).
+        if (btn.classList.contains("owned")) return;
         btn.textContent = "Start Course";
         btn.classList.add("owned");
         const card = btn.closest<HTMLElement>(".course-card");
@@ -67,6 +70,15 @@
       const name = customer?.full_name || session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "there";
       window.dispatchEvent(new CustomEvent("lashtribe:academy-enter", { detail: { name, isNew: isNewProfile || owned.size === 0 } }));
       markOwned();
+      // came from a course page to sign in? send them back to buy
+      try {
+        const back = sessionStorage.getItem("lashtribe_after_auth");
+        if (back && back.startsWith("/academy/courses/")) {
+          sessionStorage.removeItem("lashtribe_after_auth");
+          window.location.href = back;
+          return;
+        }
+      } catch { /* storage blocked */ }
       // first time in the Academy: greet them once, with confetti
       if (!hasBeenWelcomed(session)) {
         window.dispatchEvent(new CustomEvent("lashtribe:academy-welcome", {
@@ -147,6 +159,6 @@
     });
 
     // already signed in? skip the sign-in screen
-    enter(false);
+    enter(false).finally(() => document.documentElement.classList.remove("auth-pending"));
   }
 </script>

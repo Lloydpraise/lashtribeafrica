@@ -128,6 +128,7 @@ export async function markWelcomed(userId) {
  * here (listen for the "lashtribe:order-placed" event or call your payment function with
  * result.order_id) and mark the order paid with the admin_set_order_status() function.
  */
+/** @param {{ customer: any, items: any, notes?: string | null, paymentMethod?: string | null }} args */
 export async function placeOrder({ customer, items, notes, paymentMethod }) {
   const { data, error } = await supabase.rpc("place_order", {
     p_customer: customer,

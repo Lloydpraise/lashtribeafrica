@@ -65,7 +65,7 @@ export default function Policies() {
       {error && <p className="admin-gate-error" style={{ marginBottom: 16 }}>{error}</p>}
       {saved && <p className="form-hint" style={{ color: "var(--green)", marginBottom: 16 }}>Saved.</p>}
       <p className="form-hint" style={{ marginBottom: 20 }}>
-        Leave any field blank to show the built-in placeholder copy on that page. Separate paragraphs with a blank line.
+        Leave any field blank to show the built-in placeholder copy on that page. Separate paragraphs with a blank line. Start a line with <code># </code> for a heading and <code>- </code> for a bullet. The Shipping &amp; Preorders page starts with ready-made text (migration 0014) you can edit here.
         Pages: <code>/privacy-policy</code>, <code>/shipping-policy</code>, <code>/terms-and-conditions</code> — linked from the site footer and checkout.
       </p>
 

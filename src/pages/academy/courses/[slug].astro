@@ -1,0 +1,236 @@
+---
+import Layout from "../../../layouts/academy/Layout.astro";
+import SiteFooter from "../../../components/ecommerce/SiteFooter.astro";
+import { getPublishedCourses, formatKsh } from "../../../data/academy-catalog.js";
+import "../../../styles/course-info.css";
+
+export async function getStaticPaths() {
+  const courses = await getPublishedCourses();
+  return courses.map((c) => ({ params: { slug: c.slug } }));
+}
+
+const courses = await getPublishedCourses();
+const course = courses.find((c) => c.slug === Astro.params.slug);
+if (!course) return Astro.redirect("/academy/");
+const related = courses.filter((c) => c.slug !== course.slug).slice(0, 3);
+const blurb = course.subtitle || course.description || "";
+const metaDescription = (course.description || course.subtitle || `${course.title} at Lashtribe Academy`).slice(0, 160);
+const paragraphs = (course.about || course.description || "").split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
+const facts: { k: string; v: string }[] = [{ k: "Duration", v: course.duration }, { k: "Lessons", v: String(course.lessonCount) }];
+if (course.videoLength) facts.push({ k: "Video", v: course.videoLength });
+if (course.level) facts.push({ k: "Level", v: course.level[0].toUpperCase() + course.level.slice(1) });
+if (course.certificate) facts.push({ k: "Certificate", v: "Included" });
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Course",
+  name: course.title,
+  description: metaDescription,
+  provider: { "@type": "Organization", name: "Lashtribe Academy" },
+  ...(course.cover ? { image: course.cover } : {}),
+  ...(course.isFree ? {} : { offers: { "@type": "Offer", price: course.price, priceCurrency: "KES", availability: "https://schema.org/InStock" } }),
+};
+---
+
+<Layout title={`${course.title} | Lashtribe Academy`} description={metaDescription} image={course.cover}>
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} slot="head" />
+  <header class="ci-bar">
+    <a href="/academy/" class="ci-back">← All courses</a>
+    <a href="/academy/" class="ci-brand">Lashtribe Academy</a>
+  </header>
+
+  <main class="ci" data-course-id={course.id} data-slug={course.slug} data-free={course.isFree ? "1" : "0"} data-price={course.price} data-title={course.title}>
+    <section class="ci-hero">
+      <div class="ci-media">
+        {course.cover ? <img src={course.cover} alt={course.title} /> : <div class="ci-media-empty" aria-hidden="true"></div>}
+      </div>
+
+      <aside class="ci-side">
+        <div class="ci-card">
+          <div class="ci-head">
+            <span class="ci-eyebrow">{course.isFree ? "Free course" : "Online course"}</span>
+            <h1>{course.title}</h1>
+            {blurb && <p class="ci-sub">{blurb}</p>}
+            <div class="ci-price">{course.isFree ? "Free" : formatKsh(course.price)}</div>
+          </div>
+
+          <div class="ci-buyrow">
+            <button class="btn-primary ci-buy" id="ciBuy" type="button">{course.isFree ? "Start course" : "Buy course"}</button>
+            <p class="ci-note" id="ciNote">{course.isFree ? "Sign in to begin. No payment needed." : "Pay once, learn on any device. Your course unlocks as soon as payment is confirmed."}</p>
+          </div>
+        <ul class="ci-facts">
+          {facts.map((f) => <li><span>{f.k}</span><strong>{f.v}</strong></li>)}
+        </ul>
+        </div>
+      </aside>
+
+      <div class="ci-outline-wrap">
+        <div class="ci-outline">
+            <div class="ci-outline-top">
+              <h2>Course outline</h2>
+              {course.modules.length > 0 && <button type="button" class="ci-toggle" id="ciToggleAll" data-open="0">Expand all</button>}
+            </div>
+            <div class="ci-outline-scroll">
+              {course.modules.map((m, i) => (
+                <details class="ci-mod" open={i === 0}>
+                  <summary>
+                    <span class="ci-chev" aria-hidden="true"></span>
+                    <span class="ci-mt">{m.title}</span>
+                    <em>{m.lessons.length} {m.lessons.length === 1 ? "lesson" : "lessons"}</em>
+                  </summary>
+                  <ul>
+                    {m.lessons.map((l) => (
+                      <li>
+                        <div class="ci-les-row">
+                          <span class="ci-kind" aria-hidden="true"></span>
+                          <span class="ci-lt">{l.title}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ))}
+              {course.modules.length === 0 && <p class="ci-empty">The outline is coming soon.</p>}
+            </div>
+          </div>
+
+      </div>
+
+      <div class="ci-body">
+        {course.learnPoints.length > 0 && (
+          <div class="ci-block">
+            <h2>What you'll learn</h2>
+            <ul class="ci-learn">{course.learnPoints.map((p) => <li>{p}</li>)}</ul>
+          </div>
+        )}
+        <div class="ci-block">
+          <h2>About this course</h2>
+          {paragraphs.map((p) => <p>{p}</p>)}
+        </div>
+      </div>
+    </section>
+
+    {related.length > 0 && (
+      <section class="ci-related">
+        <h2>More courses</h2>
+        <div class="ci-related-grid">
+          {related.map((r) => (
+            <a href={`/academy/courses/${r.slug}`} class="ci-rel">
+              <div class="ci-rel-img">{r.cover && <img src={r.cover} alt="" loading="lazy" />}</div>
+              <strong>{r.title}</strong>
+              <span>{r.isFree ? "Free" : formatKsh(r.price)} · {r.duration}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+  </main>
+
+  <div class="ci-sticky" id="ciSticky" aria-hidden="true">
+    <div><strong>{course.isFree ? "Free" : formatKsh(course.price)}</strong><span>{course.duration}</span></div>
+    <button class="btn-primary" id="ciBuy2" type="button">{course.isFree ? "Start course" : "Buy course"}</button>
+  </div>
+
+  <SiteFooter />
+  <div class="ci-toast" id="ciToast" role="status"></div>
+</Layout>
+
+<script>
+  import { getSession, fetchMyCustomer, fetchMyCourses, placeOrder, formatKsh, HAS_DB } from "../../../services/customers.js";
+  import { startPayment } from "../../../services/payments.js";
+
+  const main = document.querySelector<HTMLElement>(".ci")!;
+  const courseId = main.dataset.courseId || "";
+  const slug = main.dataset.slug || "";
+  const isFree = main.dataset.free === "1";
+  const buttons = [document.getElementById("ciBuy"), document.getElementById("ciBuy2")] as HTMLButtonElement[];
+  const note = document.getElementById("ciNote");
+  const toast = document.getElementById("ciToast");
+  let owned = false;
+  let busy = false;
+
+  const say = (msg: string) => {
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 6000);
+  };
+  const setLabel = (t: string) => buttons.forEach((b) => b && (b.textContent = t));
+  const learnUrl = `/academy/learn/?course=${encodeURIComponent(slug)}`;
+
+  async function init() {
+    if (!HAS_DB) return;
+    try {
+      const session = await getSession();
+      if (!session) return;
+      const mine = await fetchMyCourses();
+      owned = mine.some((c: any) => c.course_id === courseId);
+      if (owned) {
+        setLabel("Go to course");
+        if (note) note.textContent = "You already own this course.";
+      }
+    } catch { /* stays as a normal buy button */ }
+  }
+
+  async function onClick() {
+    if (busy) return;
+    if (owned) { window.location.href = learnUrl; return; }
+    const session = await getSession();
+    if (!session) {
+      try { sessionStorage.setItem("lashtribe_after_auth", window.location.pathname); } catch { /* ignore */ }
+      window.location.href = "/academy/";
+      return;
+    }
+    if (isFree) { window.location.href = learnUrl; return; }
+    busy = true;
+    buttons.forEach((b) => b && (b.disabled = true));
+    try {
+      const customer: any = await fetchMyCustomer();
+      const info = {
+        full_name: customer?.full_name || session.user.user_metadata?.full_name || "",
+        email: session.user.email,
+        phone: customer?.phone || "",
+        delivery_area: customer?.delivery_area || "",
+      };
+      const result = await placeOrder({ customer: info, items: [{ type: "course", id: courseId, qty: 1 }] });
+      const payment: any = await startPayment(result, info);
+      if (payment?.redirectUrl) { window.location.href = payment.redirectUrl; return; }
+      setLabel("Order placed");
+      if (note) note.textContent = `Order ${result.order_no} (${formatKsh(result.total)}). Your course unlocks as soon as payment is confirmed.`;
+      say(`Order ${result.order_no} placed. We'll confirm your payment and unlock the course.`);
+    } catch (err: any) {
+      say(err?.message || "We couldn't place that order. Please try again.");
+      buttons.forEach((b) => b && (b.disabled = false));
+    } finally {
+      busy = false;
+    }
+  }
+
+  buttons.forEach((b) => b?.addEventListener("click", onClick));
+  init();
+
+  // Expand / collapse the whole outline
+  const toggleAll = document.getElementById("ciToggleAll") as HTMLButtonElement | null;
+  toggleAll?.addEventListener("click", () => {
+    const open = toggleAll.dataset.open !== "1";
+    document.querySelectorAll<HTMLDetailsElement>(".ci-outline .ci-mod").forEach((d) => (d.open = open));
+    toggleAll.dataset.open = open ? "1" : "0";
+    toggleAll.textContent = open ? "Collapse all" : "Expand all";
+  });
+
+  // Keep the buy button in reach: once the main one scrolls away, a bar sticks to the bottom
+  // (on every screen size), and it tucks away again over the "More courses" section.
+  const bar = document.getElementById("ciSticky");
+  const mainBuy = document.getElementById("ciBuy");
+  if (bar && mainBuy && "IntersectionObserver" in window) {
+    let mainVisible = true;
+    let relatedVisible = false;
+    const update = () => bar.classList.toggle("show", !mainVisible && !relatedVisible);
+    new IntersectionObserver((es) => { mainVisible = es[0].isIntersecting; update(); }).observe(mainBuy);
+    const rel = document.querySelector(".ci-related") || document.querySelector("footer");
+    if (rel) new IntersectionObserver((es) => { relatedVisible = es[0].isIntersecting; update(); }, { threshold: 0.15 }).observe(rel);
+    const foot = document.querySelector("footer");
+    if (foot && foot !== rel) new IntersectionObserver((es) => { if (es[0].isIntersecting) bar.classList.remove("show"); else update(); }).observe(foot);
+  } else {
+    bar?.classList.add("show");
+  }
+</script>

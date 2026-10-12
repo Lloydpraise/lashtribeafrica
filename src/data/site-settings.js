@@ -23,6 +23,14 @@ const DEFAULTS = {
   countdownNextText: "Next batch ships soon",
   batchCutoffDays: 7,
 
+  contactEmail: "info@lashtribeafrica.com",
+  contactPhone: "",
+  contactWhatsapp: "",
+  socialInstagram: "https://www.instagram.com/lashesbyshazzacademy",
+  socialTiktok: "https://www.tiktok.com/@lashesbyshazzacademy",
+  socialFacebook: "https://www.facebook.com/lashesbyshazzacademy",
+  socialYoutube: "https://www.youtube.com/@lashesbyshazzacademy",
+
   tickerEnabled: true,
   tickerMessages: [
     "WHOLESALE · DIRECT FROM SOURCE",
@@ -56,6 +64,15 @@ function mapRow(row) {
     countdownWindowDays: row.countdown_window_days || DEFAULTS.countdownWindowDays,
     countdownOpenedText: row.countdown_opened_text || DEFAULTS.countdownOpenedText,
     countdownNextText: row.countdown_next_text || DEFAULTS.countdownNextText,
+    // empty string in the database means "don't show it" (not "use the default")
+    contactEmail: row.contact_email ?? DEFAULTS.contactEmail,
+    contactPhone: row.contact_phone ?? "",
+    contactWhatsapp: row.contact_whatsapp ?? "",
+    socialInstagram: row.social_instagram ?? DEFAULTS.socialInstagram,
+    socialTiktok: row.social_tiktok ?? DEFAULTS.socialTiktok,
+    socialFacebook: row.social_facebook ?? DEFAULTS.socialFacebook,
+    socialYoutube: row.social_youtube ?? DEFAULTS.socialYoutube,
+
     batchCutoffDays: Number.isFinite(Number(row.batch_cutoff_days)) ? Number(row.batch_cutoff_days) : DEFAULTS.batchCutoffDays,
 
     tickerEnabled: row.ticker_enabled !== false,
@@ -108,4 +125,23 @@ export function getCountdownState(settings) {
   const label = daysLeft <= 0 ? "Closing today" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`;
 
   return { daysLeft, percent, label };
+}
+
+
+/** Digits only, for wa.me and tel: links. Kenyan 07xx / 01xx numbers become 254xxxxxxxxx. */
+export function phoneDigits(value) {
+  const d = String(value || "").replace(/[^0-9]/g, "");
+  if (!d) return "";
+  if (d.startsWith("0")) return `254${d.slice(1)}`;
+  return d;
+}
+
+/** The social links that are actually filled in, in display order. */
+export function socialLinks(settings) {
+  return [
+    { key: "instagram", label: "Instagram", url: settings.socialInstagram },
+    { key: "tiktok", label: "TikTok", url: settings.socialTiktok },
+    { key: "facebook", label: "Facebook", url: settings.socialFacebook },
+    { key: "youtube", label: "YouTube", url: settings.socialYoutube },
+  ].filter((l) => l.url && String(l.url).trim());
 }

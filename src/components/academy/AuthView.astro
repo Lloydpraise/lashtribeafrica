@@ -17,11 +17,11 @@ const hasDb = Boolean(import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUB
     <div class="auth-panel active" id="panelSignin">
       <div class="field">
         <label>Email</label>
-        <input type="email" id="siEmail" value={hasDb ? "" : "amina@lashtribe.africa"} autocomplete="email" />
+        <input type="email" id="siEmail" value="" autocomplete="email" />
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" id="siPass" value={hasDb ? "" : "demo1234"} autocomplete="current-password" />
+        <input type="password" id="siPass" value="" autocomplete="current-password" />
       </div>
       <p class="auth-error" id="authErrorSignin" role="alert" style="display:none;"></p>
       <button class="btn-primary auth-submit" id="signinBtn">Sign In</button>

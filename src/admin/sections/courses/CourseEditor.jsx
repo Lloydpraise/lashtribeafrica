@@ -197,7 +197,16 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
                 </select>
               </Field>
               <Field label="Subtitle" span><input type="text" value={course.subtitle || ""} onChange={(e) => set({ subtitle: e.target.value })} /></Field>
-              <Field label="Description" span><textarea rows={4} value={course.description || ""} onChange={(e) => set({ description: e.target.value })} /></Field>
+              <Field label="Short description" span hint="Shown on the course card."><textarea rows={3} value={course.description || ""} onChange={(e) => set({ description: e.target.value })} /></Field>
+              <Field label="Approx. duration" hint="Shown on the course page and while learning. Free text, e.g. 2 weeks or 6 hours.">
+                <input type="text" value={course.duration_label ?? ""} onChange={(e) => set({ duration_label: e.target.value })} placeholder="2 weeks" />
+              </Field>
+              <Field label="About this course" span hint="The full description on the course info page (this is what search engines read). Leave a blank line between paragraphs. If empty, the short description is used.">
+                <textarea rows={8} value={course.about || ""} onChange={(e) => set({ about: e.target.value })} />
+              </Field>
+              <Field label="What you'll learn" span hint="One point per line. Shown as a checklist on the course page.">
+                <textarea rows={5} value={(course.learn_points || []).join("\n")} onChange={(e) => set({ learn_points: e.target.value.split("\n") })} />
+              </Field>
               <Field label="Status">
                 <select value={course.status} onChange={(e) => set({ status: e.target.value })}>
                   {STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}

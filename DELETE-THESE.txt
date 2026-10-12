@@ -1,0 +1,4 @@
+DELETE these files from the repo:
+src/components/ecommerce/RewardsReseller.astro
+src/components/ecommerce/CheckoutPreview.astro
+src/components/ecommerce/CheckoutModal.astro

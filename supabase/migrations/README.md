@@ -112,3 +112,12 @@ site needs its normal deploy step re-run.
    After running it: add your suppliers in **Admin → Site Settings → Suppliers**, then in **Products** use the
    "products have no supplier" bar to set one for all existing products (every product needs a supplier).
    Course-only orders have no batch. With no open batch an order is saved as "Unassigned" (Orders → By shipping batch).
+14. **`0014_contact_policy_course_info.sql`** – Contact + social fields on `site_settings` (email defaults to
+   info@lashtribeafrica.com; phone, WhatsApp and social links start empty or with handle defaults and are edited in
+   Admin → Site Settings → Contact & social), a starter shipping policy (only filled if the policy is blank),
+   and course fields `duration_label` (default "2 weeks"), `about`, `learn_points`; `admin_save_course()` saves them.
+   Run after 0013; safe to re-run. Rebuild/redeploy the site afterwards so course pages are generated.
+15. **`0015_paid_course_access.sql`** – Paid courses stay locked until paid. Old "free" enrollments no longer unlock a
+   course that has become paid (and are removed automatically when you switch a course free → paid). A paid order
+   replaces any old enrollment, and `admin_set_course_access(user, course, true/false)` is a manual grant/revoke switch.
+   Run after 0014; safe to re-run.

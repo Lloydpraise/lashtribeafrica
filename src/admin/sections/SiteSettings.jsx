@@ -148,6 +148,13 @@ export default function SiteSettings() {
         countdown_label: form.countdown_label,
         ticker_enabled: form.ticker_enabled,
         ticker_messages: form.ticker_messages,
+        contact_email: (form.contact_email || "").trim(),
+        contact_phone: (form.contact_phone || "").trim(),
+        contact_whatsapp: (form.contact_whatsapp || "").trim(),
+        social_instagram: (form.social_instagram || "").trim(),
+        social_tiktok: (form.social_tiktok || "").trim(),
+        social_facebook: (form.social_facebook || "").trim(),
+        social_youtube: (form.social_youtube || "").trim(),
       };
       const updated = await saveSiteSettings(payload);
       setForm(updated);
@@ -282,6 +289,43 @@ export default function SiteSettings() {
 
       <BatchesCard />
       <SuppliersCard />
+
+      <div className="admin-card" style={{ marginBottom: 20 }}>
+        <div className="admin-card-header"><h3>Contact &amp; social</h3></div>
+        <p className="form-hint" style={{ margin: "0 0 12px" }}>
+          Shown on the Contact page, and the social icons in the footer of every page. Leave a field empty to hide it.
+        </p>
+        <div className="form-grid">
+          <label className="form-field">
+            <span>Email</span>
+            <input type="email" value={form.contact_email || ""} onChange={(e) => set("contact_email", e.target.value)} placeholder="info@lashtribeafrica.com" />
+          </label>
+          <label className="form-field">
+            <span>Phone</span>
+            <input type="text" value={form.contact_phone || ""} onChange={(e) => set("contact_phone", e.target.value)} placeholder="e.g. 0712 345 678" />
+          </label>
+          <label className="form-field">
+            <span>WhatsApp number</span>
+            <input type="text" value={form.contact_whatsapp || ""} onChange={(e) => set("contact_whatsapp", e.target.value)} placeholder="e.g. 0712 345 678" />
+          </label>
+          <label className="form-field">
+            <span>Instagram link</span>
+            <input type="url" value={form.social_instagram || ""} onChange={(e) => set("social_instagram", e.target.value)} />
+          </label>
+          <label className="form-field">
+            <span>TikTok link</span>
+            <input type="url" value={form.social_tiktok || ""} onChange={(e) => set("social_tiktok", e.target.value)} />
+          </label>
+          <label className="form-field">
+            <span>Facebook link</span>
+            <input type="url" value={form.social_facebook || ""} onChange={(e) => set("social_facebook", e.target.value)} />
+          </label>
+          <label className="form-field">
+            <span>YouTube link</span>
+            <input type="url" value={form.social_youtube || ""} onChange={(e) => set("social_youtube", e.target.value)} />
+          </label>
+        </div>
+      </div>
 
       <div className="admin-card" style={{ marginBottom: 20 }}>
         <div className="admin-card-header"><h3>Announcement ticker</h3></div>

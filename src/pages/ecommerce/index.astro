@@ -4,10 +4,10 @@ import AnnouncementTicker from "../../components/ecommerce/AnnouncementTicker.as
 import SiteHeader from "../../components/ecommerce/SiteHeader.astro";
 import Hero from "../../components/ecommerce/Hero.astro";
 import MarketingPillars from "../../components/ecommerce/MarketingPillars.astro";
+import HowOrdering from "../../components/ecommerce/HowOrdering.astro";
 import ProductRail from "../../components/ecommerce/ProductRail.astro";
 import KitStrip from "../../components/ecommerce/KitStrip.astro";
 import AcademyHook from "../../components/ecommerce/AcademyHook.astro";
-import RewardsReseller from "../../components/ecommerce/RewardsReseller.astro";
 import SiteFooter from "../../components/ecommerce/SiteFooter.astro";
 import CartDrawer from "../../components/ecommerce/CartDrawer.astro";
 import { getEcommerceProducts, formatKsh } from "../../data/ecommerce-products.js";
@@ -46,6 +46,7 @@ const newIn = allProducts
   <SiteHeader />
   <Hero />
   <MarketingPillars />
+  <HowOrdering />
   {topSelling.length > 0 && (
     <ProductRail id="shop" title="Top Selling" products={topSelling} />
   )}
@@ -54,7 +55,6 @@ const newIn = allProducts
   )}
   <KitStrip />
   <AcademyHook />
-  <RewardsReseller />
   <SiteFooter />
   <CartDrawer />
 

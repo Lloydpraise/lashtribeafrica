@@ -153,6 +153,7 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
       HAS_DB, formatKsh, getSession, fetchMyCustomer, placeOrder, signUpProfile, startAuthBridge,
     } from "../../services/customers.js";
     import { supabase } from "../../services/service.js";
+    import { startPayment } from "../../services/payments.js";
     import { formatBatchDate } from "../../data/batches.js";
 
     const $ = (id: string) => document.getElementById(id) as HTMLInputElement | null;
@@ -295,6 +296,12 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
         });
         (window as any).LashtribeCart?.setCart?.({});
         if (!signedIn) saveGuest();
+        // Payment is manual today; a provider (Pesapal / Daraja) plugs in here. See services/payments.js.
+        const payment = await startPayment(result, { full_name: name, email, phone });
+        if (payment?.redirectUrl) {
+          window.location.href = payment.redirectUrl;
+          return;
+        }
         showDone(result, wantsProfile);
       } catch (err: any) {
         say(err?.message || "We couldn't place your order. Please try again.", "error");

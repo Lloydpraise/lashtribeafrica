@@ -57,7 +57,8 @@ function Locked({ course, preview, demoSession }) {
         ? "Your Academy demo session includes preview lessons only. Sign in to your course account for full access."
         : `${course.title} is ${course.is_free ? "free once you sign in" : `Ksh ${Number(course.price).toLocaleString()}`}.`}</p>
       {preview && <p className="lx-muted">Preview lessons are marked in the curriculum.</p>}
-      <a className="lx-btn dark" href="/academy/">Back to the academy</a>
+      {!course.is_free && !demoSession && <a className="lx-btn dark" href={`/academy/courses/${course.slug}`}>View course and buy</a>}
+      <a className={course.is_free || demoSession ? "lx-btn dark" : "lx-link"} href="/academy/">Back to the academy</a>
     </div>
   );
 }
@@ -415,7 +416,7 @@ export default function LearnApp() {
     <div className={"lx-root" + (lesson?.kind === "reading" && !isCert ? " reading" : "") + (isWide && courseOpen ? " course-open" : "") + (!isMobile && notesOpen ? " notes-open" : "")}>
       <div className="lx-top">
         <a className="lx-back" href="/academy/" aria-label="Back to the academy">← <span>Academy</span></a>
-        <div className="lx-top-title">{course.title}</div>
+        <div className="lx-top-title">{course.title}{course.duration_label && <span className="lx-top-dur"> · {course.duration_label}</span>}</div>
         <div className="lx-top-right">
           {ctx.source === "demo" && <span className="lx-preview-tag" title="Showing sample content">Preview</span>}
           <div className="lx-ring" style={{ "--p": pct }} title={`${pct}% complete`}><b>{pct}</b></div>

@@ -1,7 +1,8 @@
 ---
 // Shared shell for the three policy pages (privacy, shipping, terms).
 // Content comes from Site Settings → Policies in the admin panel, stored
-// as plain text; blank lines become paragraph breaks.
+// as plain text; blank lines become paragraph breaks, a line starting with "# " is a
+// heading and lines starting with "- " make a bullet list.
 import Layout from "../../layouts/ecommerce/Layout.astro";
 import SiteHeader from "../ecommerce/SiteHeader.astro";
 import SiteFooter from "../ecommerce/SiteFooter.astro";
@@ -15,7 +16,23 @@ interface Props {
 
 const { title, content, fallback } = Astro.props;
 const body = (content && content.trim().length > 0) ? content : fallback;
-const paragraphs = body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+
+type Block = { type: "h" | "p" | "ul"; text?: string; items?: string[] };
+const blocks: Block[] = [];
+for (const chunk of body.split(/\n{2,}/).map((c) => c.trim()).filter(Boolean)) {
+  // a heading can sit directly above its paragraph, with no blank line between
+  let lines = chunk.split("\n").map((l) => l.trim()).filter(Boolean);
+  while (lines.length && /^#\s+/.test(lines[0])) {
+    blocks.push({ type: "h", text: lines[0].replace(/^#\s+/, "") });
+    lines = lines.slice(1);
+  }
+  if (!lines.length) continue;
+  if (lines.every((l) => /^[-•]\s+/.test(l))) {
+    blocks.push({ type: "ul", items: lines.map((l) => l.replace(/^[-•]\s+/, "")) });
+  } else {
+    blocks.push({ type: "p", text: lines.join(" ") });
+  }
+}
 ---
 
 <Layout title={`${title} | Lashtribe Africa`}>
@@ -26,7 +43,11 @@ const paragraphs = body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
       <div class="eyebrow">Lashtribe Africa</div>
       <h1>{title}</h1>
       <div class="policy-body">
-        {paragraphs.map((p) => <p>{p}</p>)}
+        {blocks.map((b) =>
+          b.type === "h" ? <h2>{b.text}</h2>
+          : b.type === "ul" ? <ul>{b.items!.map((i) => <li>{i}</li>)}</ul>
+          : <p>{b.text}</p>
+        )}
       </div>
     </div>
   </main>

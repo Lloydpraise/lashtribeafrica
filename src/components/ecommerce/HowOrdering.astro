@@ -1,0 +1,125 @@
+---
+// "How ordering works" strip on the shop home. Plain steps, no form. Anchor: #how-ordering.
+// This is a preorder platform: customers pay when they order, orders are grouped into
+// shipping batches (see the Shipping & Preorders policy), and delivery is arranged on arrival.
+const steps = [
+  {
+    n: "1",
+    title: "Order",
+    copy: "Add what you need and check out. Your order joins the next shipping batch, and the date is shown before you confirm.",
+  },
+  {
+    n: "2",
+    title: "Pay",
+    copy: "You pay when you order. We confirm your payment with you straight away.",
+  },
+  {
+    n: "3",
+    title: "We order in bulk",
+    copy: "When the batch closes we place it with our suppliers in one go, which is how prices stay low.",
+  },
+  {
+    n: "4",
+    title: "Delivery",
+    copy: "When your batch arrives we contact you to arrange delivery. The shipping fee is confirmed based on your area.",
+  },
+];
+---
+<section class="how-ordering" id="how-ordering">
+  <div class="wrap">
+    <div class="how-head reveal">
+      <div class="eyebrow">How ordering works</div>
+      <h2>Order. Pay. We ship in batches.</h2>
+    </div>
+    <ol class="how-steps">
+      {
+        steps.map((s, i) => (
+          <li class:list={["how-step", "reveal", i ? `d${Math.min(i, 3)}` : ""]}>
+            <span class="how-num" aria-hidden="true">{s.n}</span>
+            <div>
+              <h3>{s.title}</h3>
+              <p>{s.copy}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+    <p class="how-foot">
+      Read the full <a href="/shipping-policy">Shipping &amp; Preorders policy</a>.
+    </p>
+  </div>
+</section>
+
+<style>
+  .how-ordering {
+    padding: 72px 0 24px;
+  }
+  .how-head {
+    margin-bottom: 28px;
+  }
+  .how-head h2 {
+    margin: 10px 0 0;
+    font-size: clamp(26px, 3.2vw, 38px);
+    line-height: 1.15;
+  }
+  .how-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .how-step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 20px 18px;
+    border: 1px solid var(--grey);
+    border-radius: 14px;
+    background: var(--warm-white);
+  }
+  .how-num {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--black);
+    color: var(--warm-white);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .how-step h3 {
+    margin: 4px 0 6px;
+    font-size: 16px;
+  }
+  .how-step p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #666;
+  }
+  .how-foot {
+    margin: 18px 0 0;
+    font-size: 12.5px;
+    color: #777;
+  }
+  .how-foot a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  @media (max-width: 880px) {
+    .how-ordering {
+      padding: 48px 0 8px;
+    }
+    .how-steps {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .how-step {
+      padding: 16px 14px;
+    }
+  }
+</style>

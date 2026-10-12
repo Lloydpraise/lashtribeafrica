@@ -30,6 +30,7 @@
 /* ---- top bar ---- */
 .lx-top{position:sticky;top:0;z-index:40;height:var(--top);display:flex;align-items:center;gap:14px;padding:0 20px;background:rgba(255,253,251,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .lx-back{color:var(--ink);text-decoration:none;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:flex;gap:6px;white-space:nowrap}
+.lx-top-dur{font-family:var(--sans);font-weight:500;font-size:12px;color:var(--muted,#888)}
 .lx-top-title{font-family:var(--serif);font-weight:600;font-size:16px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .lx-top-right{display:flex;align-items:center;gap:10px}
 .lx-preview-tag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;background:var(--blush);color:var(--rose-deep);padding:5px 9px;border-radius:99px}

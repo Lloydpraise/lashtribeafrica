@@ -130,9 +130,17 @@
   const continuePlayBtn = document.getElementById('continuePlayBtn');
   if (continuePlayBtn) continuePlayBtn.addEventListener('click', showPlayer);
   document.addEventListener('click', (e) => {
-    if (e.target.closest('.course-buy')) return;
+    const buyBtn = e.target.closest('.course-buy');
+    if (buyBtn && !buyBtn.classList.contains('owned')) {
+      const infoCard = buyBtn.closest('[data-info]');
+      if (infoCard) { e.stopPropagation(); window.location.href = infoCard.dataset.info; }
+      return;
+    }
+    if (buyBtn) return;
     const card = e.target.closest('[data-open-player]');
-    if (card) showPlayer(e);
+    if (card) { showPlayer(e); return; }
+    const info = e.target.closest('[data-info]');
+    if (info) window.location.href = info.dataset.info;
   });
   const backToDash = document.getElementById('backToDash');
   if (backToDash) backToDash.addEventListener('click', showDashboard);
@@ -251,6 +259,7 @@
     if (btn) {
       e.stopPropagation();
       if (btn.classList.contains('owned')) { showPlayer(e); return; }
+      if (btn.closest('[data-info]')) return; // handled above: opens the course info page
       pendingCourseCard = btn;
       const courseTitle = document.getElementById('coCourseTitle');
       const coursePrice = document.getElementById('coCoursePrice');

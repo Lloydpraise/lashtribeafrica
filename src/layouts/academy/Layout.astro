@@ -5,10 +5,14 @@ import "../../styles/mobile-academy.css";
 
 interface Props {
   title?: string;
+  description?: string;
+  image?: string;
 }
 
 const {
   title = "Lashtribe Academy — Learn, Practice, Certify",
+  description,
+  image,
 } = Astro.props;
 ---
 
@@ -18,6 +22,30 @@ const {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    {image && <meta property="og:image" content={image} />}
+    <meta name="twitter:card" content={image ? "summary_large_image" : "summary"} />
+    <slot name="head" />
+    <!-- Returning, signed-in students: don't flash the sign-in screen while the session is checked.
+         AcademyBridge removes "auth-pending" as soon as it knows (and a timer does as a safety net). -->
+    <style is:inline>html.auth-pending #viewAuth{display:none !important}html.auth-pending body{background:#fffdfb}</style>
+    <script is:inline>
+      (function () {
+        try {
+          if (!/^\/academy\/?$/.test(location.pathname)) return;
+          var has = false;
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (/^sb-.+-auth-token$/.test(k) && localStorage.getItem(k)) { has = true; break; }
+          }
+          if (!has) return;
+          document.documentElement.classList.add("auth-pending");
+          setTimeout(function () { document.documentElement.classList.remove("auth-pending"); }, 4000);
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

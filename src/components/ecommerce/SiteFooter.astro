@@ -1,5 +1,17 @@
 ---
+import { getSiteSettings, socialLinks } from "../../data/site-settings.js";
+
 const { showAcademyStats = false } = Astro.props;
+const settings = await getSiteSettings();
+const socials = socialLinks(settings);
+
+// Simple outline icons (24x24, stroke = currentColor).
+const ICONS: Record<string, string> = {
+  instagram: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor"/>',
+  tiktok: '<path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>',
+  facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>',
+  youtube: '<path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>',
+};
 ---
 
 <footer>
@@ -25,18 +37,29 @@ const { showAcademyStats = false } = Astro.props;
           Wholesale, direct from source. No gatekeeping — just what we
           actually use.
         </p>
+        {
+          socials.length > 0 && (
+            <ul class="foot-social" aria-label="Follow us">
+              {socials.map((l) => (
+                <li>
+                  <a href={l.url} target="_blank" rel="noopener noreferrer" aria-label={l.label} title={l.label}>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={ICONS[l.key]} />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )
+        }
       </div>
       <div class="foot-col">
         <h5>Shop</h5>
         <a href="/ecommerce">Ecommerce</a>
         <a href="/shop">All Products</a>
         <a href="/ecommerce#new-in">New In</a>
-        <a href="/ecommerce#how-it-works">How Preorders Work</a>
+        <a href="/ecommerce#how-ordering">How Preorders Work</a>
       </div>
       <div class="foot-col">
-        <h5>Community</h5>
-        <a href="/ecommerce#rewards">Rewards</a>
-        <a href="#">Reseller / Private Label</a>
+        <h5>Learn</h5>
         <a href="/academy" class="academy-link">Lashtribe Academy →</a>
       </div>
       <div class="foot-col">
@@ -44,7 +67,7 @@ const { showAcademyStats = false } = Astro.props;
         <a href="/shipping-policy">Shipping & Preorders</a>
         <a href="/privacy-policy">Privacy Policy</a>
         <a href="/terms-and-conditions">Terms & Conditions</a>
-        <a href="#">Contact Us</a>
+        <a href="/contact">Contact Us</a>
       </div>
     </div>
     <div class="foot-bottom">
@@ -57,6 +80,30 @@ const { showAcademyStats = false } = Astro.props;
 <style>
   .foot-badge[hidden] {
     display: none;
+  }
+  .foot-social {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .foot-social a {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #e9e4e4;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+  }
+  .foot-social a:hover,
+  .foot-social a:focus-visible {
+    background: var(--warm-white);
+    color: var(--black);
+    border-color: var(--warm-white);
   }
 </style>
 

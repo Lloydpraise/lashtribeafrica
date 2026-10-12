@@ -1,0 +1,193 @@
+---
+import Layout from "../layouts/ecommerce/Layout.astro";
+import SiteHeader from "../components/ecommerce/SiteHeader.astro";
+import SiteFooter from "../components/ecommerce/SiteFooter.astro";
+import CartDrawer from "../components/ecommerce/CartDrawer.astro";
+import { getSiteSettings, phoneDigits, socialLinks } from "../data/site-settings.js";
+
+// Every detail comes from Admin → Site Settings → Contact & social. Empty ones are not shown.
+const settings = await getSiteSettings();
+const email = settings.contactEmail?.trim();
+const phone = settings.contactPhone?.trim();
+const whatsapp = settings.contactWhatsapp?.trim();
+const socials = socialLinks(settings);
+
+const methods = [
+  whatsapp && {
+    label: "WhatsApp",
+    value: whatsapp,
+    href: `https://wa.me/${phoneDigits(whatsapp)}`,
+    hint: "Quickest way to reach us",
+  },
+  phone && {
+    label: "Phone",
+    value: phone,
+    href: `tel:+${phoneDigits(phone)}`,
+    hint: "Call us",
+  },
+  email && {
+    label: "Email",
+    value: email,
+    href: `mailto:${email}`,
+    hint: "We reply within a working day",
+  },
+].filter(Boolean) as { label: string; value: string; href: string; hint: string }[];
+---
+
+<Layout title="Contact Us | Lashtribe Africa" description="Get in touch with Lashtribe Africa: email, phone, WhatsApp and social media.">
+  <SiteHeader />
+
+  <main class="contact-page">
+    <div class="wrap contact-wrap">
+      <div class="eyebrow">Lashtribe Africa</div>
+      <h1>Contact us</h1>
+      <p class="contact-lead">
+        Questions about an order, a batch date or the Academy? Reach us any of these ways.
+      </p>
+
+      {
+        methods.length > 0 ? (
+          <ul class="contact-methods">
+            {methods.map((m) => (
+              <li>
+                <a href={m.href} target={m.label === "WhatsApp" ? "_blank" : undefined} rel={m.label === "WhatsApp" ? "noopener noreferrer" : undefined}>
+                  <span class="cm-label">{m.label}</span>
+                  <span class="cm-value">{m.value}</span>
+                  <span class="cm-hint">{m.hint}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="contact-lead">Contact details are coming soon.</p>
+        )
+      }
+
+      {
+        socials.length > 0 && (
+          <div class="contact-social">
+            <h2>Follow us</h2>
+            <ul>
+              {socials.map((l) => (
+                <li>
+                  <a href={l.url} target="_blank" rel="noopener noreferrer">{l.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
+
+      <p class="contact-note">
+        Ordering? See <a href="/shipping-policy">how shipping and preorders work</a>.
+      </p>
+    </div>
+  </main>
+
+  <SiteFooter />
+  <CartDrawer />
+
+  <script src="/scripts/shared-cart.js" is:inline></script>
+  <script src="/scripts/cart-render.js" is:inline></script>
+  <script src="/scripts/main.js" is:inline></script>
+</Layout>
+
+<style>
+  .contact-page {
+    padding: 56px 0 84px;
+  }
+  .contact-wrap {
+    max-width: 760px;
+  }
+  .contact-wrap h1 {
+    font-size: clamp(30px, 4vw, 44px);
+    margin: 10px 0 12px;
+  }
+  .contact-lead {
+    margin: 0 0 26px;
+    font-size: 14.5px;
+    line-height: 1.8;
+    color: #555;
+  }
+  .contact-methods {
+    list-style: none;
+    margin: 0 0 34px;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+  }
+  .contact-methods a {
+    display: grid;
+    gap: 3px;
+    padding: 18px 20px;
+    border: 1px solid var(--grey);
+    border-radius: 14px;
+    background: var(--warm-white);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .contact-methods a:hover,
+  .contact-methods a:focus-visible {
+    border-color: var(--rose-deep);
+    transform: translateY(-1px);
+  }
+  .cm-label {
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--rose-deep);
+  }
+  .cm-value {
+    font-size: 18px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .cm-hint {
+    font-size: 12.5px;
+    color: #777;
+  }
+  .contact-social h2 {
+    font-size: 16px;
+    margin: 0 0 12px;
+  }
+  .contact-social ul {
+    list-style: none;
+    margin: 0 0 28px;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .contact-social a {
+    display: inline-block;
+    padding: 10px 18px;
+    border: 1px solid var(--grey);
+    border-radius: 999px;
+    font-size: 13px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .contact-social a:hover {
+    border-color: var(--black);
+  }
+  .contact-note {
+    font-size: 13px;
+    color: #777;
+  }
+  .contact-note a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  @media (max-width: 720px) {
+    .contact-page {
+      padding: 36px 0 56px;
+    }
+    .contact-methods a {
+      padding: 16px 16px;
+    }
+    .cm-value {
+      font-size: 16px;
+    }
+  }
+</style>

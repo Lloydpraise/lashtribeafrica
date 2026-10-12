@@ -64,6 +64,9 @@ export function newCourse(type = "story") {
     title: "",
     subtitle: "",
     description: "",
+    duration_label: "2 weeks",
+    about: "",
+    learn_points: [],
     level: "beginner",
     course_type: type,
     is_free: false,
@@ -224,9 +227,9 @@ export function estimateReadMinutes(blocks = []) {
 // database <-> editor
 // ---------------------------------------------------------------------
 const COURSE_FIELDS = [
-  "id", "slug", "title", "subtitle", "description", "level", "course_type", "is_free", "price",
-  "compare_price", "cover_url", "hero_path", "sequential", "certificate_enabled", "bonus_points",
-  "status", "sort_order",
+  "id", "slug", "title", "subtitle", "description", "duration_label", "about", "level", "course_type",
+  "is_free", "price", "compare_price", "cover_url", "hero_path", "sequential", "certificate_enabled",
+  "bonus_points", "status", "sort_order",
 ];
 
 /** Rows from fetchCourseFull -> editor course. */
@@ -274,6 +277,8 @@ export function courseFromRows({ course, modules, lessons, content }) {
     bonus_points: Number(course.bonus_points || 0),
     sort_order: Number(course.sort_order || 0),
     course_type: course.course_type || "story",
+    duration_label: course.duration_label || "2 weeks",
+    learn_points: Array.isArray(course.learn_points) ? course.learn_points : [],
     modules: mods,
   };
 }
@@ -288,6 +293,9 @@ export function toSavePayload(course) {
       title: course.title.trim(),
       subtitle: course.subtitle || "",
       description: course.description || "",
+      duration_label: (course.duration_label || "").trim() || "2 weeks",
+      about: course.about || "",
+      learn_points: (course.learn_points || []).map((x) => String(x).trim()).filter(Boolean),
       level: course.level,
       course_type: course.course_type,
       is_free: free,

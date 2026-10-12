@@ -59,3 +59,11 @@ later never moves old orders. Course-only orders have no batch.
 - Products: required **Supplier** dropdown with a quick "new supplier" box; stock fields are hidden (nothing is held in stock; existing values are kept). The product list shows the supplier, and a bar offers one-click "set this supplier on all products that have none".
 - Orders: new default tab **By shipping batch**: a card per batch with countdown, "taking orders until", orders / units / value / unpaid, a status switch, and the orders inside (click to open). **Supplier PDF** per batch: a page per supplier (SKU, product, total quantity), optional "only this supplier", optional dispatch list (customer, phone, area, items), paid orders only unless you tick "include awaiting payment". Order detail has "Ships with" to move an order to another batch. The All orders table has a Ships column.
 Tested: migration on a clean Postgres 16 with migrations 0001-0013 (cutoff rule, closed batches skipped, no open batch = unassigned, admin-only functions, re-run safe); production bundle compiles; PDF checked visually (multi-page, long names, dispatch list). Not tested: the admin screens in a browser against your real project.
+
+## Phase 2: contact, policies, course info page, cleanup
+- New `/contact` page (email, phone, WhatsApp, socials; empty ones are hidden). Social icons in the footer on every page. All editable in Admin → Site Settings → Contact & social.
+- Shipping policy written and wired to Admin → Policies (starter text from migration 0014; `# ` heading and `- ` bullet formatting supported).
+- Ecommerce: removed Rewards/Reseller section, fake checkout preview/modal, fallback demo products and the demo sign-in prefill. New "How preorders work" strip (Order, Pay, We order in bulk, Delivery).
+- Payment path left open in `src/services/payments.js` (manual today) for Pesapal / Daraja later.
+- Course info page `/academy/courses/<slug>`: image, price panel, scrollable outline preview, what you'll learn, about, related courses, SEO tags + Course schema, sticky buy bar on mobile. Paid course cards and Buy buttons open it; its Buy button places the course order (sign-in prompt first, then returns).
+- Courses have an approx. duration (default "2 weeks"), "About" and "What you'll learn" fields in the course editor; duration shows on the info page and the learning page header.
