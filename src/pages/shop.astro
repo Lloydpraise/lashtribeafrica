@@ -4,7 +4,7 @@ import SiteHeader from "../components/ecommerce/SiteHeader.astro";
 import ProductRail from "../components/ecommerce/ProductRail.astro";
 import SiteFooter from "../components/ecommerce/SiteFooter.astro";
 import CartDrawer from "../components/ecommerce/CartDrawer.astro";
-import { getEcommerceProducts } from "../data/ecommerce-products.js";
+import { getEcommerceProducts, cardPrices } from "../data/ecommerce-products.js";
 
 type Product = {
   slug: string;
@@ -14,6 +14,10 @@ type Product = {
   marketPrice?: number;
   nowPrice?: number;
   effectivePrice?: number;
+  fromPrice?: number;
+  effectiveFromPrice?: number;
+  priceVaries?: boolean;
+  optionsFromDelta?: number;
   hasOffer?: boolean;
   offerBadge?: string;
   moq?: number;
@@ -40,20 +44,21 @@ const groupedProducts = Object.entries(
 ) as [string, Product[]][];
 groupedProducts.sort(([left], [right]) => left.localeCompare(right));
 
+const optionWords = (product: any): string[] =>
+  (product.options || []).flatMap((o: any) => [o.name, ...o.values.map((v: any) => v.value)]).slice(0, 60);
+
 function toSearchCard(product: Product) {
   const category = product.category?.name || "Other";
   return {
     slug: product.slug,
     image: product.images?.[0]?.url,
     name: product.name,
-    marketPrice: `Ksh ${Number(product.marketPrice || 0).toLocaleString()}`,
-    nowPrice: `Ksh ${Number(product.effectivePrice ?? product.nowPrice ?? 0).toLocaleString()}`,
+    ...cardPrices(product),
     hasOffer: product.hasOffer,
-    offerPrice: `Ksh ${Number(product.effectivePrice ?? 0).toLocaleString()}`,
     offerBadge: product.offerBadge,
     note: product.note || "",
     moq: product.moq,
-    searchText: [product.name, product.slug, product.description, product.note, category].filter(Boolean).join(" "),
+    searchText: [product.name, product.slug, product.description, product.note, category, ...optionWords(product)].filter(Boolean).join(" "),
   };
 }
 ---

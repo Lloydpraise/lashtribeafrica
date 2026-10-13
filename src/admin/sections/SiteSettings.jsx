@@ -3,6 +3,7 @@ import EmptyState from "../components/EmptyState.jsx";
 import { fetchSiteSettings, saveSiteSettings, uploadSiteMedia } from "./settings/settings.api.js";
 import { fetchProducts } from "./products/products.api.js";
 import { BatchesCard, SuppliersCard } from "./batches/BatchSettings.jsx";
+import PricingFormulaCard from "./settings/PricingFormulaCard.jsx";
 
 function ListEditor({ label, hint, items, onChange, placeholder }) {
   const [draft, setDraft] = useState("");
@@ -344,9 +345,11 @@ export default function SiteSettings() {
         </div>
       </div>
 
-      <button className="admin-btn" type="button" onClick={handleSave} disabled={saving}>
+      <button className="admin-btn" type="button" onClick={handleSave} disabled={saving} style={{ marginBottom: 20 }}>
         {saving ? "Saving…" : "Save Site Settings"}
       </button>
+
+      <PricingFormulaCard />
     </div>
   );
 }

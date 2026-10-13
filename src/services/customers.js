@@ -146,7 +146,7 @@ export async function placeOrder({ customer, items, notes, paymentMethod }) {
 export async function fetchMyOrders() {
   const { data, error } = await supabase
     .from("orders")
-    .select("id, order_no, kind, status, subtotal, discount, shipping_fee, total, placed_at, paid_at, order_items(id, item_type, product_id, course_id, bundle_id, name, unit_price, quantity, line_total)")
+    .select("id, order_no, kind, status, subtotal, discount, shipping_fee, total, placed_at, paid_at, order_items(id, item_type, product_id, course_id, bundle_id, name, unit_price, quantity, line_total, selected_options, price_tier)")
     .order("placed_at", { ascending: false });
   if (error) throw error;
   return data || [];

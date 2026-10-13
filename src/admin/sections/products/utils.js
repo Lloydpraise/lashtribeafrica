@@ -35,8 +35,12 @@ export function emptyProduct() {
     complements: [],
     featured_sections: [],
     market_price: "",
-    now_price: "",
-    cost_price: "",
+    now_price: "", // WHOLESALE price (quantity at or above the MOQ)
+    retail_price: "", // below the MOQ; blank = same as wholesale
+    options: [],
+    price_mode: "manual",
+    cost_kes: "",
+    cost_usd: "",
     moq: 1,
     stock_quantity: 0,
     low_stock_threshold: 5,

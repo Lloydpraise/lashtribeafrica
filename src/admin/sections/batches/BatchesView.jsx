@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { updateBatch, fetchSupplierLines } from "./batches.api.js";
 import { buildBatchPdf, downloadPdfBytes, batchPdfName } from "./batchPdf.js";
 import { daysUntil, formatBatchDate, nairobiToday } from "../../../data/batches.js";
+import { itemLabel } from "../../../lib/pricing.js";
 
 const ksh = (v) => `Ksh ${Number(v || 0).toLocaleString()}`;
 const STATUS_LABEL = { open: "Open", closed: "Closed", ordered: "Ordered from supplier", shipped: "Shipped" };
@@ -145,7 +146,7 @@ function BatchCard({ batch, orders, suppliers, cutoff, onOpenOrder, onBatchChang
               <li key={o.id} className={live(o) ? "" : "dim"} onClick={() => onOpenOrder(o)}>
                 <div>
                   <div className="cx-name">{o.order_no} · {o.customer?.full_name || "(no name)"}</div>
-                  <div className="cx-sub">{(o.order_items || []).map((i) => `${i.name}${i.quantity > 1 ? ` ×${i.quantity}` : ""}`).join(", ")}</div>
+                  <div className="cx-sub">{(o.order_items || []).map((i) => `${itemLabel(i)}${i.quantity > 1 ? ` ×${i.quantity}` : ""}`).join(", ")}</div>
                 </div>
                 <div className="bt-order-side">
                   <span className="cx-money">{ksh(o.total)}</span>

@@ -66,21 +66,39 @@ function offerAppliesToProduct(offer, product) {
 //   hasOffer       — whether a discount is currently applied
 //   offerBadge     — text for the corner badge, e.g. "20% OFF"
 //   offerId        — id of the offer that won (highest discount wins)
+//   offerPct       — the winning percentage (0 when none); the product page applies it to whichever
+//                    price tier (wholesale / retail) the quantity falls in
+//   fromPrice / effectiveFromPrice — wholesale price with the cheapest options chosen (cards show
+//                    "From Ksh X" when priceVaries is true)
 export function applyOfferPricing(products, offers) {
   const percentageOffers = offers.filter((o) => o.type === "percentage_off");
+  const off = (price, pct) => Math.max(0, Math.round(price * (1 - pct / 100)));
 
   return products.map((product) => {
+    const fromPrice = Math.max(0, product.nowPrice + (product.optionsFromDelta || 0));
     const applicable = percentageOffers.filter((o) => offerAppliesToProduct(o, product));
     if (applicable.length === 0) {
-      return { ...product, effectivePrice: product.nowPrice, hasOffer: false, offerBadge: "", offerId: null };
+      return {
+        ...product,
+        effectivePrice: product.nowPrice,
+        fromPrice,
+        effectiveFromPrice: fromPrice,
+        offerPct: 0,
+        hasOffer: false,
+        offerBadge: "",
+        offerId: null,
+      };
     }
 
     const best = applicable.reduce((a, b) => (b.value > a.value ? b : a));
-    const effectivePrice = Math.max(0, Math.round(product.nowPrice * (1 - best.value / 100)));
+    const effectivePrice = off(product.nowPrice, best.value);
 
     return {
       ...product,
       effectivePrice,
+      fromPrice,
+      effectiveFromPrice: off(fromPrice, best.value),
+      offerPct: best.value,
       hasOffer: effectivePrice < product.nowPrice,
       offerBadge: defaultBadge(best),
       offerId: best.id,

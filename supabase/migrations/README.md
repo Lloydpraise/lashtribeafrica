@@ -121,3 +121,20 @@ site needs its normal deploy step re-run.
    course that has become paid (and are removed automatically when you switch a course free → paid). A paid order
    replaces any old enrollment, and `admin_set_course_access(user, course, true/false)` is a manual grant/revoke switch.
    Run after 0014; safe to re-run.
+16. **`0016_pricing_variants.sql`** – **Wholesale / retail / market pricing, product variants, private costs, locked-down admin writes.**
+   Run after 0015 in the SQL editor; safe to re-run. **Deploy order: run this first, then deploy the new site code**
+   (the new site still shows products if it runs first, but without retail prices or variants).
+   - `products.now_price` is now the **wholesale** price (quantity at or above the MOQ). New `products.retail_price`
+     (below the MOQ; blank = same as wholesale). `market_price` stays the crossed-out price (0 = none).
+   - `products.options` (jsonb) holds the variants an admin defines per product (e.g. Curl: C, D, DD; each value may add
+     a price change). `products.price_mode` is `manual` or `formula`. Orders remember `selected_options` and `price_tier`.
+   - `pricing_settings` (one row, admin only) is the pricing formula, edited in **Admin → Site Settings → Pricing formula**.
+     It only suggests prices; `admin_reprice_formula_products()` re-prices products kept on the formula.
+   - **Costs moved** from `products.cost_price` (publicly readable) into `product_costs` (admin only). The old column is
+     emptied, not dropped; drop it later with `alter table products drop column cost_price;` once you're happy.
+   - **RLS tightened:** products, categories, site_settings, kits, offers and the `product-media` bucket could be written
+     by anyone with the public key. Writes now need a signed-in `academy_admins` member. Reads are unchanged.
+   - `cart_quote(jsonb)` prices the cart on the server (so pages no longer embed the whole catalog), `place_order()` applies
+     the wholesale/retail rule and variant prices, and `batch_supplier_lines()` now splits a product by variant ordered.
+   - Still open (not part of 0016): the course tables are writable with the public key and lesson content is publicly
+     readable (see 0009); worth a follow-up migration.

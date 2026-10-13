@@ -1,0 +1,97 @@
+---
+// Breadcrumb trail shown at the top of product and course pages.
+//   <Breadcrumbs items={[{ label: "Home", href: "/ecommerce" }, { label: "Shop", href: "/shop" }, { label: "Lash Fans" }]} />
+// An item without an href (and always the last item) is plain text: that is the page you are on.
+export interface Crumb {
+  label: string;
+  href?: string;
+}
+interface Props {
+  items: Crumb[];
+}
+const { items } = Astro.props;
+---
+
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol>
+    {
+      items.map((item, i) => {
+        const last = i === items.length - 1;
+        return (
+          <li>
+            {item.href && !last ? (
+              <a href={item.href}>{item.label}</a>
+            ) : (
+              <span aria-current={last ? "page" : undefined}>{item.label}</span>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</nav>
+
+<style is:global>
+  .breadcrumbs {
+    max-width: var(--max, 1240px);
+    margin: 0 auto;
+    padding: 18px 28px 0;
+  }
+  .breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    color: #7a7a7a;
+  }
+  .breadcrumbs li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .breadcrumbs li + li::before {
+    content: "›";
+    color: #b3a3a7;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .breadcrumbs a {
+    color: var(--charcoal, #222);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .breadcrumbs a:hover {
+    border-bottom-color: currentColor;
+  }
+  .breadcrumbs [aria-current="page"] {
+    color: #555;
+    font-weight: 600;
+  }
+  @media (max-width: 880px) {
+    .breadcrumbs {
+      padding: 14px 16px 0;
+    }
+    .breadcrumbs ol {
+      flex-wrap: nowrap;
+      overflow: hidden;
+    }
+    .breadcrumbs li {
+      flex: none;
+    }
+    .breadcrumbs li:last-child {
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+    .breadcrumbs li:last-child span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+</style>

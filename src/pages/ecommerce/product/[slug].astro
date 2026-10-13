@@ -3,7 +3,9 @@ import Layout from "../../../layouts/ecommerce/Layout.astro";
 import SiteHeader from "../../../components/ecommerce/SiteHeader.astro";
 import CartDrawer from "../../../components/ecommerce/CartDrawer.astro";
 import SiteFooter from "../../../components/ecommerce/SiteFooter.astro";
+import Breadcrumbs from "../../../components/ecommerce/Breadcrumbs.astro";
 import { getEcommerceProducts, formatKsh } from "../../../data/ecommerce-products.js";
+import { linePrices, previewDelta } from "../../../lib/pricing.js";
 
 export async function getStaticPaths() {
   const products = await getEcommerceProducts();
@@ -12,19 +14,61 @@ export async function getStaticPaths() {
   }));
 }
 
+const slugify = (value = "") =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 const allProducts = await getEcommerceProducts();
 const slug = Astro.params.slug || allProducts[0].slug;
 const product = allProducts.find((p) => p.slug === slug) || allProducts[0];
 const complementaryProducts = allProducts.filter((item) =>
   product.complementSlugs.includes(item.slug)
 );
-const relatedProducts = allProducts.filter((item) => item.slug !== product.slug).slice(0, 3);
-const priceDifference = product.marketPrice - product.nowPrice;
+
+// "You may also like": the same category first, then anything else, three in total.
+const sameCategory = allProducts.filter(
+  (item) => item.slug !== product.slug && product.category && item.category?.id === product.category.id
+);
+const sameIds = new Set(sameCategory.map((item) => item.id));
+const otherProducts = allProducts.filter((item) => item.slug !== product.slug && !sameIds.has(item.id));
+const relatedProducts = [...sameCategory, ...otherProducts].slice(0, 3);
+
 const coverImage = product.images?.[0];
+
+const crumbs = [
+  { label: "Home", href: "/ecommerce" },
+  { label: "Shop", href: "/shop" },
+  ...(product.category ? [{ label: product.category.name, href: `/shop#${slugify(product.category.name)}` }] : []),
+  { label: product.name },
+];
+
+// What the page needs to price a quantity / option choice in the browser (mirrors the database rules).
+const config = {
+  id: product.id,
+  name: product.name,
+  moq: product.moq,
+  marketPrice: product.marketPrice,
+  nowPrice: product.nowPrice,
+  retailPrice: product.retailPrice,
+  offerPct: product.offerPct || 0,
+  options: product.options,
+};
+const configJson = JSON.stringify(config).replace(/</g, "\\u003c");
+
+// First paint: wholesale price at the MOQ, options not chosen yet counted at their cheapest value.
+const start = linePrices(config, {}, product.moq, { preview: true });
+const startPartial = previewDelta(product.options, {}).partial;
+const startSave = start.market > start.unit ? start.market - start.unit : 0;
+const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
 ---
 
 <Layout title={`${product.name} | Lashtribe Africa`}>
   <SiteHeader />
+
+  <Breadcrumbs items={crumbs} />
 
   <main class="product-page">
     <section class="product-shell wrap">
@@ -74,16 +118,23 @@ const coverImage = product.images?.[0];
                     </div>
                     <div class="bundle-copy">
                       <strong>{item.name}</strong>
-                      <span>{formatKsh(item.effectivePrice)}</span>
+                      <span>{item.priceVaries ? "From " : ""}{formatKsh(item.effectiveFromPrice ?? item.effectivePrice)}</span>
                     </div>
-                    <button
-                      class="bundle-add"
-                      type="button"
-                      data-product-id={item.id}
-                      aria-label={`Add ${item.name} to cart`}
-                    >
-                      +
-                    </button>
+                    {item.hasOptions ? (
+                      <a class="bundle-add bundle-choose" href={`/ecommerce/product/${item.slug}`} aria-label={`Choose options for ${item.name}`}>
+                        ›
+                      </a>
+                    ) : (
+                      <button
+                        class="bundle-add"
+                        type="button"
+                        data-product-id={item.id}
+                        data-moq={item.moq}
+                        aria-label={`Add ${item.name} to cart`}
+                      >
+                        +
+                      </button>
+                    )}
                   </div>
                 ))
               }
@@ -92,7 +143,7 @@ const coverImage = product.images?.[0];
         )}
       </div>
 
-      <div class="product-panel">
+      <div class="product-panel" data-product-id={product.id}>
         <div class="product-meta">
           <span class="eyebrow">
             {product.category ? product.category.name : "Wholesale favorite"}
@@ -107,35 +158,74 @@ const coverImage = product.images?.[0];
           </ul>
         )}
 
-        <div class="product-price-card">
-          <div class="market-price-row">
+        {product.options.length > 0 && (
+          <div class="option-groups" id="optionGroups">
+            {product.options.map((option) => (
+              <div class="option-group" data-option-group={option.name}>
+                <div class="option-label">
+                  <span>{option.name}</span>
+                  <em class="option-chosen" data-chosen-for={option.name}>Select</em>
+                </div>
+                <div class="option-values" role="radiogroup" aria-label={option.name}>
+                  {option.values.map((v) => (
+                    <button
+                      type="button"
+                      class="opt-pill"
+                      role="radio"
+                      aria-checked="false"
+                      data-option={option.name}
+                      data-value={v.value}
+                    >
+                      {v.value}
+                      {v.priceDelta !== 0 && <small>{deltaLabel(v.priceDelta)}</small>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <p class="option-msg" id="optionMsg" role="alert" hidden></p>
+          </div>
+        )}
+
+        <div class="product-price-card" id="priceCard">
+          <div class="market-price-row" id="marketRow" hidden={start.market <= start.unit}>
             <span class="label">Market Price</span>
-            <span class="market-price">{formatKsh(product.marketPrice)}</span>
+            <span class="market-price" id="marketPrice">{formatKsh(start.market)}</span>
           </div>
-          <div class="save-row">
+          <div class="save-row" id="saveRow" hidden={startSave <= 0}>
             <span class="label">You Will Save</span>
-            <strong>{formatKsh(product.hasOffer ? product.marketPrice - product.effectivePrice : priceDifference)}</strong>
+            <strong id="saveAmount">{formatKsh(startSave)}</strong>
           </div>
-          {product.hasOffer && (
-            <div class="offer-price-row">
-              <span class="offer-badge-inline">{product.offerBadge}</span>
-              <span class="was-price">{formatKsh(product.nowPrice)}</span>
-            </div>
-          )}
+          <div class="offer-price-row" id="offerRow" hidden={!(product.offerPct > 0)}>
+            <span class="offer-badge-inline">{product.offerBadge}</span>
+            <span class="was-price" id="wasPrice">{formatKsh(start.list)}</span>
+          </div>
           <div class="current-price-row">
-            <span class="current-price">{formatKsh(product.effectivePrice)}</span>
+            <span class="tier-badge tier-wholesale" id="tierBadge">Wholesale price</span>
+            <span class="current-price" id="currentPrice">{startPartial ? "From " : ""}{formatKsh(start.unit)}</span>
+            <span class="price-sub" id="priceSub">per unit</span>
           </div>
+          <p class="tier-hint" id="tierHint"></p>
           <div class="moq-row">
-            <span class="label">Minimum Order Qty</span>
-            <span>{product.moq}</span>
+            <span class="label">Wholesale price from</span>
+            <span>{product.moq} {product.moq === 1 ? "unit" : "units"}</span>
+          </div>
+        </div>
+
+        <div class="qty-row">
+          <span class="label">Quantity</span>
+          <div class="qty-counter">
+            <button type="button" id="qtyMinus" aria-label="Decrease quantity">−</button>
+            <input type="number" id="qtyInput" min="1" max="100000" step="1" value={product.moq} inputmode="numeric" aria-label="Quantity" />
+            <button type="button" id="qtyPlus" aria-label="Increase quantity">+</button>
           </div>
         </div>
 
         <div class="product-actions">
-          <button class="btn-primary product-add" type="button" data-product-id={product.id}>
+          <button class="btn-primary product-add" type="button" id="addToCart">
             Add to Cart
           </button>
-          <button class="btn-black product-buy" type="button" data-product-id={product.id}>
+          <button class="btn-black product-buy" type="button" id="buyNow">
             Buy Now
           </button>
         </div>
@@ -169,8 +259,8 @@ const coverImage = product.images?.[0];
               <div class="related-copy">
                 <h3>{item.name}</h3>
                 <div class="related-price-row">
-                  <span class="market">{formatKsh(item.marketPrice)}</span>
-                  <span class="now">{formatKsh(item.effectivePrice)}</span>
+                  <span class="market">{formatKsh(item.priceVaries ? item.fromPrice : item.marketPrice)}</span>
+                  <span class="now">{item.priceVaries ? "From " : ""}{formatKsh(item.effectiveFromPrice ?? item.effectivePrice)}</span>
                 </div>
               </div>
             </a>
@@ -183,70 +273,166 @@ const coverImage = product.images?.[0];
   <SiteFooter />
   <CartDrawer />
 
+  <script type="application/json" id="product-config" set:html={configJson} />
+
   <script src="/scripts/shared-cart.js" is:inline></script>
   <script src="/scripts/cart-render.js" is:inline></script>
   <script src="/scripts/main.js" is:inline></script>
-  <script is:inline>
-    (function () {
-      const productIdAttr = document.querySelector('[data-product-id]')?.dataset.productId || '';
-      const formatKsh = (value) => `Ksh ${Number(value || 0).toLocaleString()}`;
+  <script>
+    import { linePrices, previewDelta, resolveOptions, formatKsh } from "../../../lib/pricing.js";
 
-      // Gallery thumb switching
-      document.querySelectorAll('.thumb-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const url = btn.dataset.imageUrl;
-          const mainImg = document.getElementById('productMainImage');
-          if (mainImg && url) mainImg.src = url;
-          document.querySelectorAll('.thumb-btn').forEach((b) => b.classList.remove('active'));
-          btn.classList.add('active');
-        });
-      });
+    const cart = () => (window as any).LashtribeCart;
+    const config = JSON.parse(document.getElementById("product-config")?.textContent || "{}");
+    const selected: Record<string, string> = {};
 
-      function addToCart(id) {
-        const cart = window.LashtribeCart ? window.LashtribeCart.getCart() : JSON.parse(localStorage.getItem('lashtribe_cart') || '{}');
-        const next = { ...cart };
-        next[id] = (Number(next[id]) || 0) + 1;
+    const $ = (id: string) => document.getElementById(id);
+    const qtyInput = $("qtyInput") as HTMLInputElement | null;
+    const addButton = $("addToCart") as HTMLButtonElement | null;
+    const optionMsg = $("optionMsg");
 
-        if (window.LashtribeCart) {
-          window.LashtribeCart.setCart(next);
-          window.LashtribeCart.syncCartBadges();
-        } else {
-          localStorage.setItem('lashtribe_cart', JSON.stringify(next));
-        }
+    const show = (id: string, on: boolean) => {
+      const node = $(id);
+      if (node) node.hidden = !on;
+    };
+    const text = (id: string, value: string) => {
+      const node = $(id);
+      if (node) node.textContent = value;
+    };
 
-        const drawer = document.getElementById('cartDrawer');
-        if (drawer) {
-          drawer.classList.add('open');
-          const overlay = document.getElementById('overlay');
-          if (overlay) overlay.classList.add('open');
-        }
+    // The quantity as a number >= 1 (while someone is typing a box can be empty; that counts as 1 for display)
+    function quantity() {
+      const n = Math.round(Number(qtyInput?.value));
+      return Number.isFinite(n) && n >= 1 ? Math.min(100000, n) : 1;
+    }
+
+    function update() {
+      const qty = quantity();
+      const { complete, missing } = resolveOptions(config.options, selected);
+      const { partial } = previewDelta(config.options, selected);
+      const p = linePrices(config, selected, qty, { preview: true });
+      const save = p.market > p.unit ? p.market - p.unit : 0;
+      const wholesaleCheaper = p.wholesale < p.retail;
+
+      text("currentPrice", `${partial ? "From " : ""}${formatKsh(p.unit)}`);
+      text("priceSub", partial ? "per unit · pick every option for your exact price" : `per unit · ${formatKsh(p.unit * qty)} for ${qty}`);
+
+      const badge = $("tierBadge");
+      if (badge) {
+        badge.textContent = p.tier === "wholesale" ? "Wholesale price" : "Retail price · below minimum";
+        badge.classList.toggle("tier-wholesale", p.tier === "wholesale");
+        badge.classList.toggle("tier-retail", p.tier !== "wholesale");
       }
 
-      document.querySelectorAll('.product-add, .bundle-add').forEach((button) => {
-        button.addEventListener('click', () => {
-          const id = button.dataset.productId;
-          if (!id) return;
-          if (button.classList.contains('bundle-add')) {
-            button.classList.add('added');
-            button.textContent = '✓';
-            button.disabled = true;
-          }
-          addToCart(id);
-        });
-      });
+      if (p.tier === "retail" && wholesaleCheaper) {
+        text("tierHint", `Order ${config.moq} or more to get the wholesale price of ${formatKsh(p.wholesale)} each (save ${formatKsh(p.retail - p.wholesale)} per unit).`);
+      } else if (p.tier === "wholesale" && p.retail > p.wholesale) {
+        text("tierHint", `Wholesale price applied: ${formatKsh(p.retail - p.wholesale)} less per unit than retail.`);
+      } else {
+        text("tierHint", "");
+      }
+      show("tierHint", Boolean($("tierHint")?.textContent));
 
-      document.querySelectorAll('.product-buy').forEach((button) => {
-        button.addEventListener('click', () => {
-          const id = button.dataset.productId;
-          if (!id) return;
-          addToCart(id);
-          if (window.LashtribeCart) {
-            window.LashtribeCart.goToCheckout();
-          } else {
-            window.location.href = '/ecommerce/checkout';
-          }
+      show("marketRow", save > 0);
+      show("saveRow", save > 0);
+      text("marketPrice", formatKsh(p.market));
+      text("saveAmount", formatKsh(save));
+      show("offerRow", Number(config.offerPct) > 0);
+      text("wasPrice", formatKsh(p.list));
+
+      if (addButton) addButton.textContent = complete ? "Add to Cart" : `Choose ${missing[0]}`;
+    }
+
+    // ---- options ----
+    document.querySelectorAll<HTMLButtonElement>(".opt-pill").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        const name = pill.dataset.option || "";
+        selected[name] = pill.dataset.value || "";
+        document.querySelectorAll<HTMLButtonElement>(".opt-pill").forEach((other) => {
+          if (other.dataset.option !== name) return;
+          const on = other === pill;
+          other.classList.toggle("is-selected", on);
+          other.setAttribute("aria-checked", String(on));
         });
+        const chosen = document.querySelector(`[data-chosen-for="${CSS.escape(name)}"]`);
+        if (chosen) chosen.textContent = selected[name];
+        document.querySelector(`[data-option-group="${CSS.escape(name)}"]`)?.classList.remove("option-missing");
+        if (optionMsg) optionMsg.hidden = true;
+        update();
       });
-    })();
+    });
+
+    // ---- quantity ----
+    qtyInput?.addEventListener("input", update);
+    qtyInput?.addEventListener("change", () => {
+      qtyInput.value = String(quantity());
+      update();
+    });
+    $("qtyMinus")?.addEventListener("click", () => {
+      if (qtyInput) qtyInput.value = String(Math.max(1, quantity() - 1));
+      update();
+    });
+    $("qtyPlus")?.addEventListener("click", () => {
+      if (qtyInput) qtyInput.value = String(Math.min(100000, quantity() + 1));
+      update();
+    });
+
+    // ---- gallery ----
+    document.querySelectorAll<HTMLButtonElement>(".thumb-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const url = btn.dataset.imageUrl;
+        const mainImg = $("productMainImage") as HTMLImageElement | null;
+        if (mainImg && url) mainImg.src = url;
+        document.querySelectorAll(".thumb-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+
+    function openDrawer() {
+      $("cartDrawer")?.classList.add("open");
+      $("overlay")?.classList.add("open");
+    }
+
+    // Adds the chosen quantity + options. Returns false (and points at what is missing) when an option is not chosen.
+    function addChosen(): boolean {
+      const { complete, missing, chosen } = resolveOptions(config.options, selected);
+      if (!complete) {
+        missing.forEach((name: string) =>
+          document.querySelector(`[data-option-group="${CSS.escape(name)}"]`)?.classList.add("option-missing")
+        );
+        if (optionMsg) {
+          optionMsg.textContent = `Please choose ${missing.join(" and ")} first.`;
+          optionMsg.hidden = false;
+        }
+        document.getElementById("optionGroups")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return false;
+      }
+      cart()?.add(config.id, quantity(), chosen);
+      return true;
+    }
+
+    addButton?.addEventListener("click", () => {
+      if (addChosen()) openDrawer();
+    });
+
+    $("buyNow")?.addEventListener("click", () => {
+      if (!addChosen()) return;
+      if (cart()) cart().goToCheckout();
+      else window.location.href = "/ecommerce/checkout";
+    });
+
+    // "Goes together with": adds the product at its minimum order quantity
+    document.querySelectorAll<HTMLButtonElement>("button.bundle-add").forEach((button) => {
+      button.addEventListener("click", () => {
+        const id = button.dataset.productId;
+        if (!id) return;
+        button.classList.add("added");
+        button.textContent = "✓";
+        button.disabled = true;
+        cart()?.add(id, Math.max(1, Number(button.dataset.moq) || 1));
+        openDrawer();
+      });
+    });
+
+    update();
   </script>
 </Layout>

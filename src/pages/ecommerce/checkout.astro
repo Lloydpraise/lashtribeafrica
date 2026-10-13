@@ -189,14 +189,9 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
     }
 
     function cartItems() {
-      const cart = (window as any).LashtribeCart?.getCart?.() || {};
-      let catalog: any = { products: {} };
-      try {
-        catalog = JSON.parse(document.getElementById("lashtribe-catalog")?.textContent || "{}");
-      } catch { /* ignore */ }
-      return Object.entries(cart)
-        .filter(([id]) => catalog.products?.[id])
-        .map(([id, qty]) => ({ type: "product", id, qty: Number(qty) }));
+      // One entry per cart line (a product with options can appear on several lines). The database re-prices it all.
+      const lines = (window as any).LashtribeCart?.getLines?.() || [];
+      return lines.map((l: any) => ({ type: "product", id: l.id, qty: Number(l.qty), options: l.options || {} }));
     }
 
     async function syncSignedIn() {

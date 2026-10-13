@@ -10,7 +10,7 @@ import KitStrip from "../../components/ecommerce/KitStrip.astro";
 import AcademyHook from "../../components/ecommerce/AcademyHook.astro";
 import SiteFooter from "../../components/ecommerce/SiteFooter.astro";
 import CartDrawer from "../../components/ecommerce/CartDrawer.astro";
-import { getEcommerceProducts, formatKsh } from "../../data/ecommerce-products.js";
+import { getEcommerceProducts, cardPrices } from "../../data/ecommerce-products.js";
 
 const allProducts = await getEcommerceProducts();
 
@@ -20,9 +20,7 @@ function toRailCard(product) {
     icon: product.icon,
     image: product.images?.[0]?.url,
     name: product.name,
-    marketPrice: formatKsh(product.marketPrice),
-    nowPrice: formatKsh(product.nowPrice),
-    offerPrice: formatKsh(product.effectivePrice),
+    ...cardPrices(product),
     hasOffer: product.hasOffer,
     offerBadge: product.offerBadge,
     note: product.note,

@@ -278,6 +278,8 @@ body.cart-open { overflow: hidden; }
   .line-thumb { width: 56px; height: 56px; }
   .stepper button { width: 34px; height: 34px; font-size: 16px; }
   .stepper span { width: 30px; }
+  .stepper .qty-input { width: 48px; height: 34px; font-size: 14px; }
+  .line-remove { font-size: 22px; padding: 0 2px 0 6px; }
   .savings-box { padding: 14px 16px; }
   .drawer-foot { padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
   .drawer-foot .btn-primary { padding: 16px 20px; }

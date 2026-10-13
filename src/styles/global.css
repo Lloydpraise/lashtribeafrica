@@ -220,6 +220,42 @@
   .product-add{background:var(--warm-white);color:var(--black);border:1px solid var(--black);}
   .btn-black,.product-buy{background:var(--black);color:var(--warm-white);border:1px solid var(--black);}
   .product-actions button:hover{transform:translateY(-2px);box-shadow:0 10px 18px rgba(0,0,0,.08);}
+  /* options (variants), quantity counter and price tiers on the product page */
+  .option-groups{display:grid;gap:16px;margin:0 0 22px;}
+  .option-label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#666;}
+  .option-chosen{font-style:normal;font-size:12px;letter-spacing:.02em;text-transform:none;font-weight:600;color:var(--rose-deep);}
+  .option-values{display:flex;flex-wrap:wrap;gap:8px;}
+  .opt-pill{display:inline-flex;align-items:baseline;gap:6px;min-width:46px;justify-content:center;padding:10px 14px;border:1px solid var(--grey);background:var(--warm-white);border-radius:10px;font:600 13px var(--sans);color:var(--charcoal);cursor:pointer;transition:border-color .15s ease, background .15s ease, color .15s ease;}
+  .opt-pill small{font-size:10.5px;font-weight:600;color:#8a8a8a;}
+  .opt-pill:hover{border-color:var(--charcoal);}
+  .opt-pill.is-selected{background:var(--black);border-color:var(--black);color:var(--warm-white);}
+  .opt-pill.is-selected small{color:rgba(255,253,251,.75);}
+  .option-group.option-missing .opt-pill{border-color:var(--rose-deep);}
+  .option-group.option-missing .option-label{color:var(--rose-deep);}
+  .option-msg{margin:0;font-size:12.5px;color:var(--rose-deep);font-weight:600;}
+  .tier-badge{display:inline-block;margin-bottom:6px;padding:4px 10px;border-radius:20px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;}
+  .tier-badge.tier-wholesale{background:#e4f1e8;color:var(--green);}
+  .tier-badge.tier-retail{background:var(--blush);color:var(--rose-deep);}
+  .price-sub{display:block;margin-top:2px;font-size:12px;color:#777;}
+  .tier-hint{margin:10px 0 0;padding:9px 12px;border-radius:10px;background:var(--blush);font-size:12.5px;line-height:1.5;color:var(--charcoal);}
+  .tier-hint[hidden]{display:none;}
+  .qty-row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 16px;}
+  .qty-counter{display:inline-grid;grid-template-columns:44px 84px 44px;height:46px;border:1px solid var(--charcoal);border-radius:12px;overflow:hidden;background:var(--warm-white);}
+  .qty-counter button{border:0;background:var(--blush);font-size:20px;cursor:pointer;color:var(--charcoal);}
+  .qty-counter button:hover{background:var(--grey);}
+  .qty-counter input{width:100%;min-width:0;border:0;border-left:1px solid var(--grey);border-right:1px solid var(--grey);text-align:center;font:700 15px var(--sans);appearance:textfield;-moz-appearance:textfield;background:transparent;}
+  .qty-counter input::-webkit-outer-spin-button,.qty-counter input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .bundle-add.bundle-choose{display:grid;place-items:center;text-decoration:none;}
+  /* cart lines: chosen options, tier hint, typed quantity, remove */
+  .line-item{position:relative;}
+  .line-opts{font-size:11px;color:#666;margin:-2px 0 4px;line-height:1.4;}
+  .line-info .tier-hint{margin:0 0 8px;padding:6px 8px;font-size:10.5px;line-height:1.4;}
+  .stepper .qty-input{width:44px;height:26px;border:0;text-align:center;font:600 12.5px var(--sans);appearance:textfield;-moz-appearance:textfield;background:transparent;padding:0;}
+  .stepper .qty-input::-webkit-outer-spin-button,.stepper .qty-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .line-remove{align-self:flex-start;border:0;background:none;cursor:pointer;font-size:18px;line-height:1;color:#999;padding:0 0 0 4px;}
+  .line-remove:hover{color:var(--black);}
+  .line-choose{display:inline-block;margin-top:2px;font-size:11.5px;font-weight:700;color:var(--rose-deep);}
+  .line-item.is-loading{opacity:.5;}
   .product-description{margin-top:28px;padding-top:24px;border-top:1px solid var(--grey);}
   .product-description h2{font-size:18px;margin:0 0 10px;}
   .product-description p{margin:0 0 12px;font-size:14px;line-height:1.8;color:var(--charcoal);}
@@ -587,3 +623,6 @@
   .checkout-done h1{font-family:var(--serif);font-size:32px;margin:0 0 14px;}
   .checkout-done p{font-size:15px;line-height:1.6;margin:0 0 12px;}
   .checkout-done a{color:var(--rose-deep);}
+
+/* rows toggled with the hidden attribute must stay hidden even though their class sets display */
+.product-price-card [hidden], .option-msg[hidden] { display: none !important; }

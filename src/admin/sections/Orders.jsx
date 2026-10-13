@@ -4,6 +4,7 @@ import { fetchOrders, setOrderStatus } from "./orders/orders.api.js";
 import BatchesView from "./batches/BatchesView.jsx";
 import { fetchAllBatches, fetchSuppliers, fetchCutoffDays, moveOrderToBatch } from "./batches/batches.api.js";
 import { formatBatchDate } from "../../data/batches.js";
+import { itemLabel, optionsText } from "../../lib/pricing.js";
 
 const ksh = (v) => `Ksh ${Number(v || 0).toLocaleString()}`;
 const when = (iso) =>
@@ -99,8 +100,8 @@ function OrderDetail({ order, batches, onClose, onChanged, onMoved }) {
               <tbody>
                 {order.order_items.map((i) => (
                   <tr key={i.id}>
-                    <td className="cx-name">{i.name}</td>
-                    <td>{i.item_type}</td>
+                    <td className="cx-name">{i.name}{optionsText(i.selected_options) && <div className="cx-sub">{optionsText(i.selected_options)}</div>}</td>
+                    <td>{i.item_type}{i.price_tier && <div className="cx-sub">{i.price_tier}</div>}</td>
                     <td>{i.quantity}</td>
                     <td className="cx-money">{ksh(i.unit_price)}</td>
                     <td className="cx-money">{ksh(i.line_total)}</td>
@@ -222,7 +223,7 @@ export default function Orders() {
       .filter((o) => kind === "all" || o.kind === kind)
       .filter((o) => {
         if (!terms.length) return true;
-        const hay = [o.order_no, o.customer?.full_name, o.customer?.phone, o.customer?.email, o.payment_ref, ...o.order_items.map((i) => i.name)]
+        const hay = [o.order_no, o.customer?.full_name, o.customer?.phone, o.customer?.email, o.payment_ref, ...o.order_items.map((i) => itemLabel(i))]
           .filter(Boolean).join(" ").toLowerCase();
         return terms.every((t) => hay.includes(t));
       });
@@ -291,7 +292,7 @@ export default function Orders() {
                     <div className="cx-name">{o.customer?.full_name || "(no name)"}</div>
                     <div className="cx-sub">{o.customer?.phone || o.customer?.email}</div>
                   </td>
-                  <td className="cx-order-items">{o.order_items.map((i) => `${i.name}${i.quantity > 1 ? ` ×${i.quantity}` : ""}`).join(", ")}</td>
+                  <td className="cx-order-items">{o.order_items.map((i) => `${itemLabel(i)}${i.quantity > 1 ? ` ×${i.quantity}` : ""}`).join(", ")}</td>
                   <td>{KIND_LABEL[o.kind]}</td>
                   <td>{o.batch_id && batchById.get(o.batch_id) ? formatBatchDate(batchById.get(o.batch_id).ship_date) : "—"}</td>
                   <td className="cx-money">{ksh(o.total)}</td>

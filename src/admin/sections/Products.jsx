@@ -55,14 +55,14 @@ export default function Products() {
     }
   }
 
-  async function handleSave(payload) {
+  async function handleSave(payload, costs) {
     if (editing.id) {
-      const updated = await updateProduct(editing.id, payload);
+      const updated = await updateProduct(editing.id, payload, costs);
       setProducts((prev) =>
         prev.map((p) => (p.id === updated.id ? updated : p))
       );
     } else {
-      const created = await createProduct(payload);
+      const created = await createProduct(payload, costs);
       setProducts((prev) => [created, ...prev]);
     }
     setEditing(null);
@@ -169,13 +169,21 @@ export default function Products() {
                   <td>
                     <div className="table-primary">{p.name}</div>
                     <div className="table-secondary">{p.sku || p.slug}</div>
+                    {Array.isArray(p.options) && p.options.length > 0 && (
+                      <div className="table-secondary">
+                        {p.options.map((o) => `${o.name} (${(o.values || []).length})`).join(" · ")}
+                      </div>
+                    )}
                   </td>
                   <td>{p.category?.name || "—"}</td>
                   <td>
-                    <div className="table-primary">{formatKsh(p.now_price)}</div>
-                    <div className="table-secondary strike">
-                      {formatKsh(p.market_price)}
+                    <div className="table-primary">{formatKsh(p.now_price)} <small>wholesale</small></div>
+                    <div className="table-secondary">
+                      {Number(p.retail_price) > 0 ? `${formatKsh(p.retail_price)} retail` : "retail = wholesale"}
                     </div>
+                    {Number(p.market_price) > 0 && (
+                      <div className="table-secondary strike">{formatKsh(p.market_price)}</div>
+                    )}
                   </td>
                   <td className={p.supplier ? "" : "stock-low"}>
                     {p.supplier?.name || "No supplier"}

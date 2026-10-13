@@ -292,6 +292,7 @@ export default function LearnApp() {
   }, [ctx, lesson]);
 
   const onAddProduct = (p) => {
+    if (p.hasOptions && p.slug) { window.location.href = `/ecommerce/product/${p.slug}`; return; }
     if (addToShopCart(p)) { setAdded((a) => ({ ...a, [p.slug]: true })); say(`Added ${p.name} to your cart`); }
     else say("Open the shop to add this product.");
   };

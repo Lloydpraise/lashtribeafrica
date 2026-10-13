@@ -22,9 +22,13 @@ const products = (await getEcommerceProducts()).slice(0, 3);
             </div>
             <div class="ps-info">
               <h6>{p.name}</h6>
-              <span>{formatKsh(p.effectivePrice ?? p.nowPrice)}</span>
+              <span>{p.priceVaries ? "From " : ""}{formatKsh(p.effectiveFromPrice ?? p.effectivePrice ?? p.nowPrice)}</span>
             </div>
-            <button class="ps-add" data-id={p.id} data-name={p.name} data-moq={p.moq}>+</button>
+            {p.hasOptions ? (
+              <a class="ps-add ps-choose" href={`/ecommerce/product/${p.slug}`} aria-label={`Choose options for ${p.name}`}>›</a>
+            ) : (
+              <button class="ps-add" data-id={p.id} data-name={p.name} data-moq={p.moq}>+</button>
+            )}
           </div>
         ))}
       </div>

@@ -31,14 +31,34 @@
   }
 
   if (searchInput && searchSuggestions) {
+    // The product list is one cached file (/search-index.json), downloaded the first time search is opened.
     let searchProducts = [];
+    let searchLoading = false;
+    const searchHost = searchSuggestions.parentElement;
     try {
-      searchProducts = JSON.parse(searchSuggestions.parentElement?.dataset.searchProducts || '[]');
+      // older pages that still embed the list keep working
+      searchProducts = JSON.parse(searchHost?.dataset.searchProducts || '[]');
     } catch (error) {
       searchProducts = [];
     }
+    function loadSearchIndex() {
+      const src = searchHost?.dataset.searchSrc;
+      if (!src || searchProducts.length || searchLoading) return;
+      searchLoading = true;
+      fetch(src)
+        .then((res) => (res.ok ? res.json() : []))
+        .then((list) => {
+          searchProducts = Array.isArray(list) ? list : [];
+          if (searchInput.value.trim()) searchInput.dispatchEvent(new Event('input'));
+        })
+        .catch(() => {})
+        .finally(() => { searchLoading = false; });
+    }
+    searchInput.addEventListener('focus', loadSearchIndex);
+    searchToggle?.addEventListener('click', loadSearchIndex);
 
     searchInput.addEventListener('input', () => {
+      loadSearchIndex();
       const terms = searchInput.value.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
       searchSuggestions.replaceChildren();
 

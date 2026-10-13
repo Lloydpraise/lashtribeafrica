@@ -12,6 +12,7 @@ interface Product {
   offerBadge?: string;
   note: string;
   moq?: number;
+  hasOptions?: boolean;
 }
 
 interface Props {
@@ -54,26 +55,34 @@ const minimum = Math.max(1, Number(product.moq) || 1);
     </div>
   </a>
   <div class="kit-card-actions">
-    <div class="kit-quantity-control" aria-label={`Quantity for ${product.name}`}>
-      <button type="button" data-qty-step="-1" aria-label={`Decrease ${product.name} quantity`}>−</button>
-      <input
-        type="number"
-        min={minimum}
-        step="1"
-        value={minimum}
-        data-kit-qty={product.id}
-        aria-label={`Quantity for ${product.name}`}
-      />
-      <button type="button" data-qty-step="1" aria-label={`Increase ${product.name} quantity`}>+</button>
-    </div>
-    <button
-      class="kit-add-button"
-      type="button"
-      data-add-kit-product={product.id}
-      disabled={!product.id}
-    >
-      Add to Cart
-    </button>
+    {product.hasOptions ? (
+      <a class="kit-add-button kit-choose-button" href={product.slug ? `/ecommerce/product/${product.slug}` : "/shop"}>
+        Choose options
+      </a>
+    ) : (
+      <>
+        <div class="kit-quantity-control" aria-label={`Quantity for ${product.name}`}>
+          <button type="button" data-qty-step="-1" aria-label={`Decrease ${product.name} quantity`}>−</button>
+          <input
+            type="number"
+            min={minimum}
+            step="1"
+            value={minimum}
+            data-kit-qty={product.id}
+            aria-label={`Quantity for ${product.name}`}
+          />
+          <button type="button" data-qty-step="1" aria-label={`Increase ${product.name} quantity`}>+</button>
+        </div>
+        <button
+          class="kit-add-button"
+          type="button"
+          data-add-kit-product={product.id}
+          disabled={!product.id}
+        >
+          Add to Cart
+        </button>
+      </>
+    )}
   </div>
 </article>
 
@@ -140,6 +149,12 @@ const minimum = Math.max(1, Number(product.moq) || 1);
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
+  }
+
+  .kit-choose-button {
+    display: grid;
+    place-items: center;
+    text-decoration: none;
   }
 
   .kit-add-button:hover:not(:disabled) {

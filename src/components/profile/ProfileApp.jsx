@@ -143,16 +143,16 @@ function Overview({ session, customer, orders, courses, certificates, onSaved })
 // ------------------------------------------------------------------ orders
 function Orders({ orders }) {
   function buyAgain(order) {
-    const cart = window.LashtribeCart ? window.LashtribeCart.getCart() : {};
+    if (!window.LashtribeCart) return;
     let added = 0;
     for (const item of order.order_items) {
       if (item.item_type === "product" && item.product_id) {
-        cart[item.product_id] = (Number(cart[item.product_id]) || 0) + Number(item.quantity);
+        // same product AND the same options (curl, length...) as ordered
+        window.LashtribeCart.add(item.product_id, Number(item.quantity), item.selected_options || {});
         added += 1;
       }
     }
-    if (!added || !window.LashtribeCart) return;
-    window.LashtribeCart.setCart(cart);
+    if (!added) return;
     window.location.href = "/ecommerce/checkout";
   }
 
@@ -183,6 +183,9 @@ function Orders({ orders }) {
           <li key={item.id}>
             <span>
               {item.name}
+              {item.selected_options && Object.keys(item.selected_options).length > 0 && (
+                <small> ({Object.entries(item.selected_options).map(([k, v]) => `${k}: ${v}`).join(", ")})</small>
+              )}
               {item.quantity > 1 && <small> × {item.quantity}</small>}
               {item.item_type !== "product" && <small> · {item.item_type}</small>}
             </span>

@@ -1,3 +1,27 @@
+# Pricing tiers, variants, storefront scaling, breadcrumbs
+
+Extract this zip over the repo root. Run `supabase/migrations/0016_pricing_variants.sql` in the Supabase SQL editor
+FIRST, then deploy. `npm run build` passes; the product page and cart drawer were exercised in headless Chromium at
+390px and 1280px against a mocked API (the 0016 SQL was tested separately on a local Postgres: 54 checks).
+
+## What you get
+- Prices: market (crossed out) / wholesale (qty >= MOQ, the default) / retail (qty < MOQ). Admin → Products has all three.
+- Variants: define any option types and values per product in the product form (nothing hardcoded), each value with an
+  optional price change. The product page has selectors; price follows the choice; cart lines are per variant.
+- Product page: quantity counter starting at the MOQ; the price and badge switch to retail below the MOQ.
+- Pricing formula: Site Settings → Pricing formula (editable, with a live example and a "re-price" button). It only
+  suggests; you can type your own prices. Costs (USD / Ksh) are private.
+- Breadcrumbs: Home › Shop › Category › Product, and Academy › Level › Course. New `/academy/courses/` lists courses by
+  Beginner / Intermediate / Advanced.
+- Built for hundreds of products: catalog fetched once per build (was once per page) and read past Supabase's 1,000-row
+  cap; cart and search no longer embed the catalog in every page; the cart is priced by the database (`cart_quote`).
+- Security: admin writes now require an admin login in the database, not just in the UI.
+
+## Notes
+- Existing products keep working: their `now_price` becomes the wholesale price, retail = wholesale until you set it.
+- Variant lines in orders show in Admin → Orders, the batch view and the supplier / dispatch PDFs.
+- Products with variants show "From Ksh X" on cards and a "Choose options" link where a quick-add button used to be.
+- `0007_*.sql` in the repo is UTF-16; some tools need it converted to UTF-8 to replay. Not changed.
 # Mobile pass — lashtribeafrica
 
 Extract this zip over the repo root (paths match the repo). `npm run build` passes.

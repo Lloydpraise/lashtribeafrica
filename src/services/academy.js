@@ -237,9 +237,12 @@ export async function resolveProducts(slugs) {
   if (!unique.length) return out;
   if (HAS_DB) {
     const { data } = await supabase
-      .from("products").select("id, slug, name, now_price, moq, images, status").in("slug", unique);
+      .from("products").select("id, slug, name, now_price, moq, images, status, options").in("slug", unique);
     (data || []).forEach((p) => {
-      out[p.slug] = { id: p.id, slug: p.slug, name: p.name, price: Number(p.now_price), moq: p.moq || 1, image: p.images?.[0]?.url || null };
+      out[p.slug] = {
+        id: p.id, slug: p.slug, name: p.name, price: Number(p.now_price), moq: p.moq || 1, image: p.images?.[0]?.url || null,
+        hasOptions: Array.isArray(p.options) && p.options.length > 0, // needs curl / length etc: chosen on the product page
+      };
     });
   }
   unique.forEach((s) => {
@@ -248,12 +251,11 @@ export async function resolveProducts(slugs) {
   return out;
 }
 
-/** Adds to the same localStorage cart the shop uses (keyed by product id). */
+/** Adds to the same localStorage cart the shop uses. Products with options (curl, length...) can't be added
+ *  blind: they return false and the caller sends the person to the product page. */
 export function addToShopCart(product) {
-  if (!product?.id || !window.LashtribeCart) return false;
-  const cart = window.LashtribeCart.getCart();
-  cart[product.id] = cart[product.id] ? cart[product.id] + 1 : Math.max(1, product.moq || 1);
-  window.LashtribeCart.setCart(cart);
-  window.LashtribeCart.syncCartBadges();
+  if (!product?.id || !window.LashtribeCart || product.hasOptions) return false;
+  const already = Boolean(window.LashtribeCart.getCart()[product.id]);
+  window.LashtribeCart.add(product.id, already ? 1 : Math.max(1, product.moq || 1));
   return true;
 }

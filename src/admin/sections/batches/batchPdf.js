@@ -8,6 +8,7 @@
 
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { formatBatchDate } from "../../../data/batches.js";
+import { itemLabel, optionsText } from "../../../lib/pricing.js";
 
 const PAGE = [595.28, 841.89]; // A4 portrait, points
 const M = 48;
@@ -86,6 +87,12 @@ function footers(doc, font) {
   });
 }
 
+// supplier line: product name plus the options ordered (each curl / length is its own row)
+const supplierLine = (r) => {
+  const opts = optionsText(r.options);
+  return opts ? `${r.product_name} (${opts})` : r.product_name;
+};
+
 /**
  * batch     – { ship_date }
  * lines     – rows from batch_supplier_lines(): supplier_id, supplier_name, sku, product_name, quantity
@@ -161,7 +168,7 @@ export async function buildBatchPdf({ batch, lines, suppliers = [], orders = [],
 
     let units = 0;
     for (const r of g.rows) {
-      const nameLines = wrap(r.product_name, f.regular, 10, PAGE[0] - 2 * M - 86 - 50);
+      const nameLines = wrap(supplierLine(r), f.regular, 10, PAGE[0] - 2 * M - 86 - 50);
       const need = nameLines.length * 13 + 8;
       if (w.y - need < M + 24) {
         w.newPage();
@@ -201,7 +208,7 @@ export async function buildBatchPdf({ batch, lines, suppliers = [], orders = [],
 
     for (const o of batchOrders) {
       const items = (o.order_items || []).filter((i) => i.item_type === "product");
-      const itemLines = items.flatMap((i) => wrap(`${i.quantity} x ${i.name}`, f.regular, 10, PAGE[0] - 2 * M - 14));
+      const itemLines = items.flatMap((i) => wrap(`${i.quantity} x ${itemLabel(i)}`, f.regular, 10, PAGE[0] - 2 * M - 14));
       const notes = o.delivery_notes ? wrap(`Note: ${o.delivery_notes}`, f.regular, 9, PAGE[0] - 2 * M) : [];
       w.ensure(38 + itemLines.length * 13 + notes.length * 12);
       w.text(`${o.order_no}  -  ${o.customer?.full_name || "(no name)"}`, { size: 11, font: f.bold });

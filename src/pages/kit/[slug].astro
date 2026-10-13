@@ -4,7 +4,7 @@ import SiteHeader from "../../components/ecommerce/SiteHeader.astro";
 import KitProductCard from "../../components/ecommerce/KitProductCard.astro";
 import SiteFooter from "../../components/ecommerce/SiteFooter.astro";
 import CartDrawer from "../../components/ecommerce/CartDrawer.astro";
-import { getEcommerceProducts } from "../../data/ecommerce-products.js";
+import { getEcommerceProducts, cardPrices } from "../../data/ecommerce-products.js";
 import { getKits, resolveKitProducts, slugifyKitTitle } from "../../data/kits.js";
 
 export async function getStaticPaths() {
@@ -28,6 +28,11 @@ type Product = {
   marketPrice?: number;
   nowPrice?: number;
   effectivePrice?: number;
+  fromPrice?: number;
+  effectiveFromPrice?: number;
+  priceVaries?: boolean;
+  optionsFromDelta?: number;
+  hasOptions?: boolean;
   hasOffer?: boolean;
   offerBadge?: string;
   moq?: number;
@@ -46,10 +51,9 @@ function toSearchCard(product: Product) {
     image: product.images?.[0]?.url,
     icon: product.icon || "",
     name: product.name,
-    marketPrice: `Ksh ${Number(product.marketPrice || 0).toLocaleString()}`,
-    nowPrice: `Ksh ${Number(product.effectivePrice ?? product.nowPrice ?? 0).toLocaleString()}`,
+    ...cardPrices(product),
+    hasOptions: Boolean(product.hasOptions),
     hasOffer: product.hasOffer,
-    offerPrice: `Ksh ${Number(product.effectivePrice ?? 0).toLocaleString()}`,
     offerBadge: product.offerBadge,
     note: product.note || "",
     moq: product.moq,
@@ -79,7 +83,7 @@ function toSearchCard(product: Product) {
       <p class="kit-page-empty wrap">There are no products available in this kit right now.</p>
     )}
 
-    {kitProducts.length > 0 && (
+    {kitProducts.some((product) => !product.hasOptions) && (
       <div class="kit-buy-bar wrap">
         <button class="btn-primary kit-buy-button" type="button" data-buy-kit>
           Buy Kit
@@ -102,12 +106,9 @@ function toSearchCard(product: Product) {
       }
 
       function addSelectedProducts(productIds) {
-        const cart = window.LashtribeCart?.getCart() || {};
         for (const id of productIds) {
-          cart[id] = (Number(cart[id]) || 0) + getSelectedQty(id);
+          window.LashtribeCart?.add(id, getSelectedQty(id));
         }
-        window.LashtribeCart?.setCart(cart);
-        window.LashtribeCart?.syncCartBadges();
 
         document.getElementById("cartDrawer")?.classList.add("open");
         document.getElementById("overlay")?.classList.add("open");

@@ -1,0 +1,49 @@
+---
+import Layout from "../../../layouts/academy/Layout.astro";
+import Breadcrumbs from "../../../components/ecommerce/Breadcrumbs.astro";
+import { getPublishedCourses, formatKsh } from "../../../data/academy-catalog.js";
+import "../../../styles/course-info.css";
+
+// Courses grouped by level. The levels are fixed by the courses table: beginner, intermediate, advanced.
+const LEVELS = [
+  { key: "beginner", label: "Beginner" },
+  { key: "intermediate", label: "Intermediate" },
+  { key: "advanced", label: "Advanced" },
+];
+const courses = await getPublishedCourses();
+const groups = LEVELS.map((l) => ({ ...l, courses: courses.filter((c) => (c.level || "beginner") === l.key) }));
+---
+
+<Layout title="All courses | Lashtribe Academy" description="Lash courses by level: beginner, intermediate and advanced.">
+  <header class="ci-bar">
+    <a href="/academy/" class="ci-back">← Academy</a>
+    <a href="/academy/" class="ci-brand">Lashtribe Academy</a>
+  </header>
+  <div class="ci-crumbs"><Breadcrumbs items={[{ label: "Academy", href: "/academy/" }, { label: "All courses" }]} /></div>
+  <main class="cl">
+    <h1>All courses</h1>
+    <p class="cl-intro">Pick the level that fits where you are.</p>
+    {
+      groups.map((g) => (
+        <section class="cl-level" id={g.key}>
+          <h2>{g.label}</h2>
+          {g.courses.length === 0 ? (
+            <p class="cl-empty">No {g.label.toLowerCase()} courses yet.</p>
+          ) : (
+            <div class="cl-grid">
+              {g.courses.map((c) => (
+                <a class="cl-card" href={`/academy/courses/${c.slug}/`}>
+                  {c.cover ? <img src={c.cover} alt="" loading="lazy" /> : <div class="cl-ph" aria-hidden="true" />}
+                  <div class="cl-body">
+                    <strong>{c.title}</strong>
+                    <span>{c.isFree ? "Free" : formatKsh(c.price)} · {c.duration}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </section>
+      ))
+    }
+  </main>
+</Layout>

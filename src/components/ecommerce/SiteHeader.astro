@@ -1,27 +1,6 @@
 ---
 import MobileNav from "./MobileNav.astro";
 import ProfileButton from "../profile/ProfileButton.jsx";
-import { formatKsh, getEcommerceProducts } from "../../data/ecommerce-products.js";
-
-type SearchProduct = {
-  slug: string;
-  name: string;
-  description?: string;
-  effectivePrice?: number;
-  nowPrice: number;
-  images?: { url?: string }[];
-  category?: { name?: string } | null;
-};
-
-const searchProducts = ((await getEcommerceProducts()) as SearchProduct[]).map((product) => ({
-  slug: product.slug,
-  name: product.name,
-  price: formatKsh(product.effectivePrice ?? product.nowPrice),
-  image: product.images?.[0]?.url || "",
-  searchText: [product.name, product.slug, product.description, product.category?.name]
-    .filter(Boolean)
-    .join(" "),
-}));
 ---
 
 <header id="siteHeader">
@@ -54,7 +33,7 @@ const searchProducts = ((await getEcommerceProducts()) as SearchProduct[]).map((
     </div>
   </div>
   <div class="search-panel" id="searchPanel">
-    <div class="wrap search-inner" data-search-products={JSON.stringify(searchProducts)}>
+    <div class="wrap search-inner" data-search-src="/search-index.json">
       <form action="/shop" method="get">
         <input
           type="search"

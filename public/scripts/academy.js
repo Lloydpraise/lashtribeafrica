@@ -341,11 +341,9 @@
       showToast('This item is ready for checkout in the shop.');
       return;
     }
-    const cart = window.LashtribeCart.getCart();
     // first add starts at the product's minimum order quantity, later adds go up by one
-    cart[id] = cart[id] ? Number(cart[id]) + 1 : Math.max(1, Number(moq) || 1);
-    window.LashtribeCart.setCart(cart);
-    window.LashtribeCart.syncCartBadges();
+    const already = Boolean(window.LashtribeCart.getCart()[id]);
+    window.LashtribeCart.add(id, already ? 1 : Math.max(1, Number(moq) || 1));
     syncSharedCartBadge();
     refreshAcademyCart();
     openAcademyCart();
@@ -356,7 +354,7 @@
     syncSharedCartBadge();
   }
 
-  document.querySelectorAll('.ps-add').forEach(btn => {
+  document.querySelectorAll('button.ps-add').forEach(btn => {
     btn.addEventListener('click', () => {
       if (btn.classList.contains('added')) return;
       btn.classList.add('added');

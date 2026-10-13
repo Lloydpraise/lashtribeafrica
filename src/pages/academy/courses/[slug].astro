@@ -1,5 +1,6 @@
 ---
 import Layout from "../../../layouts/academy/Layout.astro";
+import Breadcrumbs from "../../../components/ecommerce/Breadcrumbs.astro";
 import SiteFooter from "../../../components/ecommerce/SiteFooter.astro";
 import { getPublishedCourses, formatKsh } from "../../../data/academy-catalog.js";
 import "../../../styles/course-info.css";
@@ -20,6 +21,13 @@ const facts: { k: string; v: string }[] = [{ k: "Duration", v: course.duration }
 if (course.videoLength) facts.push({ k: "Video", v: course.videoLength });
 if (course.level) facts.push({ k: "Level", v: course.level[0].toUpperCase() + course.level.slice(1) });
 if (course.certificate) facts.push({ k: "Certificate", v: "Included" });
+// Levels are fixed by the courses table: beginner, intermediate or advanced.
+const levelLabel = course.level ? course.level[0].toUpperCase() + course.level.slice(1) : "";
+const crumbs = [
+  { label: "Academy", href: "/academy/" },
+  ...(course.level ? [{ label: levelLabel, href: `/academy/courses/#${course.level}` }] : []),
+  { label: course.title },
+];
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Course",
@@ -37,6 +45,7 @@ const jsonLd = {
     <a href="/academy/" class="ci-back">← All courses</a>
     <a href="/academy/" class="ci-brand">Lashtribe Academy</a>
   </header>
+  <div class="ci-crumbs"><Breadcrumbs items={crumbs} /></div>
 
   <main class="ci" data-course-id={course.id} data-slug={course.slug} data-free={course.isFree ? "1" : "0"} data-price={course.price} data-title={course.title}>
     <section class="ci-hero">
