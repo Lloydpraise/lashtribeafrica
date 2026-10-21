@@ -166,7 +166,7 @@ function ScreenBody({ s, i, beat, solved, solve, api }) {
     case "figure":
       return (
         <div className="st-body fig">
-          <div className="st-fig"><img src={s.url} alt={s.caption || ""} draggable={false} onContextMenu={(e) => e.preventDefault()} /></div>
+          <div className="st-fig"><img src={s.url} alt={s.caption || ""} decoding="async" draggable={false} onContextMenu={(e) => e.preventDefault()} /></div>
           {s.caption && <p className="st-cap">{s.caption}</p>}
         </div>
       );
@@ -213,6 +213,20 @@ export default function Story({ blocks, title, summary, minutes = 3, startAt = 0
   const [nudge, setNudge] = useState(false);
   const stRef = useRef(null);
   const swipe = useRef(null);
+  const ahead = useRef(new Map());
+
+  // Pictures on the next few screens are fetched while the student reads the current one, so a
+  // figure never pops in late. Nothing further ahead than that is requested.
+  useEffect(() => {
+    for (let k = pos.i + 1; k <= Math.min(last, pos.i + 3); k++) {
+      const sc = screens[k];
+      if (sc?.type !== "figure" || !sc.url || ahead.current.has(sc.url)) continue;
+      const im = new Image();
+      im.decoding = "async";
+      im.src = sc.url;
+      ahead.current.set(sc.url, im);
+    }
+  }, [pos.i, screens, last]);
   const swiped = useRef(false);
   const nudgeTimer = useRef(null);
 

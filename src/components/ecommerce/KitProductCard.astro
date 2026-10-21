@@ -31,7 +31,7 @@ const minimum = Math.max(1, Number(product.moq) || 1);
         <span class="badge-moq">MOQ {minimum}</span>
       </div>
       {product.image ? (
-        <img src={product.image} alt={product.name} loading="lazy" />
+        <img src={product.image} alt={product.name} loading="lazy" decoding="async" />
       ) : (
         <svg viewBox="0 0 100 100" set:html={product.icon || ""} />
       )}

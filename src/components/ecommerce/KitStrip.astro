@@ -42,7 +42,7 @@ const ctaLink = activeKit ? `/kit/${slugifyKitTitle(activeKit.title)}` : "/shop"
           kitProducts.map((product) => (
             <a class="kit-item kit-item-product" href={`/ecommerce/product/${product.slug}`} title={product.name}>
               {product.images?.[0]?.url ? (
-                <img src={product.images[0].url} alt={product.name} loading="lazy" />
+                <img src={product.images[0].url} alt={product.name} loading="lazy" decoding="async" />
               ) : (
                 <svg viewBox="0 0 60 60" set:html={product.icon} />
               )}

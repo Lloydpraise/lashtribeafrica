@@ -50,7 +50,7 @@ const jsonLd = {
   <main class="ci" data-course-id={course.id} data-slug={course.slug} data-free={course.isFree ? "1" : "0"} data-price={course.price} data-title={course.title}>
     <section class="ci-hero">
       <div class="ci-media">
-        {course.cover ? <img src={course.cover} alt={course.title} /> : <div class="ci-media-empty" aria-hidden="true"></div>}
+        {course.cover ? <img src={course.cover} alt={course.title} loading="eager" fetchpriority="high" decoding="async" /> : <div class="ci-media-empty" aria-hidden="true"></div>}
       </div>
 
       <aside class="ci-side">
@@ -124,7 +124,7 @@ const jsonLd = {
         <div class="ci-related-grid">
           {related.map((r) => (
             <a href={`/academy/courses/${r.slug}`} class="ci-rel">
-              <div class="ci-rel-img">{r.cover && <img src={r.cover} alt="" loading="lazy" />}</div>
+              <div class="ci-rel-img">{r.cover && <img src={r.cover} alt="" loading="lazy" decoding="async" />}</div>
               <strong>{r.title}</strong>
               <span>{r.isFree ? "Free" : formatKsh(r.price)} · {r.duration}</span>
             </a>

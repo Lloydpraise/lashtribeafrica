@@ -19,7 +19,7 @@ const bgImageUrl = settings.heroBgImage?.url || null;
 <section class="hero" id="home">
   <div class="hero-bg" aria-hidden="true">
     {bgImageUrl ? (
-      <img class="hero-bg-photo" src={bgImageUrl} alt="" />
+      <img class="hero-bg-photo" src={bgImageUrl} alt="" loading="eager" fetchpriority="high" decoding="async" />
     ) : (
       <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
         <path

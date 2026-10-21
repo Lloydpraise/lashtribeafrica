@@ -191,11 +191,27 @@
       if (!course?.cover_url) return;
       image.addEventListener("load", () => (image.hidden = false), { once: true });
       image.alt = course.title || "";
+      image.decoding = "async";
       image.src = course.cover_url;
     } catch {
       /* no preview: the gradient stays */
     }
   }
 
-  void loadPreview();
+  // The card sits well below the hero, so neither the course query nor its cover image is
+  // requested until the visitor scrolls within a screen or so of it.
+  const hook = document.getElementById("academy");
+  if (hook && "IntersectionObserver" in window) {
+    const watcher = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        watcher.disconnect();
+        void loadPreview();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    watcher.observe(hook);
+  } else {
+    void loadPreview();
+  }
 </script>

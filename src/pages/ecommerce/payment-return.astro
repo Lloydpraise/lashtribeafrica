@@ -1,0 +1,97 @@
+---
+import Layout from "../../layouts/ecommerce/Layout.astro";
+---
+
+<Layout title="Payment | Lashtribe Africa">
+  <meta name="robots" content="noindex" slot="head" />
+  <div class="checkout-page">
+    <div class="checkout-header">
+      <div class="logo">Lashtribe <em>africa</em></div>
+      <a class="back-link" href="/shop">Continue shopping</a>
+    </div>
+
+    <div class="checkout-shell" style="grid-template-columns:minmax(0,640px);justify-content:center;">
+      <section class="checkout-panel" id="payPanel" aria-live="polite">
+        <div class="eyebrow">Payment</div>
+        <h1 id="payTitle">Checking your payment…</h1>
+        <p id="payText">One moment while we confirm with Pesapal.</p>
+        <div id="payActions"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    import { checkPayment, retryPayment } from "../../services/payments.js";
+
+    const params = new URLSearchParams(window.location.search);
+    // Pesapal sends the customer back with OrderTrackingId / OrderMerchantReference; our cancel link sends ref.
+    const trackingId = params.get("OrderTrackingId") || "";
+    const ref = params.get("OrderMerchantReference") || params.get("ref") || "";
+    const cancelled = params.get("cancelled") === "1";
+
+    const title = document.getElementById("payTitle") as HTMLElement;
+    const text = document.getElementById("payText") as HTMLElement;
+    const actions = document.getElementById("payActions") as HTMLElement;
+
+    function link(href: string, label: string) {
+      const a = document.createElement("a");
+      a.href = href;
+      a.className = "pay-now-btn";
+      a.textContent = label;
+      a.style.cssText = "display:block;text-align:center;text-decoration:none;";
+      return a;
+    }
+
+    function show(heading: string, body: string, ...nodes: HTMLElement[]) {
+      title.textContent = heading;
+      text.textContent = body;
+      actions.replaceChildren(...nodes);
+    }
+
+    function tryAgainButton(orderId: string) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "pay-now-btn";
+      b.textContent = "Try paying again";
+      b.addEventListener("click", async () => {
+        b.disabled = true;
+        b.textContent = "Opening payment page…";
+        const next = await retryPayment(orderId);
+        if (next?.redirectUrl) window.location.href = next.redirectUrl;
+        else show("We couldn't reopen the payment page", "Your order is saved. We'll confirm payment with you directly, or you can try again in a moment.", link("/shop", "Continue shopping"));
+      });
+      return b;
+    }
+
+    async function run(attempt = 0) {
+      if (!trackingId && !ref) {
+        show("Nothing to check here", "This page shows the result of a payment. If you've just paid, your order is in your profile.", link("/profile#orders", "View my orders"), link("/shop", "Continue shopping"));
+        return;
+      }
+      try {
+        const r = await checkPayment({ trackingId, ref });
+        const orderNo = r?.order_no ? ` for order ${r.order_no}` : "";
+        if (r.status === "paid") {
+          show("Payment received", `Thank you! We've received your payment${orderNo}. Courses in your order are unlocked, and products ship with your batch.`,
+            link("/profile#orders", "View this order"), link("/shop", "Continue shopping"));
+        } else if (r.status === "failed" || cancelled) {
+          show("Payment not completed", `The payment${orderNo} didn't go through, and you haven't been charged for it. Your order is saved.`,
+            tryAgainButton(r.order_id), link("/shop", "Continue shopping"));
+        } else if (r.status === "mismatch" || r.status === "reversed") {
+          show("We're looking into your payment", `Something about this payment${orderNo} needs a quick check by our team. We'll contact you shortly; there's no need to pay again.`,
+            link("/contact", "Contact us"));
+        } else if (attempt < 15) {
+          // Still waiting for Pesapal (M-Pesa prompts can take a moment): look again every few seconds.
+          show("Waiting for confirmation…", `We haven't had confirmation${orderNo} yet. If you've approved the payment on your phone, this page updates by itself.`);
+          window.setTimeout(() => run(attempt + 1), 4000);
+        } else {
+          show("Still waiting for confirmation", `We haven't had confirmation${orderNo} yet. If you were charged, your order will update automatically and we'll be in touch. Otherwise you can try again.`,
+            tryAgainButton(r.order_id), link("/profile#orders", "View my orders"));
+        }
+      } catch {
+        show("We couldn't check the payment", "Please refresh in a moment. If you paid, your order will update automatically.", link("/profile#orders", "View my orders"));
+      }
+    }
+    run();
+  </script>
+</Layout>

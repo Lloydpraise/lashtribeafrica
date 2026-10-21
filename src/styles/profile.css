@@ -414,7 +414,14 @@
   width: 88px;
   height: 88px;
   border-radius: 7px;
-  background: var(--blush, #f3e4e7) center / cover no-repeat;
+  background: var(--blush, #f3e4e7);
+  overflow: hidden;
+}
+.pf-course-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .pf-course h4 {
   font-family: var(--serif);

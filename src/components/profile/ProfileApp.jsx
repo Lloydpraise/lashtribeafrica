@@ -251,7 +251,7 @@ function Courses({ courses, onCertificate }) {
         const finished = total > 0 && done >= total;
         return (
           <div className="pf-course" key={c.course_id}>
-            <div className="pf-course-cover" style={c.cover_url ? { backgroundImage: `url(${c.cover_url})` } : undefined} />
+            <div className="pf-course-cover">{c.cover_url && <img src={c.cover_url} alt="" loading="lazy" decoding="async" />}</div>
             <div>
               <h4>{c.course_title}</h4>
               <div className={`pf-progress${finished ? " done" : ""}`}><i style={{ width: `${pct}%` }} /></div>

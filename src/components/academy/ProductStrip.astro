@@ -15,7 +15,7 @@ const products = (await getEcommerceProducts()).slice(0, 3);
           <div class="ps-card">
             <div class="ps-thumb">
               {p.images?.[0]?.url ? (
-                <img src={p.images[0].url} alt="" loading="lazy" />
+                <img src={p.images[0].url} alt="" loading="lazy" decoding="async" />
               ) : (
                 <svg viewBox="0 0 60 60" set:html={p.icon} />
               )}

@@ -84,7 +84,7 @@ export function Block({ b }) {
       if (!b.url) return null;
       return (
         <figure className="rd-figure">
-          <img src={b.url} alt={b.caption || ""} loading="lazy" draggable={false} onContextMenu={(e) => e.preventDefault()} />
+          <img src={b.url} alt={b.caption || ""} loading="lazy" decoding="async" draggable={false} onContextMenu={(e) => e.preventDefault()} />
           {b.caption && <figcaption>{b.caption}</figcaption>}
         </figure>
       );

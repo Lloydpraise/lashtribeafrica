@@ -145,6 +145,7 @@ import DashboardEmpty from "./DashboardEmpty.astro";
     if (heroImage instanceof HTMLImageElement) {
       const cover = (catalog.find((course) => course.slug === slug) || heroCourse)?.cover_url;
       if (cover) {
+        heroImage.decoding = "async";
         heroImage.src = cover;
         heroImage.hidden = false;
       } else {

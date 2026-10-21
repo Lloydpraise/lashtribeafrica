@@ -105,7 +105,7 @@
   }
 
   function lineThumb(line) {
-    if (line.image) return '<img src="' + esc(line.image) + '" alt="" />';
+    if (line.image) return '<img src="' + esc(line.image) + '" alt="" loading="lazy" decoding="async" />';
     return '<svg viewBox="0 0 60 60">' + (line.icon || '') + '</svg>';
   }
 

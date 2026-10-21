@@ -82,18 +82,24 @@ function toSearchCard(product: Product) {
           viewAllHref="/shop"
           showViewAll={false}
           noTopPadding={index === 0}
+          eagerCount={index === 0 ? 4 : 0}
         />
       ))}
     </div>
 
     <div id="searchResults" hidden>
-      <ProductRail
-        id="search-results"
-        title="Search Results"
-        products={allProducts.map(toSearchCard)}
-        viewAllHref="/shop"
-        showViewAll={false}
-      />
+      {/* The full product list for searching sits inside a <template>, so the browser doesn't build
+          (or fetch images for) a second copy of every card. The script below clones it in only when
+          the page is opened with ?search=. */}
+      <template id="searchTemplate">
+        <ProductRail
+          id="search-results"
+          title="Search Results"
+          products={allProducts.map(toSearchCard)}
+          viewAllHref="/shop"
+          showViewAll={false}
+        />
+      </template>
       <p class="shop wrap search-no-results" id="searchNoResults" hidden>No products found.</p>
     </div>
   </main>
@@ -118,6 +124,13 @@ function toSearchCard(product: Product) {
       fullCatalog.hidden = true;
       searchResults.hidden = false;
       let matchingProducts = 0;
+
+      const searchTemplate = document.querySelector<HTMLTemplateElement>("#searchTemplate");
+      if (searchTemplate) {
+        searchResults.prepend(searchTemplate.content.cloneNode(true));
+        // These nodes arrive after the page's scroll-reveal observer ran, so show them directly.
+        searchResults.querySelectorAll(".reveal").forEach((el) => el.classList.add("in-view"));
+      }
 
       searchResults.querySelectorAll<HTMLElement>("[data-product-search]").forEach((card) => {
         const productText = (card.getAttribute("data-product-search") || "").toLocaleLowerCase();
@@ -162,4 +175,13 @@ function toSearchCard(product: Product) {
       if (chips[0]) chips[0].classList.add("active");
     }
   </script>
+
+  <style is:global>
+    /* Long catalogs: the browser skips layout and paint for category sections that are far off
+       screen, and builds them as they near the viewport. The first two sections stay normal. */
+    #fullCatalog > [data-product-section]:nth-child(n + 3) {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 560px;
+    }
+  </style>
 </Layout>

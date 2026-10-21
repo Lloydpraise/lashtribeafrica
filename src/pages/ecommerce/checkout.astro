@@ -291,13 +291,13 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
         });
         (window as any).LashtribeCart?.setCart?.({});
         if (!signedIn) saveGuest();
-        // Payment is manual today; a provider (Pesapal / Daraja) plugs in here. See services/payments.js.
+        // Online payment (Pesapal) when available; otherwise the order stays pending for manual confirmation. See services/payments.js.
         const payment = await startPayment(result, { full_name: name, email, phone });
         if (payment?.redirectUrl) {
           window.location.href = payment.redirectUrl;
           return;
         }
-        showDone(result, wantsProfile);
+        showDone(result, wantsProfile, payment);
       } catch (err: any) {
         say(err?.message || "We couldn't place your order. Please try again.", "error");
         buttons.forEach((b) => { b.disabled = false; b.textContent = "Place order"; });
@@ -305,7 +305,7 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
       }
     }
 
-    function showDone(result: any, createdProfile: boolean) {
+    function showDone(result: any, createdProfile: boolean, payment?: any) {
       const panel = document.querySelector(".checkout-panel");
       if (!panel) return;
       panel.innerHTML = "";
@@ -320,6 +320,11 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
         ? `Your order will ship with the ${formatBatchDate(result.ship_date)} batch. We'll contact you shortly to confirm payment and the shipping fee.`
         : "We'll contact you shortly to confirm payment, your shipment date and the shipping fee.";
       wrap.append(h, p1, p2);
+      if (payment?.note === "online_payment_unavailable") {
+        const pn = document.createElement("p");
+        pn.textContent = "Online payment isn't available right now, so we'll confirm payment with you directly. Your order is safe.";
+        wrap.append(pn);
+      }
       if (signedIn) {
         const p3 = document.createElement("p");
         p3.textContent = createdProfile ? "Your profile is ready too. " : "";

@@ -21,6 +21,7 @@ interface Props {
   products: Product[];
   noTopPadding?: boolean;
   showViewAll?: boolean;
+  eagerCount?: number; // first N card photos load immediately (above the fold); the rest are lazy
 }
 
 const {
@@ -30,6 +31,7 @@ const {
   products,
   noTopPadding = false,
   showViewAll = true,
+  eagerCount = 0,
 } = Astro.props;
 
 const delayClasses = ["", "d1", "d2", "d3"];
@@ -56,7 +58,7 @@ const delayClasses = ["", "d1", "d2", "d3"];
                 {product.moq ? <span class="badge-moq">MOQ {product.moq}</span> : null}
               </div>
               {product.image ? (
-                <img src={product.image} alt={product.name} loading="lazy" />
+                <img src={product.image} alt={product.name} loading={i < eagerCount ? "eager" : "lazy"} fetchpriority={i < eagerCount ? "high" : undefined} decoding="async" />
               ) : (
                 <svg viewBox="0 0 100 100" set:html={product.icon} />
               )}

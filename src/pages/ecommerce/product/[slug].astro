@@ -77,7 +77,7 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
           <span class="product-badge">{product.badge}</span>
           {product.hasOffer && <span class="offer-badge">{product.offerBadge}</span>}
           {coverImage ? (
-            <img src={coverImage.url} alt={coverImage.alt || product.name} id="productMainImage" />
+            <img src={coverImage.url} alt={coverImage.alt || product.name} id="productMainImage" loading="eager" fetchpriority="high" decoding="async" />
           ) : (
             <svg viewBox="0 0 100 100" set:html={product.icon} />
           )}
@@ -87,7 +87,7 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
           <div class="product-thumb-strip">
             {product.images.map((img, i) => (
               <button type="button" class:list={["thumb-btn", i === 0 && "active"]} data-image-url={img.url}>
-                <img src={img.url} alt={img.alt || product.name} />
+                <img src={img.url} alt={img.alt || product.name} loading="lazy" decoding="async" />
               </button>
             ))}
           </div>
@@ -111,7 +111,7 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
                   <div class="bundle-card">
                     <div class="bundle-thumb">
                       {item.images?.[0] ? (
-                        <img src={item.images[0].url} alt={item.name} />
+                        <img src={item.images[0].url} alt={item.name} loading="lazy" decoding="async" />
                       ) : (
                         <svg viewBox="0 0 100 100" set:html={item.icon} />
                       )}
@@ -251,7 +251,7 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
             <a class="related-card" href={`/ecommerce/product/${item.slug}`}>
               <div class="related-thumb">
                 {item.images?.[0] ? (
-                  <img src={item.images[0].url} alt={item.name} />
+                  <img src={item.images[0].url} alt={item.name} loading="lazy" decoding="async" />
                 ) : (
                   <svg viewBox="0 0 100 100" set:html={item.icon} />
                 )}

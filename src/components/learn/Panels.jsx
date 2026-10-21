@@ -73,7 +73,7 @@ export function Shop({ items, onAdd, onSeek, hasVideo, added }) {
     <ul className="lx-shop">
       {items.map((it) => (
         <li key={it.slug + it.t}>
-          <div className="lx-shop-img">{it.product.image ? <img src={it.product.image} alt="" /> : <span>✦</span>}</div>
+          <div className="lx-shop-img">{it.product.image ? <img src={it.product.image} alt="" loading="lazy" decoding="async" /> : <span>✦</span>}</div>
           <div className="lx-shop-body">
             <strong>{it.product.name}</strong>
             <span>Ksh {Number(it.product.price).toLocaleString()}</span>

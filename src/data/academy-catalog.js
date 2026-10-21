@@ -90,18 +90,22 @@ export async function getPublishedCourses() {
     if (error) {
       console.error("Course pages: could not load courses.", error);
     } else {
-      for (const course of courses || []) {
-        const [mods, less] = await Promise.all([
-          supabase.from("course_modules").select("*").eq("course_id", course.id).order("sort_order"),
-          supabase.from("lessons").select("id, course_id, module_id, title, kind, summary, duration_seconds, read_minutes, is_preview, sort_order")
-            .eq("course_id", course.id).eq("status", "published").order("sort_order"),
-        ]);
-        if (mods.error || less.error) {
-          console.error("Course pages: could not load outline for", course.slug, mods.error || less.error);
-          continue;
-        }
-        list.push(shape({ course, modules: mods.data || [], lessons: less.data || [] }));
-      }
+      // Every course's modules and lessons are requested at the same time (course order is kept).
+      const outlines = await Promise.all(
+        (courses || []).map(async (course) => {
+          const [mods, less] = await Promise.all([
+            supabase.from("course_modules").select("*").eq("course_id", course.id).order("sort_order"),
+            supabase.from("lessons").select("id, course_id, module_id, title, kind, summary, duration_seconds, read_minutes, is_preview, sort_order")
+              .eq("course_id", course.id).eq("status", "published").order("sort_order"),
+          ]);
+          if (mods.error || less.error) {
+            console.error("Course pages: could not load outline for", course.slug, mods.error || less.error);
+            return null;
+          }
+          return shape({ course, modules: mods.data || [], lessons: less.data || [] });
+        }),
+      );
+      list = outlines.filter(Boolean);
     }
   } else {
     list = DEMO_COURSES.map((c) => shape(buildCourseCtx(c)));

@@ -111,3 +111,6 @@ details[open]>summary>.ci-chev{transform:rotate(45deg)}
 .cl-body span{font-size:13px;color:#6b6b6b}
 .cl-empty{color:#918f8f;font-size:14px}
 @media (max-width:880px){.cl{padding:0 16px 72px}.cl h1{font-size:28px}}
+
+/* Lists with many courses: levels below the first are laid out and painted as they near the screen. */
+.cl-level:nth-of-type(n+2){content-visibility:auto;contain-intrinsic-size:auto 420px}

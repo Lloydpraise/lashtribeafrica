@@ -12,6 +12,10 @@ const LEVELS = [
 ];
 const courses = await getPublishedCourses();
 const groups = LEVELS.map((l) => ({ ...l, courses: courses.filter((c) => (c.level || "beginner") === l.key) }));
+// The first couple of covers are above the fold on most screens, so they load straight away;
+// everything after that loads as the student scrolls toward it.
+const EAGER_COVERS = 2;
+let coverIndex = 0;
 ---
 
 <Layout title="All courses | Lashtribe Academy" description="Lash courses by level: beginner, intermediate and advanced.">
@@ -33,7 +37,10 @@ const groups = LEVELS.map((l) => ({ ...l, courses: courses.filter((c) => (c.leve
             <div class="cl-grid">
               {g.courses.map((c) => (
                 <a class="cl-card" href={`/academy/courses/${c.slug}/`}>
-                  {c.cover ? <img src={c.cover} alt="" loading="lazy" /> : <div class="cl-ph" aria-hidden="true" />}
+                  {c.cover ? (coverIndex++ < EAGER_COVERS
+                    ? <img src={c.cover} alt="" loading="eager" fetchpriority="high" decoding="async" />
+                    : <img src={c.cover} alt="" loading="lazy" decoding="async" />
+                  ) : <div class="cl-ph" aria-hidden="true" />}
                   <div class="cl-body">
                     <strong>{c.title}</strong>
                     <span>{c.isFree ? "Free" : formatKsh(c.price)} · {c.duration}</span>

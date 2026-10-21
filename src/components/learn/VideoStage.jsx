@@ -246,7 +246,7 @@ export default function VideoStage({ video, startAt = 0, timeStore, apiRef, onSa
 
         {activeProduct && (
           <div className="lx-prodpop" role="status">
-            <div className="lx-prodpop-img">{activeProduct.product.image ? <img src={activeProduct.product.image} alt="" /> : <span>✦</span>}</div>
+            <div className="lx-prodpop-img">{activeProduct.product.image ? <img src={activeProduct.product.image} alt="" decoding="async" /> : <span>✦</span>}</div>
             <div className="lx-prodpop-body">
               <small>{activeProduct.note || "Used in this lesson"}</small>
               <strong>{activeProduct.product.name}</strong>

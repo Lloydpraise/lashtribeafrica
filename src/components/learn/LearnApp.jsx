@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "../../styles/learn.css";
 import {
   HAS_DB, loadCourse, loadLessonContent, loadProgress, saveProgress, enrollFree,
@@ -6,12 +6,18 @@ import {
 } from "../../services/academy.js";
 import { issueCertificate } from "../../services/customers.js";
 import { createTimeStore, useMedia, burstConfetti, fmtMinutes } from "./util.js";
-import VideoStage from "./VideoStage.jsx";
 import Reader, { Block, groupSections } from "./Reader.jsx";
-import Story from "./Story.jsx";
-import Assessment from "./Assessment.jsx";
 import Curriculum from "./Curriculum.jsx";
-import { Transcript, Notes, Shop } from "./Panels.jsx";
+
+// Each lesson view is its own chunk, fetched the first time a lesson needs it. A student on a
+// reading lesson never downloads the video player code, and the other way round.
+const VideoStage = lazy(() => import("./VideoStage.jsx"));
+const Story = lazy(() => import("./Story.jsx"));
+const Assessment = lazy(() => import("./Assessment.jsx"));
+const Transcript = lazy(() => import("./Panels.jsx").then((m) => ({ default: m.Transcript })));
+const Notes = lazy(() => import("./Panels.jsx").then((m) => ({ default: m.Notes })));
+const Shop = lazy(() => import("./Panels.jsx").then((m) => ({ default: m.Shop })));
+const viewFallback = <div className="lx-skel"><i /><i /><i /></div>;
 
 const params = () => new URLSearchParams(window.location.search);
 
@@ -255,6 +261,27 @@ export default function LearnApp() {
     return () => { live = false; };
   }, [ctx, lessonId]); // eslint-disable-line
 
+  // While the student works on a lesson, quietly fetch the next one so "Next" feels instant.
+  // Lessons behind the paywall are never fetched, and nothing is prefetched on Data Saver.
+  useEffect(() => {
+    if (!ctx || !lesson || lessonState !== "idle" || !cache[lesson.id]) return;
+    if (navigator.connection?.saveData) return;
+    const upcoming = lessons[lessons.indexOf(lesson) + 1];
+    if (!upcoming || cache[upcoming.id]) return;
+    if (!ctx.access && !upcoming.is_preview) return;
+    let live = true;
+    const run = () => {
+      loadLessonContent(ctx, upcoming)
+        .then((c) => { if (live && c) setCache((x) => (x[upcoming.id] ? x : { ...x, [upcoming.id]: c })); })
+        .catch(() => { /* not needed yet: it loads normally if the student opens it */ });
+    };
+    const handle = "requestIdleCallback" in window ? window.requestIdleCallback(run, { timeout: 4000 }) : window.setTimeout(run, 1500);
+    return () => {
+      live = false;
+      if ("cancelIdleCallback" in window) window.cancelIdleCallback(handle); else window.clearTimeout(handle);
+    };
+  }, [ctx, lessonId, lessonState]); // eslint-disable-line
+
   // resolve products once content is cached (covers cache hits)
   useEffect(() => {
     const c = lesson && cache[lesson.id];
@@ -344,21 +371,21 @@ export default function LearnApp() {
   })();
 
   const stageEl = video && lessonState === "idle" && lesson ? (
-    <VideoStage key={lesson.id} video={video} title={lesson.title} startAt={progress[lesson.id]?.position || 0}
+    <Suspense fallback={viewFallback}><VideoStage key={lesson.id} video={video} title={lesson.title} startAt={progress[lesson.id]?.position || 0}
       timeStore={timeStore} apiRef={playerApi} onSave={onSave} onNearEnd={() => !progress[lesson.id]?.completed && complete(lesson.id, true)}
-      timed={timed} onAdd={onAddProduct} watermark={watermark} />
+      timed={timed} onAdd={onAddProduct} watermark={watermark} /></Suspense>
   ) : null;
 
   const storyActive = !!lesson && lesson.kind === "reading" && view === "story" && lessonState === "idle" && !!content && bodyBlocks.length > 0;
 
   const storyView = storyActive && (
-    <Story key={lesson.id} blocks={bodyBlocks} title={lesson.title} summary={lesson.summary} minutes={lesson.read_minutes || 3}
+    <Suspense fallback={viewFallback}><Story key={lesson.id} blocks={bodyBlocks} title={lesson.title} summary={lesson.summary} minutes={lesson.read_minutes || 3}
       startAt={done ? 0 : progress[lesson.id]?.position || 0} watermark={watermark}
       onFinish={() => complete(lesson.id)}
       onPosition={(i) => { setProgress((p) => ({ ...p, [lesson.id]: { ...(p[lesson.id] || {}), position: i } })); saveProgress(ctx, lesson.id, { position: i }); }}
       onArticle={() => pickView("article")}
       nextLabel={next ? "Next lesson →" : "Finish course →"}
-      onNext={() => (next ? go(next.id) : go("__certificate"))} />
+      onNext={() => (next ? go(next.id) : go("__certificate"))} /></Suspense>
   );
 
   const lessonView = lesson && (
@@ -381,7 +408,7 @@ export default function LearnApp() {
       {lessonState === "locked" && <Locked course={course} preview={lessons.some((l) => l.is_preview)} demoSession={demoSession} />}
       {lessonState === "idle" && content && (
         lesson.kind === "assessment"
-          ? <Assessment key={lesson.id} quiz={quiz} completed={done} onPass={() => complete(lesson.id)} />
+          ? <Suspense fallback={viewFallback}><Assessment key={lesson.id} quiz={quiz} completed={done} onPass={() => complete(lesson.id)} /></Suspense>
           : bodyBlocks.length > 0 && (
             video
               ? <div className="lx-notes-body"><div className="lx-sec-label">Lesson notes</div>
@@ -401,7 +428,7 @@ export default function LearnApp() {
   ].filter((t) => t.show);
   const activePanel = panelTabs.some((t) => t.id === panelTab) ? panelTab : "notes";
 
-  const panelBody = (id) => id === "transcript"
+  const panelBody = (id) => <Suspense fallback={viewFallback}>{id === "transcript"
     ? <Transcript lines={video?.transcript || []} timeStore={timeStore} onSeek={seek} />
     : id === "shop"
       ? <Shop items={timed} onAdd={onAddProduct} onSeek={seek} hasVideo={!!video} added={added} />
@@ -409,7 +436,7 @@ export default function LearnApp() {
           onNeedSignIn={() => say("Sign in to save notes.")}
           onAdd={async (t, body) => { const n = await addNote(ctx, lesson.id, t, body); setNotes((x) => [...x, n]); }}
           onDelete={async (id) => { await deleteNote(ctx, lesson.id, id); setNotes((x) => x.filter((n) => n.id !== id)); }}
-          onSeek={seek} />;
+          onSeek={seek} />}</Suspense>;
 
   const currProps = { course, modules: ctx.modules, lessons, progress, currentId: lessonId, stateOf, onPick: go, pct, doneCount, certReady, certEnabled: course.certificate_enabled };
 
