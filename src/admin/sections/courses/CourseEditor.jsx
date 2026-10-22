@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  LEVELS, STATUSES, formatKsh, slugify, newModule, newLesson, uid, validateCourse, lessonCount,
+  LEVELS, COURSE_CATEGORIES, STATUSES, formatKsh, slugify, newModule, newLesson, uid, validateCourse, lessonCount,
 } from "./courseModel.js";
 import { saveCourse, explain } from "./courses.api.js";
 import { Field, Segmented, Toggle, StatusBadge, Notice, ConfirmModal } from "./fields.jsx";
@@ -190,6 +190,11 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
               <Field label="Title" span><input type="text" value={course.title} onChange={(e) => setTitle(e.target.value)} /></Field>
               <Field label="URL slug" hint={`/academy/learn/?course=${course.slug || "…"}${!course.isNew ? " · changing this breaks existing links" : ""}`}>
                 <input type="text" value={course.slug} onChange={(e) => { setSlugTouched(true); set({ slug: slugify(e.target.value) }); }} />
+              </Field>
+              <Field label="Category" hint="Which section of the Academy this course appears under.">
+                <select value={course.category} onChange={(e) => set({ category: e.target.value })}>
+                  {COURSE_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                </select>
               </Field>
               <Field label="Level">
                 <select value={course.level} onChange={(e) => set({ level: e.target.value })}>

@@ -138,3 +138,8 @@ site needs its normal deploy step re-run.
      the wholesale/retail rule and variant prices, and `batch_supplier_lines()` now splits a product by variant ordered.
    - Still open (not part of 0016): the course tables are writable with the public key and lesson content is publicly
      readable (see 0009); worth a follow-up migration.
+18. **`0018_course_categories.sql`** – Course categories for the Academy dashboard: Beginner, Advanced, Business development.
+   Adds `courses.category` (existing courses are sorted once from their old level: beginner stays beginner, intermediate and
+   advanced become advanced) and updates `admin_save_course()` to save it. Set a course's category in
+   **Admin → Courses → open a course → Category**. Run after 0017 and **before deploying the new site code**; safe to re-run
+   (it never overwrites categories you have already set).

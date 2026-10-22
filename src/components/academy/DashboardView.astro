@@ -1,21 +1,69 @@
 ---
-import DashboardPopulated from "./DashboardPopulated.astro";
-import DashboardEmpty from "./DashboardEmpty.astro";
+// The Academy dashboard.
+//
+// Top: one hero slot with two possible heroes.
+//   - "Continue learning": the student has started a course (lesson activity, or they opened it).
+//   - Academy landing: they haven't started anything yet, so the hero sells the Academy instead.
+//     Its copy is the same as the Academy card on the shop home page (AcademyHook.astro).
+// Below: every published course, grouped by the category the admin gave it
+// (Beginner, Advanced, Business development; see src/data/course-categories.js).
+//
+// Courses are read in the browser so a course the admin publishes shows up without a rebuild.
 ---
 
 <section class="view" id="viewDashboard" style="display:block;">
-  <DashboardPopulated />
-  <DashboardEmpty />
+  <div id="dashboardMain" class="wrap dash-wrap">
+    <div class="hero-slot reveal" id="heroSlot" data-state="pending">
+      <div class="continue-hero" id="continueHero" data-course="classic-set-essentials" hidden>
+        <div class="continue-bg">
+          <img class="continue-hero-image" id="continueHeroImage" alt="" aria-hidden="true" hidden />
+        </div>
+        <div class="continue-overlay"></div>
+        <div class="continue-content">
+          <div class="eyebrow">Continue Learning</div>
+          <h1 id="continueCourseTitle">Classic Set Essentials</h1>
+          <p class="continue-sub" id="continueCourseSub">Continue where you left off.</p>
+          <div class="progress-row">
+            <div class="progress-bar" role="progressbar" aria-label="Course progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="continueProgressFill" style="width:0%;"></div></div>
+            <span id="continueProgressLabel">0%</span>
+          </div>
+          <button class="play-btn" id="continuePlayBtn"><span class="play-circle">▶</span> Continue Course</button>
+        </div>
+      </div>
+
+      <div class="continue-hero landing-hero" id="landingHero" hidden>
+        <div class="continue-bg">
+          <img class="continue-hero-image" id="landingHeroImage" alt="" aria-hidden="true" hidden />
+        </div>
+        <div class="continue-overlay"></div>
+        <div class="continue-content">
+          <h1>Lashtribe <span class="script">Academy</span></h1>
+          <p class="continue-sub">
+            Learn from top tutors the tricks and turns of profitable lash artistry. Build your skill
+            into a profitable business.
+          </p>
+          <a href="#courseCatalog" class="play-btn" id="browseCoursesBtn"><span class="play-circle">→</span> Browse Courses</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="courseCatalog">
+      <p class="cat-note">Loading courses…</p>
+    </div>
+  </div>
 </section>
 
 <script>
   import { supabase } from "../../services/service.js";
   import { loadCourse, loadProgress, getLastActiveCourseSlug } from "../../services/academy.js";
+  import { DEMO_COURSES } from "../../data/demo-courses.js";
+  import { COURSE_CATEGORIES, courseCategory } from "../../data/course-categories.js";
 
   const hasDatabase = Boolean(
     import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
   );
 
+  // ---------- course cards ----------
   function createCourseCard(course) {
     const card = document.createElement("div");
     const paid = !course.is_free;
@@ -92,102 +140,185 @@ import DashboardEmpty from "./DashboardEmpty.astro";
     return card;
   }
 
-  function renderCatalog(courses) {
-    const freeCourses = courses.filter((course) => course.is_free);
-    const paidCourses = courses.filter((course) => !course.is_free);
-    const freeGrids = [
-      document.getElementById("courseGridPopulated"),
-      document.getElementById("courseGridEmpty"),
-    ];
-    const paidGrids = [
-      document.getElementById("advancedGridPopulated"),
-      document.getElementById("advancedGridEmpty"),
-    ];
+  // ---------- catalog, grouped by category ----------
+  const catalogMount = document.getElementById("courseCatalog");
 
-    freeGrids.forEach((grid) => {
-      if (grid) grid.replaceChildren(...freeCourses.map(createCourseCard));
-    });
-    paidGrids.forEach((grid) => {
-      if (grid) grid.replaceChildren(...paidCourses.map(createCourseCard));
-    });
+  function showCatalogNote(text) {
+    if (!catalogMount) return;
+    const note = document.createElement("p");
+    note.className = "cat-note";
+    note.textContent = text;
+    catalogMount.replaceChildren(note);
   }
 
-  let catalog = [];
-  if (hasDatabase) {
-    const { data, error } = await supabase
-      .from("courses")
-      .select("id, slug, title, subtitle, description, is_free, price, cover_url, sort_order, duration_label")
-      .eq("status", "published")
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false });
+  function renderCatalog(courses) {
+    if (!catalogMount) return;
+    const sections = [];
+    for (const category of COURSE_CATEGORIES) {
+      const list = courses.filter((course) => courseCategory(course) === category.value);
+      if (!list.length) continue; // a category with no courses isn't shown
 
+      const section = document.createElement("section");
+      section.className = "cat-section";
+      section.id = `cat-${category.value}`;
+
+      const head = document.createElement("div");
+      head.className = "section-head";
+      const heading = document.createElement("h2");
+      heading.textContent = category.label;
+      const count = document.createElement("span");
+      count.className = "eyebrow";
+      count.textContent = `${list.length} ${list.length === 1 ? "course" : "courses"}`;
+      head.append(heading, count);
+
+      const grid = document.createElement("div");
+      grid.className = "course-grid";
+      grid.append(...list.map(createCourseCard));
+
+      section.append(head, grid);
+      sections.push(section);
+    }
+    if (!sections.length) return showCatalogNote("New courses are on the way.");
+    catalogMount.replaceChildren(...sections);
+  }
+
+  const CATALOG_COLUMNS =
+    "id, slug, title, subtitle, description, is_free, price, cover_url, sort_order, duration_label, level";
+
+  async function fetchCatalogRows() {
+    const query = (columns) =>
+      supabase
+        .from("courses")
+        .select(columns)
+        .eq("status", "published")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+
+    let result = await query(`${CATALOG_COLUMNS}, category`);
+    if (result.error) {
+      // The category column comes with migration 0018. Until it has been run, load without it
+      // (courses are then grouped by their old level) so the dashboard still works.
+      console.warn("Academy: loading courses without categories.", result.error.message);
+      result = await query(CATALOG_COLUMNS);
+    }
+    return result;
+  }
+
+  async function loadCatalog() {
+    if (!hasDatabase) {
+      // No database configured (local preview): show the built-in demo courses.
+      const demo = DEMO_COURSES.map((course) => ({
+        id: course.slug, slug: course.slug, title: course.title, subtitle: course.subtitle,
+        description: course.description, is_free: course.is_free !== false, price: course.price || 0,
+        cover_url: "", level: course.level,
+      }));
+      renderCatalog(demo);
+      return demo;
+    }
+    const { data, error } = await fetchCatalogRows();
     if (error) {
       console.error("Academy: could not load the published course catalog.", error);
+      showCatalogNote("We couldn't load the courses just now. Please refresh to try again.");
+      return [];
+    }
+    const courses = data || [];
+    renderCatalog(courses);
+    return courses;
+  }
+
+  const catalogPromise = loadCatalog();
+
+  // ---------- hero ----------
+  const slot = document.getElementById("heroSlot");
+  const continueHero = document.getElementById("continueHero");
+  const landingHero = document.getElementById("landingHero");
+
+  function setHeroState(state) {
+    if (slot) slot.dataset.state = state;
+    if (continueHero) continueHero.hidden = state !== "continue";
+    if (landingHero) landingHero.hidden = state !== "landing";
+  }
+
+  function setHeroImage(image, cover) {
+    if (!(image instanceof HTMLImageElement)) return;
+    if (cover) {
+      image.decoding = "async";
+      image.src = cover;
+      image.hidden = false;
     } else {
-      catalog = data || [];
-      if (catalog.length) renderCatalog(catalog);
+      image.removeAttribute("src");
+      image.hidden = true;
     }
   }
 
-  // The hero shows the course the student interacted with most recently (not a fixed one), so
-  // someone working through two courses at once always lands back on the one they used last.
-  async function updateHero() {
-    const hero = document.querySelector(".continue-hero");
-    const heroImage = document.getElementById("continueHeroImage");
-    const lastSlug = await getLastActiveCourseSlug();
-    const heroCourse =
-      (lastSlug && catalog.find((course) => course.slug === lastSlug)) ||
-      catalog.find((course) => course.slug === "classic-set-essentials") ||
-      catalog.find((course) => course.is_free);
-    const slug = lastSlug || heroCourse?.slug || "classic-set-essentials";
+  async function showContinueHero(slug, ctx) {
+    const catalog = await catalogPromise;
+    if (continueHero) continueHero.dataset.course = slug;
+    setHeroImage(
+      document.getElementById("continueHeroImage"),
+      ctx.course?.cover_url || catalog.find((course) => course.slug === slug)?.cover_url,
+    );
 
-    if (hero) hero.dataset.course = slug;
-    if (heroImage instanceof HTMLImageElement) {
-      const cover = (catalog.find((course) => course.slug === slug) || heroCourse)?.cover_url;
-      if (cover) {
-        heroImage.decoding = "async";
-        heroImage.src = cover;
-        heroImage.hidden = false;
-      } else {
-        heroImage.removeAttribute("src");
-        heroImage.hidden = true;
-      }
-    }
+    const fill = document.getElementById("continueProgressFill");
+    const label = document.getElementById("continueProgressLabel");
+    const bar = document.querySelector("#continueHero .progress-bar");
+    const title = document.getElementById("continueCourseTitle");
+    const subtitle = document.getElementById("continueCourseSub");
+    if (title) title.textContent = ctx.course.title;
 
     try {
-      const course = await loadCourse(slug);
-      if (course) {
-        const progress = await loadProgress(course);
-        const lessons = course.lessons || [];
-        const completed = lessons.filter((lesson) => progress[lesson.id]?.completed).length;
-        const percent = lessons.length ? Math.round((completed / lessons.length) * 100) : 0;
-        const fill = document.getElementById("continueProgressFill");
-        const label = document.getElementById("continueProgressLabel");
-        const bar = document.querySelector(".continue-hero .progress-bar");
-        const title = document.getElementById("continueCourseTitle");
-        const subtitle = document.getElementById("continueCourseSub");
-
-        if (fill) {
-          fill.style.width = `${percent}%`;
-          fill.classList.toggle("is-green", percent > 70);
-        }
-        if (label) label.textContent = `${percent}%`;
-        if (bar) bar.setAttribute("aria-valuenow", String(percent));
-        if (title) title.textContent = course.course.title;
-        if (subtitle) subtitle.textContent = `${completed} of ${lessons.length} lessons completed`;
+      const progress = await loadProgress(ctx);
+      const lessons = ctx.lessons || [];
+      const completed = lessons.filter((lesson) => progress[lesson.id]?.completed).length;
+      const percent = lessons.length ? Math.round((completed / lessons.length) * 100) : 0;
+      if (fill) {
+        fill.style.width = `${percent}%`;
+        fill.classList.toggle("is-green", percent > 70);
       }
+      if (label) label.textContent = `${percent}%`;
+      if (bar) bar.setAttribute("aria-valuenow", String(percent));
+      if (subtitle) subtitle.textContent = `${completed} of ${lessons.length} lessons completed`;
     } catch (progressError) {
       console.error("Academy: could not load course progress for the dashboard.", progressError);
-      const label = document.getElementById("continueProgressLabel");
-      const subtitle = document.getElementById("continueCourseSub");
-      const bar = document.querySelector(".continue-hero .progress-bar");
       if (label) label.textContent = "—";
       if (subtitle) subtitle.textContent = "Progress couldn't be loaded.";
       if (bar) bar.setAttribute("aria-label", "Course progress unavailable");
     }
+    setHeroState("continue");
   }
 
+  async function showLandingHero() {
+    // same picture as the Academy card on the shop home page: the first published course cover
+    const catalog = await catalogPromise;
+    setHeroImage(
+      document.getElementById("landingHeroImage"),
+      catalog.find((course) => course.cover_url)?.cover_url,
+    );
+    setHeroState("landing");
+  }
+
+  // The hero follows the course the student used most recently. A student who hasn't started a
+  // course yet (new, or only browsing) gets the Academy landing hero instead.
+  async function updateHero() {
+    setHeroState("pending");
+    let started = null;
+    try {
+      const slug = await getLastActiveCourseSlug({ startedOnly: true });
+      const ctx = slug ? await loadCourse(slug) : null;
+      if (slug && ctx) started = { slug, ctx };
+    } catch (err) {
+      console.error("Academy: couldn't work out the last course.", err);
+    }
+    if (started) await showContinueHero(started.slug, started.ctx);
+    else await showLandingHero();
+  }
+
+  document.getElementById("browseCoursesBtn")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("courseCatalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
   await updateHero();
-  // signing in on this page (no reload) switches the hero to that student's last course
+  // signing in on this page (no reload) switches the hero to that student's own state
   window.addEventListener("lashtribe:academy-enter", () => { updateHero(); });
 </script>

@@ -80,9 +80,7 @@
     document.body.style.overflow = "";
     markWelcomed(userId);
     // open the Academy at the full, scrollable course list
-    const empty = document.getElementById("dashboardEmpty");
-    const emptyVisible = !!empty && empty.style.display !== "none";
-    const target = document.getElementById(emptyVisible ? "courseCatalog" : "courseGridPopulated");
+    const target = document.getElementById("courseCatalog");
     window.setTimeout(() => target?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   });
 </script>

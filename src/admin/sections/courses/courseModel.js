@@ -2,6 +2,10 @@
 // translation between the editor's in-memory course and (a) the database rows, (b) the
 // portable "lashtribe-course" JSON file that import/export and scripts/course-to-sql.mjs use.
 
+import { CATEGORY_VALUES, courseCategory } from "../../../data/course-categories.js";
+
+export { COURSE_CATEGORIES } from "../../../data/course-categories.js";
+
 export const COURSE_FORMAT = "lashtribe-course@1";
 
 export const uid = () =>
@@ -68,6 +72,7 @@ export function newCourse(type = "story") {
     about: "",
     learn_points: [],
     level: "beginner",
+    category: "beginner",
     course_type: type,
     is_free: false,
     price: 0,
@@ -227,7 +232,7 @@ export function estimateReadMinutes(blocks = []) {
 // database <-> editor
 // ---------------------------------------------------------------------
 const COURSE_FIELDS = [
-  "id", "slug", "title", "subtitle", "description", "duration_label", "about", "level", "course_type",
+  "id", "slug", "title", "subtitle", "description", "duration_label", "about", "level", "category", "course_type",
   "is_free", "price", "compare_price", "cover_url", "hero_path", "sequential", "certificate_enabled",
   "bonus_points", "status", "sort_order",
 ];
@@ -272,6 +277,8 @@ export function courseFromRows({ course, modules, lessons, content }) {
   }
   return {
     ...Object.fromEntries(COURSE_FIELDS.map((k) => [k, course[k] ?? ""])),
+    // a course saved before categories existed gets the one its old level implies
+    category: courseCategory(course),
     price: Number(course.price || 0),
     compare_price: course.compare_price == null ? "" : Number(course.compare_price),
     bonus_points: Number(course.bonus_points || 0),
@@ -297,6 +304,7 @@ export function toSavePayload(course) {
       about: course.about || "",
       learn_points: (course.learn_points || []).map((x) => String(x).trim()).filter(Boolean),
       level: course.level,
+      category: CATEGORY_VALUES.includes(course.category) ? course.category : "beginner",
       course_type: course.course_type,
       is_free: free,
       price: free ? 0 : Number(course.price) || 0,

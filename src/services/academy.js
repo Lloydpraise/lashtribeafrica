@@ -149,8 +149,11 @@ export function touchCourse(ctx) {
 
 /** Slug of the course the student interacted with most recently: the later of their latest lesson
  *  activity (saved in the database), the last course opened on this device, and, failing both, their
- *  newest enrolment. Returns null when there is nothing to go on. */
-export async function getLastActiveCourseSlug() {
+ *  newest enrolment. Returns null when there is nothing to go on.
+ *  With { startedOnly: true } the enrolment fallback is skipped, so a course only counts when the
+ *  student has actually begun it (lesson activity, or they opened it). The dashboard hero uses this
+ *  to decide between "continue learning" and the Academy landing hero. */
+export async function getLastActiveCourseSlug({ startedOnly = false } = {}) {
   const user = await getUser();
   let best = null; // { slug, t }
   const consider = (slug, t) => { if (slug && Number.isFinite(t) && (!best || t > best.t)) best = { slug, t }; };
@@ -167,7 +170,7 @@ export async function getLastActiveCourseSlug() {
         const { data: c } = await supabase.from("courses").select("slug").eq("id", prog[0].course_id).maybeSingle();
         consider(c?.slug, new Date(prog[0].updated_at).getTime());
       }
-      if (!best) {
+      if (!best && !startedOnly) {
         const { data: enr } = await supabase
           .from("enrollments").select("course_id, created_at")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1);

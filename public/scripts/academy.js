@@ -62,15 +62,11 @@
     if (appShell) appShell.style.display = 'block';
     const avatarInitial = document.getElementById('avatarInitial');
     const accountNameLabel = document.getElementById('accountNameLabel');
-    const emptyName = document.getElementById('emptyName');
-    const dashboardPopulated = document.getElementById('dashboardPopulated');
-    const dashboardEmpty = document.getElementById('dashboardEmpty');
 
     if (avatarInitial) avatarInitial.textContent = name.charAt(0).toUpperCase();
     if (accountNameLabel) accountNameLabel.textContent = name.split(' ')[0];
-    if (emptyName) emptyName.textContent = name.split(' ')[0];
-    if (dashboardPopulated) dashboardPopulated.style.display = isNew ? 'none' : 'block';
-    if (dashboardEmpty) dashboardEmpty.style.display = isNew ? 'block' : 'none';
+    // The dashboard is a single view now: DashboardView picks the hero (continue learning, or the
+    // Academy landing hero for a student who hasn't started a course) and groups the courses itself.
     showDashboard();
   }
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import EmptyState from "../../components/EmptyState.jsx";
 import { formatKsh, toExport } from "./courseModel.js";
+import { courseCategory, categoryLabel } from "../../../data/course-categories.js";
 import { courseToMarkdown } from "./courseMarkdown.js";
 import { fetchCourseFull, setCourseStatus, updateCoursePricing, deleteCourse, duplicateCourse, explain } from "./courses.api.js";
 import { Field, Toggle, StatusBadge, ConfirmModal, Notice } from "./fields.jsx";
@@ -133,7 +134,7 @@ export default function CourseList({ courses, bundles, onEdit, onReload, onCreat
                       <div className="table-thumb">{c.cover_url ? <img src={c.cover_url} alt="" /> : <div className="table-thumb-placeholder" />}</div>
                       <div>
                         <button type="button" className="cs-linkish table-primary" onClick={() => onEdit(c.id)}>{c.title}</button>
-                        <div className="table-secondary">{c.course_type === "video" ? "Video" : "Story"} · {c.level} · /{c.slug}</div>
+                        <div className="table-secondary">{c.course_type === "video" ? "Video" : "Story"} · {categoryLabel(courseCategory(c))} · /{c.slug}</div>
                       </div>
                     </div>
                   </td>

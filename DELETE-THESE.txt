@@ -2,3 +2,8 @@ DELETE these files from the repo:
 src/components/ecommerce/RewardsReseller.astro
 src/components/ecommerce/CheckoutPreview.astro
 src/components/ecommerce/CheckoutModal.astro
+src/components/academy/DashboardPopulated.astro
+src/components/academy/DashboardEmpty.astro
+src/components/academy/CourseCard.astro
+src/components/academy/AdvancedCourseCard.astro
+src/components/academy/NextModuleCard.astro
