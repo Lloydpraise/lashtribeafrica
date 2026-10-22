@@ -16,6 +16,8 @@ const allProducts = await getEcommerceProducts();
 
 function toRailCard(product) {
   return {
+    id: product.id,
+    hasOptions: Boolean(product.hasOptions),
     slug: product.slug,
     icon: product.icon,
     image: product.images?.[0]?.url,
@@ -24,6 +26,7 @@ function toRailCard(product) {
     hasOffer: product.hasOffer,
     offerBadge: product.offerBadge,
     note: product.note,
+    description: product.description || "",
     moq: product.moq,
   };
 }

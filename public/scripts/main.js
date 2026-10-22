@@ -193,6 +193,20 @@
     }
   }
 
+  // product card "add to cart" buttons: adds the minimum order quantity and opens the cart
+  document.addEventListener('click', (event) => {
+    const btn = event.target.closest && event.target.closest('button[data-card-add]');
+    if (!btn || !window.LashtribeCart) return;
+    const id = btn.dataset.cardAdd;
+    if (!id) return;
+    window.LashtribeCart.add(id, Math.max(1, Number(btn.dataset.moq) || 1));
+    btn.classList.add('added');
+    setTimeout(() => btn.classList.remove('added'), 1200);
+    if (drawer) drawer.classList.add('open');
+    if (overlay) overlay.classList.add('open');
+    document.body.classList.add('cart-open');
+  });
+
   const drawerCheckoutBtn = document.getElementById('drawerCheckoutBtn');
   if (drawerCheckoutBtn) {
     drawerCheckoutBtn.addEventListener('click', () => {

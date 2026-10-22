@@ -111,14 +111,29 @@ export function getEcommerceProducts() {
   return cached;
 }
 
-/** Price strings for product cards. A product whose options change the price shows "From Ksh X". */
+/**
+ * Price strings for product cards. A product whose options change the price shows "From Ksh X".
+ *   strikePrice  the crossed-out price shown above the real one ("" when there is nothing to cross out)
+ *   price        the price actually paid (offer-adjusted when an offer applies)
+ *   saveText     "Save Ksh 500" (""  when there is no saving: the card then shows no save line)
+ * The older keys (marketPrice / nowPrice / offerPrice) are kept for anything else that still reads them.
+ */
 export function cardPrices(product) {
   const prefix = product.priceVaries ? "From " : "";
   const fromDelta = product.optionsFromDelta || 0;
+  const listNum = product.fromPrice ?? product.nowPrice;
+  const actualNum = product.hasOffer ? (product.effectiveFromPrice ?? product.effectivePrice) : listNum;
+  const marketNum = product.marketPrice > 0 ? product.marketPrice + fromDelta : 0;
+  // what gets crossed out: the market price, or the pre-offer price when that is higher
+  const strikeNum = Math.max(marketNum, product.hasOffer ? listNum : 0);
+  const saveNum = strikeNum > actualNum ? strikeNum - actualNum : 0;
   return {
-    marketPrice: formatKsh(product.marketPrice > 0 ? product.marketPrice + fromDelta : 0),
-    nowPrice: prefix + formatKsh(product.fromPrice ?? product.nowPrice),
+    marketPrice: formatKsh(marketNum),
+    nowPrice: prefix + formatKsh(listNum),
     offerPrice: prefix + formatKsh(product.effectiveFromPrice ?? product.effectivePrice),
+    strikePrice: saveNum > 0 ? formatKsh(strikeNum) : "",
+    price: prefix + formatKsh(actualNum),
+    saveText: saveNum > 0 ? `${product.priceVaries ? "Save up to" : "Save"} ${formatKsh(saveNum)}` : "",
   };
 }
 

@@ -15,25 +15,75 @@ export const num = (value, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
-/** Options exactly as the product page / admin work with them: [{ name, values: [{ value, priceDelta }] }]. */
+/**
+ * Options exactly as the product page / admin work with them:
+ *   [{ name, type, values: [{ value, priceDelta, image, swatch }] }]
+ * type    "auto" | "text" | "color" | "image": how the picker is drawn (see optionDisplayType).
+ * image   URL of a product photo linked to that value; the product page shows it when the value is picked.
+ * swatch  optional colour (#hex) used by colour pickers when the value's name is not itself a CSS colour.
+ * The database only checks name / value / price_delta, so the extra keys need no migration.
+ */
+export const OPTION_TYPES = ["auto", "text", "color", "image"];
+
 export function normalizeOptions(raw) {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((o) => ({
       name: String(o?.name ?? "").trim(),
+      type: OPTION_TYPES.includes(o?.type) ? o.type : "auto",
       values: (Array.isArray(o?.values) ? o.values : [])
-        .map((v) => ({ value: String(v?.value ?? "").trim(), priceDelta: num(v?.price_delta ?? v?.priceDelta) }))
+        .map((v) => ({
+          value: String(v?.value ?? "").trim(),
+          priceDelta: num(v?.price_delta ?? v?.priceDelta),
+          image: String(v?.image ?? "").trim(),
+          swatch: String(v?.swatch ?? "").trim(),
+        }))
         .filter((v) => v.value),
     }))
     .filter((o) => o.name && o.values.length);
 }
 
-/** Back to the stored shape (price_delta is only written when it is not zero). */
+/** Back to the stored shape (price_delta, image, swatch and type are only written when they carry something). */
 export function optionsForSave(options) {
   return normalizeOptions(options).map((o) => ({
     name: o.name,
-    values: o.values.map((v) => (v.priceDelta ? { value: v.value, price_delta: v.priceDelta } : { value: v.value })),
+    ...(o.type !== "auto" ? { type: o.type } : {}),
+    values: o.values.map((v) => ({
+      value: v.value,
+      ...(v.priceDelta ? { price_delta: v.priceDelta } : {}),
+      ...(v.image ? { image: v.image } : {}),
+      ...(v.swatch ? { swatch: v.swatch } : {}),
+    })),
   }));
+}
+
+const NAMED_COLORS = new Set(
+  ("black white red green blue yellow orange purple pink brown grey gray silver gold beige ivory navy teal maroon " +
+    "burgundy coral cyan magenta lavender violet turquoise tan khaki olive lime mint peach plum rose nude cream " +
+    "charcoal bronze copper champagne").split(" ")
+);
+
+/** A usable CSS colour for a value, or "" when there is none (explicit swatch first, then a colour name / hex). */
+export function swatchColor(value) {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+  if (hex.test(value.swatch || "")) return value.swatch;
+  const name = String(value.value || "").trim().toLowerCase();
+  if (hex.test(name) || NAMED_COLORS.has(name)) return name;
+  return "";
+}
+
+/**
+ * How an option is drawn on the product page.
+ *   "color"  round swatches   (admin chose it, or the type is named Colour/Color/Shade and every value has a colour)
+ *   "image"  photo tiles      (admin chose it, or every value has a linked photo and it is not a colour)
+ *   "text"   plain pills      (everything else, e.g. Curl, Length, Size)
+ */
+export function optionDisplayType(option) {
+  if (option.type === "color" || option.type === "image" || option.type === "text") return option.type;
+  const allColors = option.values.every((v) => swatchColor(v));
+  if (/colou?r|shade/i.test(option.name) && allColors) return "color";
+  if (option.values.every((v) => v.image)) return "image";
+  return "text";
 }
 
 const same = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();

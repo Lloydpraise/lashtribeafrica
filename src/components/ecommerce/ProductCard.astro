@@ -1,0 +1,82 @@
+---
+// One product card, used by every product rail and by "You may also like" so they are always identical.
+//   title        the product name (up to 2 lines, then an ellipsis)
+//   description  the product description (2 lines max with an ellipsis; only 1 line when the card shows a
+//                struck-through price, so cards with and without a strike-through stay about the same height)
+//   price block  struck price, real price, green save line (left) + square cart button (right)
+interface Product {
+  id?: string;
+  hasOptions?: boolean; // products with variants send the customer to the product page to choose
+  strikePrice?: string; // crossed-out price ("" = none)
+  price?: string; // the price actually paid
+  saveText?: string; // "Save Ksh 500" ("" = no save line)
+  slug?: string;
+  icon?: string; // inner SVG markup for the product illustration (fallback when no photo)
+  image?: string; // cover photo URL, preferred over icon when present
+  name: string;
+  description?: string;
+  nowPrice?: string;
+  hasOffer?: boolean;
+  offerBadge?: string; // e.g. "20% OFF"
+  moq?: number;
+  searchText?: string;
+}
+
+interface Props {
+  product: Product;
+  eager?: boolean; // photo loads immediately (above the fold)
+  reveal?: boolean; // scroll-in animation
+  delay?: string; // "", "d1", "d2", "d3"
+}
+
+const { product, eager = false, reveal = true, delay = "" } = Astro.props;
+---
+
+<article class:list={["card", reveal && "reveal", delay, product.strikePrice && "has-strike"]} data-product-search={product.searchText ?? product.name}>
+  <a class="card-link" href={product.slug ? `/ecommerce/product/${product.slug}` : "/shop"}>
+    <div class="card-img">
+      <div class="card-badges">
+        {product.hasOffer && <span class="badge-offer">{product.offerBadge}</span>}
+        {product.moq ? <span class="badge-moq">MOQ {product.moq}</span> : null}
+      </div>
+      {product.image ? (
+        <img src={product.image} alt={product.name} loading={eager ? "eager" : "lazy"} fetchpriority={eager ? "high" : undefined} decoding="async" />
+      ) : (
+        <svg viewBox="0 0 100 100" set:html={product.icon} />
+      )}
+    </div>
+    <div class="card-body">
+      <h4 class="card-title">{product.name}</h4>
+      {product.description && <p class="card-desc">{product.description}</p>}
+    </div>
+  </a>
+  <div class="card-buy">
+    <div class="card-prices">
+      {product.strikePrice && <span class="price-strike">{product.strikePrice}</span>}
+      <span class:list={["price-actual", product.hasOffer && "price-offer"]}>{product.price ?? product.nowPrice}</span>
+      {product.saveText && <span class="price-save">{product.saveText}</span>}
+    </div>
+    {product.hasOptions ? (
+      <a
+        class="card-cart-btn"
+        href={product.slug ? `/ecommerce/product/${product.slug}` : "/shop"}
+        aria-label={`Choose options for ${product.name}`}
+        title="Choose options"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.1a1.6 1.6 0 0 0 1.6-1.2L20.4 8H6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.5" r="1.4" fill="currentColor"/><circle cx="17" cy="19.5" r="1.4" fill="currentColor"/></svg>
+      </a>
+    ) : (
+      <button
+        class="card-cart-btn"
+        type="button"
+        data-card-add={product.id}
+        data-moq={product.moq || 1}
+        disabled={!product.id}
+        aria-label={`Add ${product.name} to cart`}
+        title="Add to cart"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.1a1.6 1.6 0 0 0 1.6-1.2L20.4 8H6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.5" r="1.4" fill="currentColor"/><circle cx="17" cy="19.5" r="1.4" fill="currentColor"/></svg>
+      </button>
+    )}
+  </div>
+</article>

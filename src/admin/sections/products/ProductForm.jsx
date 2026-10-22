@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import MediaUploader from "./MediaUploader.jsx";
-import OptionsEditor, { optionsToEditor, editorToOptions } from "./OptionsEditor.jsx";
+import OptionsEditor, { optionsToEditor, editorToOptions, pruneOptionImages } from "./OptionsEditor.jsx";
 import { createCategory, fetchPricingSettings } from "./products.api.js";
 import { DEFAULT_PRICING_SETTINGS, formulaPrices, normalizeOptions } from "../../../lib/pricing.js";
 import { createSupplier } from "../batches/batches.api.js";
@@ -146,7 +146,7 @@ export default function ProductForm({
 
     let options;
     try {
-      options = editorToOptions(form.options);
+      options = pruneOptionImages(editorToOptions(form.options), form.images);
     } catch (err) {
       setError(err.message);
       return;
@@ -501,6 +501,8 @@ export default function ProductForm({
                 rows={form.options}
                 onChange={(rows) => set("options", rows)}
                 knownOptions={knownOptions}
+                images={form.images || []}
+                basePrice={Number(form.now_price) || 0}
               />
             </div>
 

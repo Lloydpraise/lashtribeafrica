@@ -7,6 +7,8 @@ import CartDrawer from "../components/ecommerce/CartDrawer.astro";
 import { getEcommerceProducts, cardPrices } from "../data/ecommerce-products.js";
 
 type Product = {
+  id?: string;
+  hasOptions?: boolean;
   slug: string;
   name: string;
   description?: string;
@@ -50,6 +52,8 @@ const optionWords = (product: any): string[] =>
 function toSearchCard(product: Product) {
   const category = product.category?.name || "Other";
   return {
+    id: product.id,
+    hasOptions: Boolean(product.hasOptions),
     slug: product.slug,
     image: product.images?.[0]?.url,
     name: product.name,
@@ -57,6 +61,7 @@ function toSearchCard(product: Product) {
     hasOffer: product.hasOffer,
     offerBadge: product.offerBadge,
     note: product.note || "",
+    description: product.description || "",
     moq: product.moq,
     searchText: [product.name, product.slug, product.description, product.note, category, ...optionWords(product)].filter(Boolean).join(" "),
   };

@@ -4,8 +4,9 @@ import SiteHeader from "../../../components/ecommerce/SiteHeader.astro";
 import CartDrawer from "../../../components/ecommerce/CartDrawer.astro";
 import SiteFooter from "../../../components/ecommerce/SiteFooter.astro";
 import Breadcrumbs from "../../../components/ecommerce/Breadcrumbs.astro";
-import { getEcommerceProducts, formatKsh } from "../../../data/ecommerce-products.js";
-import { linePrices, previewDelta } from "../../../lib/pricing.js";
+import { getEcommerceProducts, formatKsh, cardPrices } from "../../../data/ecommerce-products.js";
+import ProductCard from "../../../components/ecommerce/ProductCard.astro";
+import { linePrices, previewDelta, optionDisplayType, swatchColor } from "../../../lib/pricing.js";
 
 export async function getStaticPaths() {
   const products = await getEcommerceProducts();
@@ -34,7 +35,19 @@ const sameCategory = allProducts.filter(
 );
 const sameIds = new Set(sameCategory.map((item) => item.id));
 const otherProducts = allProducts.filter((item) => item.slug !== product.slug && !sameIds.has(item.id));
-const relatedProducts = [...sameCategory, ...otherProducts].slice(0, 3);
+const relatedProducts = [...sameCategory, ...otherProducts].slice(0, 4).map((item) => ({
+  id: item.id,
+  slug: item.slug,
+  icon: item.icon,
+  image: item.images?.[0]?.url,
+  name: item.name,
+  description: item.description || "",
+  ...cardPrices(item),
+  hasOptions: Boolean(item.hasOptions),
+  hasOffer: item.hasOffer,
+  offerBadge: item.offerBadge,
+  moq: item.moq,
+}));
 
 const coverImage = product.images?.[0];
 
@@ -73,21 +86,34 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
   <main class="product-page">
     <section class="product-shell wrap">
       <div class="product-gallery">
-        <div class="product-visual" id="productVisual">
+        <div class:list={["product-visual", product.images.length > 0 && "has-gallery"]} id="productVisual">
           <span class="product-badge">{product.badge}</span>
           {product.hasOffer && <span class="offer-badge">{product.offerBadge}</span>}
-          {coverImage ? (
-            <img src={coverImage.url} alt={coverImage.alt || product.name} id="productMainImage" loading="eager" fetchpriority="high" decoding="async" />
+          {product.images.length > 0 ? (
+            <div class="gallery-track" id="galleryTrack" tabindex="0" aria-label="Product photos">
+              {product.images.map((img, i) => (
+                <div class="gallery-slide" data-image-url={img.url}>
+                  <img
+                    src={img.url}
+                    alt={img.alt || product.name}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    fetchpriority={i === 0 ? "high" : undefined}
+                    decoding="async"
+                    draggable="false"
+                  />
+                </div>
+              ))}
+            </div>
           ) : (
             <svg viewBox="0 0 100 100" set:html={product.icon} />
           )}
         </div>
 
         {product.images.length > 1 && (
-          <div class="product-thumb-strip">
+          <div class="product-thumb-strip" id="thumbStrip">
             {product.images.map((img, i) => (
-              <button type="button" class:list={["thumb-btn", i === 0 && "active"]} data-image-url={img.url}>
-                <img src={img.url} alt={img.alt || product.name} loading="lazy" decoding="async" />
+              <button type="button" class:list={["thumb-btn", i === 0 && "active"]} data-image-url={img.url} data-index={i} aria-label={`Show photo ${i + 1}`}>
+                <img src={img.url} alt="" loading="lazy" decoding="async" />
               </button>
             ))}
           </div>
@@ -158,35 +184,6 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
           </ul>
         )}
 
-        {product.options.length > 0 && (
-          <div class="option-groups" id="optionGroups">
-            {product.options.map((option) => (
-              <div class="option-group" data-option-group={option.name}>
-                <div class="option-label">
-                  <span>{option.name}</span>
-                  <em class="option-chosen" data-chosen-for={option.name}>Select</em>
-                </div>
-                <div class="option-values" role="radiogroup" aria-label={option.name}>
-                  {option.values.map((v) => (
-                    <button
-                      type="button"
-                      class="opt-pill"
-                      role="radio"
-                      aria-checked="false"
-                      data-option={option.name}
-                      data-value={v.value}
-                    >
-                      {v.value}
-                      {v.priceDelta !== 0 && <small>{deltaLabel(v.priceDelta)}</small>}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-            <p class="option-msg" id="optionMsg" role="alert" hidden></p>
-          </div>
-        )}
-
         <div class="product-price-card" id="priceCard">
           <div class="market-price-row" id="marketRow" hidden={start.market <= start.unit}>
             <span class="label">Market Price</span>
@@ -221,6 +218,60 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
           </div>
         </div>
 
+        {product.options.length > 0 && (
+          <div class="option-groups" id="optionGroups">
+            {product.options.map((option) => {
+              const kind = optionDisplayType(option);
+              return (
+                <div class="option-group" data-option-group={option.name} data-kind={kind}>
+                  <div class="option-label">
+                    <span>{option.name}</span>
+                    <em class="option-chosen" data-chosen-for={option.name}>Select</em>
+                  </div>
+                  <div class={`option-values option-values-${kind}`} role="radiogroup" aria-label={option.name}>
+                    {option.values.map((v) => {
+                      const title = v.priceDelta !== 0 ? `${v.value} (${deltaLabel(v.priceDelta)})` : v.value;
+                      const common = {
+                        type: "button",
+                        role: "radio",
+                        "aria-checked": "false",
+                        "data-option": option.name,
+                        "data-value": v.value,
+                        "data-image": v.image || undefined,
+                        title,
+                      };
+                      if (kind === "color") {
+                        const color = swatchColor(v);
+                        return (
+                          <button {...common} class="opt-swatch" aria-label={title} style={color ? `--swatch:${color}` : undefined}>
+                            <span class="opt-swatch-dot" />
+                          </button>
+                        );
+                      }
+                      if (kind === "image") {
+                        return (
+                          <button {...common} class="opt-tile" aria-label={title}>
+                            {v.image ? <img src={v.image} alt="" loading="lazy" decoding="async" /> : <span class="opt-tile-blank" />}
+                            <span class="opt-tile-name">{v.value}</span>
+                            {v.priceDelta !== 0 && <small>{deltaLabel(v.priceDelta)}</small>}
+                          </button>
+                        );
+                      }
+                      return (
+                        <button {...common} class="opt-pill">
+                          {v.value}
+                          {v.priceDelta !== 0 && <small>{deltaLabel(v.priceDelta)}</small>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            <p class="option-msg" id="optionMsg" role="alert" hidden></p>
+          </div>
+        )}
+
         <div class="product-actions">
           <button class="btn-primary product-add" type="button" id="addToCart">
             Add to Cart
@@ -247,24 +298,7 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
       </div>
       <div class="related-grid">
         {
-          relatedProducts.map((item) => (
-            <a class="related-card" href={`/ecommerce/product/${item.slug}`}>
-              <div class="related-thumb">
-                {item.images?.[0] ? (
-                  <img src={item.images[0].url} alt={item.name} loading="lazy" decoding="async" />
-                ) : (
-                  <svg viewBox="0 0 100 100" set:html={item.icon} />
-                )}
-              </div>
-              <div class="related-copy">
-                <h3>{item.name}</h3>
-                <div class="related-price-row">
-                  <span class="market">{formatKsh(item.priceVaries ? item.fromPrice : item.marketPrice)}</span>
-                  <span class="now">{item.priceVaries ? "From " : ""}{formatKsh(item.effectiveFromPrice ?? item.effectivePrice)}</span>
-                </div>
-              </div>
-            </a>
-          ))
+          relatedProducts.map((item) => <ProductCard product={item} reveal={false} />)
         }
       </div>
     </section>
@@ -343,11 +377,11 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
     }
 
     // ---- options ----
-    document.querySelectorAll<HTMLButtonElement>(".opt-pill").forEach((pill) => {
+    document.querySelectorAll<HTMLButtonElement>("[data-option][data-value]").forEach((pill) => {
       pill.addEventListener("click", () => {
         const name = pill.dataset.option || "";
         selected[name] = pill.dataset.value || "";
-        document.querySelectorAll<HTMLButtonElement>(".opt-pill").forEach((other) => {
+        document.querySelectorAll<HTMLButtonElement>("[data-option][data-value]").forEach((other) => {
           if (other.dataset.option !== name) return;
           const on = other === pill;
           other.classList.toggle("is-selected", on);
@@ -357,6 +391,7 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
         if (chosen) chosen.textContent = selected[name];
         document.querySelector(`[data-option-group="${CSS.escape(name)}"]`)?.classList.remove("option-missing");
         if (optionMsg) optionMsg.hidden = true;
+        showVariantImage(pill.dataset.image);
         update();
       });
     });
@@ -376,15 +411,49 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
       update();
     });
 
-    // ---- gallery ----
-    document.querySelectorAll<HTMLButtonElement>(".thumb-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const url = btn.dataset.imageUrl;
-        const mainImg = $("productMainImage") as HTMLImageElement | null;
-        if (mainImg && url) mainImg.src = url;
-        document.querySelectorAll(".thumb-btn").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-      });
+    // ---- gallery: a smooth scroll-snap strip. Thumbnails, swipes and linked variants all move the same strip. ----
+    const track = $("galleryTrack");
+    const thumbs = Array.from(document.querySelectorAll<HTMLButtonElement>(".thumb-btn"));
+    const slides = Array.from(document.querySelectorAll<HTMLElement>(".gallery-slide"));
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function markActive(index: number) {
+      thumbs.forEach((b, i) => b.classList.toggle("active", i === index));
+      const t = thumbs[index];
+      const strip = $("thumbStrip");
+      if (t && strip && strip.scrollWidth > strip.clientWidth) {
+        strip.scrollTo({ left: t.offsetLeft - strip.clientWidth / 2 + t.clientWidth / 2, behavior: reduceMotion ? "auto" : "smooth" });
+      }
+    }
+
+    function goToSlide(index: number) {
+      if (!track || index < 0 || index >= slides.length) return;
+      track.scrollTo({ left: slides[index].offsetLeft - track.offsetLeft, behavior: reduceMotion ? "auto" : "smooth" });
+      markActive(index);
+    }
+
+    // the photo linked to a chosen variant value slides into view; a value with no linked photo leaves the gallery alone
+    function showVariantImage(url?: string) {
+      if (!url) return;
+      const index = slides.findIndex((s) => s.dataset.imageUrl === url);
+      if (index >= 0) goToSlide(index);
+    }
+
+    thumbs.forEach((btn, i) => btn.addEventListener("click", () => goToSlide(i)));
+
+    let scrollTimer: number | undefined;
+    track?.addEventListener("scroll", () => {
+      window.clearTimeout(scrollTimer);
+      scrollTimer = window.setTimeout(() => {
+        if (!track) return;
+        markActive(Math.max(0, Math.min(slides.length - 1, Math.round(track.scrollLeft / Math.max(1, track.clientWidth)))));
+      }, 60);
+    }, { passive: true });
+
+    track?.addEventListener("keydown", (e) => {
+      const current = thumbs.findIndex((b) => b.classList.contains("active"));
+      if (e.key === "ArrowRight") { e.preventDefault(); goToSlide(Math.min(slides.length - 1, current + 1)); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); goToSlide(Math.max(0, current - 1)); }
     });
 
     function openDrawer() {

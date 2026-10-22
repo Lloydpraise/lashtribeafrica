@@ -202,8 +202,12 @@
     if (!itemsEl) return;
 
     const lines = cartLines().filter((l) => l.status !== 'missing');
+    const typingHere = document.activeElement && document.activeElement.classList &&
+      document.activeElement.classList.contains('qty-input') && itemsEl.contains(document.activeElement);
 
-    if (lines.length === 0) {
+    if (typingHere) {
+      // keep the box being typed in; totals below still update
+    } else if (lines.length === 0) {
       itemsEl.innerHTML = '<p class="summary-empty">Your cart is empty. <a href="/shop">Browse products</a></p>';
     } else {
       itemsEl.innerHTML = lines.map((l) => {
@@ -218,11 +222,22 @@
             '</h3><small><a href="/ecommerce/product/' + encodeURIComponent(l.slug || '') + '">Choose options &rarr;</a> before ordering</small></div></div>';
         }
         const opts = optionsText(l);
-        return '<div class="summary-item">' +
+        const k = esc(l.key);
+        const hint = tierHint(l);
+        return '<div class="summary-item" data-key="' + k + '">' +
           '<div class="summary-thumb">' + lineThumb(l) + '</div>' +
           '<div class="summary-info"><h3>' + esc(l.name) + '</h3>' +
-            (opts ? '<small>' + opts + '</small><br />' : '') +
-            '<small>Qty <span class="summary-qty">' + l.qty + '</span> &middot; ' + (l.tier === 'wholesale' ? 'Wholesale' : 'Retail') + ' ' + money(l.unit) + ' each</small>' +
+            (opts ? '<small>' + opts + '</small>' : '') +
+            '<small>' + (l.tier === 'wholesale' ? 'Wholesale' : 'Retail') + ' ' + money(l.unit) + ' each &middot; MOQ ' + l.moq + '</small>' +
+            (hint ? '<small class="summary-hint">' + hint + '</small>' : '') +
+            '<div class="summary-qty-row">' +
+              '<div class="stepper">' +
+                '<button class="qty-btn" data-key="' + k + '" data-dir="-1" type="button" aria-label="One less">&ndash;</button>' +
+                '<input class="qty-input" data-key="' + k + '" type="number" min="1" max="100000" inputmode="numeric" value="' + l.qty + '" aria-label="Quantity" />' +
+                '<button class="qty-btn" data-key="' + k + '" data-dir="1" type="button" aria-label="One more">+</button>' +
+              '</div>' +
+              '<button class="summary-remove" type="button" data-key="' + k + '" aria-label="Remove ' + esc(l.name) + '">Remove</button>' +
+            '</div>' +
           '</div>' +
           '<div class="summary-price">' + money(l.lineTotal) + '</div>' +
         '</div>';
@@ -339,7 +354,7 @@
       return;
     }
 
-    const rm = event.target.closest('.line-remove[data-key]');
+    const rm = event.target.closest('.line-remove[data-key], .summary-remove[data-key]');
     if (rm) {
       cart.remove(rm.dataset.key);
       cart.syncCartBadges();

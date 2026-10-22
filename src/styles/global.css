@@ -139,9 +139,9 @@
   .card{border:1px solid var(--grey);border-radius:var(--radius);overflow:hidden;background:var(--warm-white);transition:transform .25s ease, box-shadow .25s ease;}
   .card:hover{transform:translateY(-4px);box-shadow:0 14px 28px rgba(0,0,0,.08);}
   .card-link{display:block;color:inherit;}
-  .card-img{aspect-ratio:1/1;background:var(--blush);position:relative;display:grid;place-items:center;}
+  .card-img{aspect-ratio:1/1;background:var(--blush);position:relative;display:grid;place-items:center;overflow:hidden;}
   .card-img svg{width:46%;opacity:.85;}
-  .card-img img{width:100%;height:100%;object-fit:cover;}
+  .card-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
   .card-badges{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;z-index:1;}
   .badge-moq{background:var(--warm-white);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;padding:4px 8px;border-radius:20px;}
   .badge-offer{background:var(--rose-deep,#a8434f);color:var(--warm-white);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;padding:4px 8px;border-radius:20px;}
@@ -152,6 +152,25 @@
   .price-now{font-family:var(--serif);font-weight:700;font-size:17px;}
   .price-offer{color:var(--rose-deep,#a8434f);}
   .card-note{font-size:10.5px;color:var(--charcoal);margin-top:6px;}
+  .card-body .card-title{margin:0 0 3px;min-height:0;}
+  .card-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;line-height:1.4;}
+  .card-desc{margin:0;font-size:10.5px;line-height:1.5;color:var(--charcoal);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;}
+  .card.has-strike .card-desc{-webkit-line-clamp:1;}
+  /* "You may also like" uses the same card, in the same 4-up grid as the shop */
+  /* product card: prices on the left (struck-through above the real price, green save line below), square cart button on the right */
+  .card{display:flex;flex-direction:column;}
+  .card .card-link{flex:1;}
+  .card-buy{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:0 16px 16px;}
+  .card-prices{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;}
+  .price-strike{font-size:12px;line-height:1.2;color:#8a8a8a;text-decoration:line-through;}
+  .price-actual{font-family:var(--serif);font-weight:700;font-size:17px;line-height:1.2;}
+  .price-actual.price-offer{color:var(--rose-deep,#a8434f);}
+  .price-save{font-size:11px;line-height:1.3;font-weight:700;color:var(--green);}
+  .card-cart-btn{flex:none;width:40px;height:40px;display:grid;place-items:center;padding:0;border:1px solid var(--black);border-radius:0;background:var(--black);color:#fff;cursor:pointer;text-decoration:none;transition:transform .15s ease, opacity .15s ease, background .2s ease;}
+  .card-cart-btn svg{width:20px;height:20px;}
+  .card-cart-btn:hover:not(:disabled){transform:translateY(-1px);opacity:.9;}
+  .card-cart-btn:disabled{opacity:.4;cursor:default;}
+  .card-cart-btn.added{background:var(--green);border-color:var(--green);}
 
   .product-page{padding:42px 0 72px;background:linear-gradient(180deg, #fffdfb 0%, #f7eeef 100%);}
   .product-shell{display:grid;grid-template-columns:1.1fr 0.9fr;gap:44px;align-items:start;}
@@ -159,6 +178,14 @@
   .product-visual{position:relative;display:grid;place-items:center;min-height:560px;background:linear-gradient(135deg, #f3e4e7 0%, #fdf7f6 100%);border:1px solid var(--grey);border-radius:22px;overflow:hidden;}
   .product-visual svg{width:min(68%,520px);opacity:.94;max-width:100%;}
   .product-visual img{width:100%;height:100%;object-fit:cover;}
+  /* gallery: one smooth scroll-snap strip (thumbnails, swipes and linked variants all drive it) */
+  .product-visual.has-gallery{display:block;}
+  .gallery-track{position:absolute;inset:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;outline:none;}
+  .gallery-track::-webkit-scrollbar{display:none;}
+  .gallery-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:center;scroll-snap-stop:always;}
+  .gallery-slide img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;}
+  @media (prefers-reduced-motion: reduce){.gallery-track{scroll-behavior:auto;}}
+  .product-thumb-strip{scrollbar-width:none;}
   .product-thumb-strip{display:flex;gap:10px;flex-wrap:wrap;}
   .product-thumb-strip button{width:64px;height:64px;border-radius:10px;overflow:hidden;border:2px solid transparent;padding:0;background:var(--blush);cursor:pointer;}
   .product-thumb-strip button.active{border-color:var(--rose-deep);}
@@ -185,9 +212,7 @@
   .product-panel{padding-top:10px;min-width:0;}
   .related-products{padding-top:10px;}
   .related-head{margin-bottom:22px;}
-  .related-grid{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;padding-bottom:6px;}
-  .related-grid::-webkit-scrollbar{height:4px;}
-  .related-grid::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2);border-radius:999px;}
+  .related-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;}
   .related-card{display:block;flex:0 0 320px;background:var(--warm-white);border:1px solid var(--grey);border-radius:18px;overflow:hidden;transition:transform .2s ease, box-shadow .2s ease;scroll-snap-align:start;}
   .related-card:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(0,0,0,.06);}
   .related-thumb{aspect-ratio:1/1;background:var(--blush);display:grid;place-items:center;}
@@ -222,6 +247,7 @@
   .product-actions button:hover{transform:translateY(-2px);box-shadow:0 10px 18px rgba(0,0,0,.08);}
   /* options (variants), quantity counter and price tiers on the product page */
   .option-groups{display:grid;gap:16px;margin:0 0 22px;}
+  .qty-row + .option-groups{margin-top:-2px;}
   .option-label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#666;}
   .option-chosen{font-style:normal;font-size:12px;letter-spacing:.02em;text-transform:none;font-weight:600;color:var(--rose-deep);}
   .option-values{display:flex;flex-wrap:wrap;gap:8px;}
@@ -230,6 +256,19 @@
   .opt-pill:hover{border-color:var(--charcoal);}
   .opt-pill.is-selected{background:var(--black);border-color:var(--black);color:var(--warm-white);}
   .opt-pill.is-selected small{color:rgba(255,253,251,.75);}
+  /* colour swatches and photo tiles (picker style follows the variant type) */
+  .opt-swatch{width:36px;height:36px;padding:3px;border:1px solid var(--grey);border-radius:50%;background:var(--warm-white);cursor:pointer;display:grid;place-items:center;transition:border-color .15s ease, box-shadow .15s ease;}
+  .opt-swatch-dot{width:100%;height:100%;border-radius:50%;background:var(--swatch,#d8d2d2);border:1px solid rgba(0,0,0,.12);}
+  .opt-swatch:hover{border-color:var(--charcoal);}
+  .opt-swatch.is-selected{border-color:var(--black);box-shadow:0 0 0 1px var(--black);}
+  .option-values-image{gap:10px;}
+  .opt-tile{width:76px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 4px 6px;border:1px solid var(--grey);border-radius:10px;background:var(--warm-white);cursor:pointer;font:600 11.5px var(--sans);color:var(--charcoal);transition:border-color .15s ease, box-shadow .15s ease;}
+  .opt-tile img,.opt-tile-blank{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:7px;background:var(--blush);display:block;}
+  .opt-tile-name{line-height:1.25;text-align:center;overflow-wrap:anywhere;}
+  .opt-tile small{font-size:10px;font-weight:600;color:#8a8a8a;}
+  .opt-tile:hover{border-color:var(--charcoal);}
+  .opt-tile.is-selected{border-color:var(--black);box-shadow:0 0 0 1px var(--black);}
+  .option-group.option-missing .opt-swatch,.option-group.option-missing .opt-tile{border-color:var(--rose-deep);}
   .option-group.option-missing .opt-pill{border-color:var(--rose-deep);}
   .option-group.option-missing .option-label{color:var(--rose-deep);}
   .option-msg{margin:0;font-size:12.5px;color:var(--rose-deep);font-weight:600;}
@@ -425,6 +464,12 @@
   .summary-info h3{font-family:var(--sans);font-size:13px;font-weight:600;line-height:1.45;margin:0 0 4px;}
   .summary-info small{display:block;font-size:11px;color:#666;}
   .summary-price{font-family:var(--serif);font-size:15px;font-weight:700;}
+  .summary-item{align-items:start;}
+  .summary-qty-row{display:flex;align-items:center;gap:12px;margin-top:8px;}
+  .summary-qty-row .stepper{background:var(--warm-white);}
+  .summary-remove{border:0;background:none;padding:0;font-size:11px;color:#8a8a8a;text-decoration:underline;cursor:pointer;}
+  .summary-remove:hover{color:var(--black);}
+  .summary-info .summary-hint{margin-top:4px;color:var(--rose-deep);}
   .summary-totals{margin-top:22px;padding-top:16px;border-top:1px solid var(--grey);}
   .saved-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;color:var(--green);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
   .saved-row strong{font-size:13px;color:var(--green);}
