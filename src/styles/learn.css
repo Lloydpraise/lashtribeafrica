@@ -277,6 +277,9 @@
 .rd-cp-fb{font-size:14px;line-height:1.6;margin:12px 0 0}
 .rd-checkpoint.ok{border-color:var(--green)}
 .rd-sentinel{height:1px}
+.rd-rail button:disabled{opacity:.45;cursor:not-allowed}
+.rd-wall{display:flex;align-items:center;gap:10px;margin:-8px 0 40vh;padding:14px 16px;border-radius:14px;background:var(--blush);color:var(--rose-deep);font-size:14px;font-weight:700}
+.rd-wall span{flex:none;width:26px;height:26px;border-radius:50%;background:var(--rose-deep);color:#fff;display:grid;place-items:center;font-size:13px}
 
 /* ---- quiz ---- */
 .qz{max-width:640px;margin:18px auto 10px;background:#fff;border:1px solid var(--line);border-radius:22px;padding:26px 24px}

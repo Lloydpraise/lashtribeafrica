@@ -55,7 +55,9 @@ function offerAppliesToProduct(offer, product) {
   if (offer.scope === "all") return true;
   if (offer.scope === "products") return offer.productIds.includes(product.id);
   if (offer.scope === "categories") {
-    return Boolean(product.category?.id) && offer.categoryIds.includes(product.category.id);
+    // an offer on a main category also covers its subcategories
+    const ids = [product.category?.id, product.category?.parent?.id].filter(Boolean);
+    return ids.some((id) => offer.categoryIds.includes(id));
   }
   return false;
 }

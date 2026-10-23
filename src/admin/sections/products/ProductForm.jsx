@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import MediaUploader from "./MediaUploader.jsx";
+import ComplementsPicker from "./ComplementsPicker.jsx";
 import OptionsEditor, { optionsToEditor, editorToOptions, pruneOptionImages } from "./OptionsEditor.jsx";
 import { createCategory, fetchPricingSettings } from "./products.api.js";
 import { DEFAULT_PRICING_SETTINGS, formulaPrices, normalizeOptions } from "../../../lib/pricing.js";
@@ -8,7 +9,10 @@ import {
   slugify,
   formatKsh,
   STATUS_OPTIONS,
+  STATUS_LABELS,
   FEATURED_SECTION_OPTIONS,
+  categoryOptions,
+  categoryTree,
 } from "./utils.js";
 
 export default function ProductForm({
@@ -46,6 +50,7 @@ export default function ProductForm({
   const [slugTouched, setSlugTouched] = useState(false);
   const [newFeature, setNewFeature] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryParent, setNewCategoryParent] = useState("");
   const [addingCategory, setAddingCategory] = useState(false);
   const [newSupplierName, setNewSupplierName] = useState("");
   const [addingSupplier, setAddingSupplier] = useState(false);
@@ -70,16 +75,6 @@ export default function ProductForm({
       current.includes(value)
         ? current.filter((v) => v !== value)
         : [...current, value]
-    );
-  }
-
-  function toggleComplement(id) {
-    const current = form.complements || [];
-    set(
-      "complements",
-      current.includes(id)
-        ? current.filter((v) => v !== id)
-        : [...current, id]
     );
   }
 
@@ -116,10 +111,11 @@ export default function ProductForm({
     if (!newCategoryName.trim()) return;
     setAddingCategory(true);
     try {
-      const created = await createCategory(newCategoryName.trim());
+      const created = await createCategory(newCategoryName.trim(), newCategoryParent || null);
       onCategoriesChange([...categories, created]);
       set("category_id", created.id);
       setNewCategoryName("");
+      setNewCategoryParent("");
     } catch (err) {
       setError(err.message || "Couldn't create category.");
     } finally {
@@ -224,8 +220,23 @@ export default function ProductForm({
         onMouseDown={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
       >
-        <div className="admin-modal-header">
+        <div className="admin-modal-header pf-header">
           <h2>{form.id ? "Edit Product" : "Add Product"}</h2>
+          {/* Publishing sits here, top right, instead of among the other fields. Saved with "Save Product". */}
+          <div className="pf-status" role="radiogroup" aria-label="Status">
+            {STATUS_OPTIONS.map((s) => (
+              <button
+                type="button"
+                key={s}
+                role="radio"
+                aria-checked={form.status === s}
+                className={`pf-status-btn is-${s}` + (form.status === s ? " on" : "")}
+                onClick={() => set("status", s)}
+              >
+                {STATUS_LABELS[s] || s}
+              </button>
+            ))}
+          </div>
           <button type="button" className="admin-modal-close" onClick={onCancel}>
             ×
           </button>
@@ -336,23 +347,34 @@ export default function ProductForm({
                 onChange={(e) => set("category_id", e.target.value)}
               >
                 <option value="">— None —</option>
-                {categories.map((c) => (
+                {categoryOptions(categories).map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {c.label}
                   </option>
                 ))}
               </select>
             </label>
 
             <div className="form-field">
-              <span>New category</span>
+              <span>New category or subcategory</span>
               <div className="inline-add-row">
                 <input
                   type="text"
-                  placeholder="e.g. Lash Fans"
+                  placeholder="e.g. Fast-Drying Glue"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                 />
+                <select
+                  value={newCategoryParent}
+                  onChange={(e) => setNewCategoryParent(e.target.value)}
+                  aria-label="Put the new category under"
+                  className="pf-parent-select"
+                >
+                  <option value="">Main category</option>
+                  {categoryTree(categories).map((m) => (
+                    <option key={m.id} value={m.id}>Under {m.name}</option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   className="admin-btn secondary"
@@ -536,20 +558,6 @@ export default function ProductForm({
               />
             </label>
 
-            <label className="form-field">
-              <span>Status</span>
-              <select
-                value={form.status}
-                onChange={(e) => set("status", e.target.value)}
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s[0].toUpperCase() + s.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
             <div className="form-field span-2">
               <span>Show in</span>
               <div className="checkbox-row">
@@ -568,23 +576,16 @@ export default function ProductForm({
 
             <div className="form-field span-2">
               <span>Goes together with</span>
-              <div className="checkbox-row">
-                {otherProducts.length === 0 && (
-                  <span className="form-hint">
-                    Save other products first to associate them here.
-                  </span>
-                )}
-                {otherProducts.map((p) => (
-                  <label className="checkbox-pill" key={p.id}>
-                    <input
-                      type="checkbox"
-                      checked={(form.complements || []).includes(p.id)}
-                      onChange={() => toggleComplement(p.id)}
-                    />
-                    {p.name}
-                  </label>
-                ))}
-              </div>
+              {otherProducts.length === 0 ? (
+                <span className="form-hint">Save other products first to associate them here.</span>
+              ) : (
+                <ComplementsPicker
+                  value={form.complements || []}
+                  products={otherProducts}
+                  categories={categories}
+                  onChange={(ids) => set("complements", ids)}
+                />
+              )}
             </div>
 
           </div>

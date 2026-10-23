@@ -7,6 +7,7 @@ import {
 import { issueCertificate } from "../../services/customers.js";
 import { createTimeStore, useMedia, burstConfetti, fmtMinutes } from "./util.js";
 import Reader, { Block, groupSections } from "./Reader.jsx";
+import { buildScreens } from "./screens.js";
 import Curriculum from "./Curriculum.jsx";
 
 // Each lesson view is its own chunk, fetched the first time a lesson needs it. A student on a
@@ -147,7 +148,7 @@ export default function LearnApp() {
     try { return localStorage.getItem("lashtribe_reading_view") === "article" ? "article" : "story"; } catch { return "story"; }
   });
   const pickView = (v) => { setView(v); try { localStorage.setItem("lashtribe_reading_view", v); } catch { /* ignore */ } };
-  const [seenInfo, setSeenInfo] = useState({ n: 0, total: 0 });
+  const [seenInfo, setSeenInfo] = useState({ n: 0, total: 0, waiting: null });
   const [toast, setToast] = useState("");
   const [cartCount, setCartCount] = useState(0);
 
@@ -235,7 +236,7 @@ export default function LearnApp() {
   // ---------- lesson content ----------
   useEffect(() => {
     if (!ctx || !lesson) return;
-    setSeenInfo({ n: 0, total: 0 });
+    setSeenInfo({ n: 0, total: 0, waiting: null });
     timeStore.set(0);
     if (stateOf(lesson) === "paywall") { setLessonState("locked"); return; }
     if (cache[lesson.id]) { setLessonState("idle"); return; }
@@ -299,6 +300,11 @@ export default function LearnApp() {
     () => (video?.products || []).map((p) => ({ ...p, product: products[p.slug] })).filter((p) => p.product),
     [video, products]
   );
+  // the story view's screens, so the article view saves its place in the same units
+  const readingScreens = useMemo(
+    () => (lesson?.kind === "reading" && content ? buildScreens((content.blocks || []).filter((b) => b.type !== "quiz"), {}) : []),
+    [lesson?.kind, content]
+  );
   const hasShop = timed.length > 0;
   const hasTranscript = !!video?.transcript?.length;
   const watermark = "lashtribeafrica.com";
@@ -354,7 +360,17 @@ export default function LearnApp() {
   const prev = idx > 0 ? lessons[idx - 1] : null;
   const next = idx >= 0 && idx < lessons.length - 1 ? lessons[idx + 1] : null;
   const sections = lesson?.kind === "reading" ? groupSections(bodyBlocks).length : 0;
-  const readerReady = lesson?.kind !== "reading" || seenInfo.total === 0 || seenInfo.n >= seenInfo.total;
+  const savedPos = lesson ? progress[lesson.id]?.position || 0 : 0;
+  const articleStart = done ? 0 : Math.max(0, readingScreens[savedPos]?.sec ?? 0);
+  const onArticleProgress = (n, total, waiting) => {
+    setSeenInfo({ n, total, waiting });
+    if (done || !n || !readingScreens.length) return;
+    let at = readingScreens.findIndex((sc) => sc.sec >= n);
+    if (at < 0 || n >= total) at = readingScreens.length - 1;
+    if (at <= savedPos) return;
+    setProgress((p) => ({ ...p, [lesson.id]: { ...(p[lesson.id] || {}), position: at } }));
+    saveProgress(ctx, lesson.id, { position: at });
+  };
 
   const mainBar = (() => {
     if (!lesson || isCert) return null;
@@ -366,7 +382,9 @@ export default function LearnApp() {
       ? <button className="lx-btn dark" onClick={() => go(next.id)}>Next lesson →</button>
       : <button className="lx-btn dark" onClick={() => go("__certificate")}>Finish course →</button>;
     if (lesson.kind === "reading")
-      return <button className="lx-btn dark" disabled={!readerReady} onClick={() => complete(lesson.id)}>{readerReady ? "Finish lesson ✓" : `Keep reading · ${seenInfo.n} of ${seenInfo.total}`}</button>;
+      return <span className="lx-bar-hint">{seenInfo.waiting === "flip" ? "Flip the card to keep reading"
+        : seenInfo.waiting ? "Answer the question to keep reading"
+        : seenInfo.total ? `Keep scrolling · ${seenInfo.n} of ${seenInfo.total} sections read` : "Keep scrolling"}</span>;
     return <button className="lx-btn dark" onClick={() => complete(lesson.id)}>Mark complete ✓</button>;
   })();
 
@@ -414,8 +432,8 @@ export default function LearnApp() {
               ? <div className="lx-notes-body"><div className="lx-sec-label">Lesson notes</div>
                   <div className="reader mode-scroll">{groupSections(bodyBlocks).map((s, i) => <section className="rd-section tight" key={i}>{s.title && <div className="rd-sec-head"><h2>{s.title}</h2></div>}{s.blocks.map((b, k) => <Block b={b} key={k} />)}</section>)}</div>
                 </div>
-              : <Reader key={lesson.id} resetKey={lesson.id} blocks={bodyBlocks} watermark={watermark}
-                  onProgress={(n, total) => setSeenInfo({ n, total })} />
+              : <Reader key={lesson.id} blocks={bodyBlocks} watermark={watermark} startSection={articleStart} completed={done}
+                  onProgress={onArticleProgress} onSeenAll={() => complete(lesson.id)} />
           )
       )}
     </>

@@ -52,7 +52,10 @@ export function Checkpoint({ b, onSolved, onWrong, bare, solved }) {
   );
 }
 
-export function Block({ b }) {
+/** Blocks the reader has to act on before the article lets them read further, as in the story view. */
+export const isGate = (b) => b.type === "checkpoint" || b.type === "flip";
+
+export function Block({ b, solved, onSolved }) {
   switch (b.type) {
     case "text": return <p className="rd-p">{inline(b.text)}</p>;
     case "list": {
@@ -88,22 +91,31 @@ export function Block({ b }) {
           {b.caption && <figcaption>{b.caption}</figcaption>}
         </figure>
       );
-    case "checkpoint": return <Checkpoint b={b} />;
-    case "flip": return <FlipCard b={b} />;
+    case "checkpoint": return <Checkpoint b={b} solved={solved} onSolved={onSolved} />;
+    case "flip": return <FlipCard b={b} solved={solved} onFlip={onSolved} />;
     case "compare": return <Compare b={b} />;
     case "divider": return <hr className="rd-hr" />;
     default: return null;
   }
 }
 
-/** Article view: the same blocks as a scrolling page with a section progress rail. */
-export default function Reader({ blocks, onSeenAll, onProgress, watermark, resetKey }) {
+/**
+ * Article view: the same blocks as a scrolling page with a section progress rail. Scrolling past a
+ * section's end marks it read, and the lesson completes once the last one is reached. The page
+ * stops at the first unanswered question (or unflipped card) until the reader deals with it.
+ */
+export default function Reader({ blocks, onSeenAll, onProgress, watermark, startSection = 0, completed = false }) {
   const sections = useMemo(() => groupSections(blocks), [blocks]);
-  const [seen, setSeen] = useState(() => new Set());
+  const gates = useMemo(() => {
+    const g = [];
+    sections.forEach((s, si) => s.blocks.forEach((b, bi) => { if (isGate(b)) g.push({ key: `${si}:${bi}`, si, bi, type: b.type }); }));
+    return g;
+  }, [sections]);
+  const start = Math.max(0, Math.min(startSection, sections.length - 1));
+  const [seen, setSeen] = useState(() => new Set(Array.from({ length: start }, (_, k) => k)));
+  const [solved, setSolved] = useState(() => new Set(gates.filter((g) => completed || g.si < start).map((g) => g.key)));
   const rootRef = useRef(null);
   const reported = useRef(false);
-
-  useEffect(() => { setSeen(new Set()); reported.current = false; }, [resetKey]);
 
   const markUpTo = (i) => setSeen((prev) => {
     let changed = false;
@@ -111,6 +123,10 @@ export default function Reader({ blocks, onSeenAll, onProgress, watermark, reset
     for (let k = 0; k <= i; k++) if (!next.has(k)) { next.add(k); changed = true; }
     return changed ? next : prev;
   });
+  const solve = (key) => setSolved((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+
+  // everything after the first open gate stays hidden, so the page simply ends there
+  const wall = gates.find((g) => !solved.has(g.key)) || null;
 
   // a section counts as read once its end has been reached
   useEffect(() => {
@@ -122,15 +138,23 @@ export default function Reader({ blocks, onSeenAll, onProgress, watermark, reset
     }, { rootMargin: "0px 0px -8% 0px" });
     rootRef.current.querySelectorAll("[data-sentinel]").forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [sections]);
+  }, [sections, wall?.key]);
+
+  // pick up where the reader left off
+  useEffect(() => {
+    if (start < 1) return undefined;
+    const t = setTimeout(() => rootRef.current?.querySelector(`[data-sec="${start}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 400);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line
 
   const total = sections.length;
   const allSeen = total > 0 && seen.size >= total;
-  useEffect(() => { onProgress?.(seen.size, total); }, [seen.size, total]); // eslint-disable-line
+  useEffect(() => { onProgress?.(seen.size, total, wall?.type || null); }, [seen.size, total, wall?.type]); // eslint-disable-line
   useEffect(() => { if (allSeen && !reported.current) { reported.current = true; onSeenAll?.(); } }, [allSeen]); // eslint-disable-line
 
   const goto = (i) => rootRef.current?.querySelector(`[data-sec="${i}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   const activeSeg = Math.min(total - 1, Math.max(0, seen.size ? Math.max(...seen) + (seen.size < total ? 1 : 0) : 0));
+  const shown = wall ? sections.slice(0, wall.si + 1) : sections;
 
   if (!total) return null;
   return (
@@ -140,21 +164,35 @@ export default function Reader({ blocks, onSeenAll, onProgress, watermark, reset
       {total > 1 && (
         <div className="rd-rail" role="tablist" aria-label="Lesson sections">
           {sections.map((s, i) => (
-            <button key={i} role="tab" aria-label={`Section ${i + 1}${s.title ? ": " + s.title : ""}`}
+            <button key={i} role="tab" aria-label={`Section ${i + 1}${s.title ? ": " + s.title : ""}`} disabled={i >= shown.length}
                     className={(seen.has(i) ? "seen " : "") + (i === activeSeg ? "now" : "")} onClick={() => goto(i)} />
           ))}
         </div>
       )}
-      {sections.map((s, i) => (
-        <section className="rd-section" data-sec={i} key={i}>
-          <div className="rd-sec-head">
-            <span className="rd-num">{pad2(i + 1)}</span>
-            {s.title && <h2>{s.title}</h2>}
-          </div>
-          {s.blocks.map((b, k) => <Block b={b} key={k} />)}
-          <div data-sentinel data-i={i} className="rd-sentinel" />
-        </section>
-      ))}
+      {shown.map((s, i) => {
+        const blocked = wall && wall.si === i;
+        const list = blocked ? s.blocks.slice(0, wall.bi + 1) : s.blocks;
+        return (
+          <section className="rd-section" data-sec={i} key={i}>
+            <div className="rd-sec-head">
+              <span className="rd-num">{pad2(i + 1)}</span>
+              {s.title && <h2>{s.title}</h2>}
+            </div>
+            {list.map((b, k) => {
+              const key = `${i}:${k}`;
+              return isGate(b)
+                ? <Block b={b} key={k} solved={solved.has(key)} onSolved={() => solve(key)} />
+                : <Block b={b} key={k} />;
+            })}
+            {blocked
+              ? <div className="rd-wall" role="status">
+                  <span aria-hidden>↑</span>
+                  {wall.type === "flip" ? "Flip the card above to keep reading" : "Answer the question above to keep reading"}
+                </div>
+              : <div data-sentinel data-i={i} className="rd-sentinel" />}
+          </section>
+        );
+      })}
     </div>
   );
 }

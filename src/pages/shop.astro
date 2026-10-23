@@ -6,6 +6,8 @@ import SiteFooter from "../components/ecommerce/SiteFooter.astro";
 import CartDrawer from "../components/ecommerce/CartDrawer.astro";
 import { getEcommerceProducts, cardPrices } from "../data/ecommerce-products.js";
 
+type Category = { id?: string; name?: string; slug?: string; sortOrder?: number; parent?: Category | null };
+
 type Product = {
   id?: string;
   hasOptions?: boolean;
@@ -24,7 +26,7 @@ type Product = {
   offerBadge?: string;
   moq?: number;
   images?: { url?: string }[];
-  category?: { name?: string; slug?: string } | null;
+  category?: Category | null;
 };
 
 const allProducts = (await getEcommerceProducts()) as Product[];
@@ -36,21 +38,44 @@ const slugify = (value = "") =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-const groupedProducts = Object.entries(
-  allProducts.reduce<Record<string, Product[]>>((acc, product) => {
-    const category = product.category?.name || "Other";
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(product);
-    return acc;
-  }, {})
-) as [string, Product[]][];
-groupedProducts.sort(([left], [right]) => left.localeCompare(right));
+// Main category -> subcategories -> products. A product's category is its subcategory when it has a parent
+// (migration 0025); a product sitting directly in a main category is listed under that main category.
+type Sub = { id: string; name: string; order: number; products: Product[] };
+type Group = { id: string; name: string; order: number; direct: Product[]; subs: Map<string, Sub> };
+
+const groupMap = new Map<string, Group>();
+for (const product of allProducts) {
+  const cat = product.category;
+  const main = cat?.parent || cat || null;
+  const mainId = main ? main.slug || slugify(main.name) : "other";
+  let group = groupMap.get(mainId);
+  if (!group) {
+    group = { id: mainId, name: main?.name || "Other", order: main ? main.sortOrder ?? 0 : Number.MAX_SAFE_INTEGER, direct: [], subs: new Map() };
+    groupMap.set(mainId, group);
+  }
+  if (cat?.parent) {
+    const subId = cat.slug || slugify(cat.name);
+    let sub = group.subs.get(subId);
+    if (!sub) {
+      sub = { id: subId, name: cat.name || "", order: cat.sortOrder ?? 0, products: [] };
+      group.subs.set(subId, sub);
+    }
+    sub.products.push(product);
+  } else {
+    group.direct.push(product);
+  }
+}
+const byOrder = (a: { order: number; name: string }, b: { order: number; name: string }) =>
+  a.order - b.order || a.name.localeCompare(b.name);
+const groups = [...groupMap.values()]
+  .sort(byOrder)
+  .map((g) => ({ ...g, subList: [...g.subs.values()].sort(byOrder) }));
 
 const optionWords = (product: any): string[] =>
   (product.options || []).flatMap((o: any) => [o.name, ...o.values.map((v: any) => v.value)]).slice(0, 60);
 
 function toSearchCard(product: Product) {
-  const category = product.category?.name || "Other";
+  const category = [product.category?.parent?.name, product.category?.name || "Other"].filter(Boolean).join(" ");
   return {
     id: product.id,
     hasOptions: Boolean(product.hasOptions),
@@ -72,23 +97,50 @@ function toSearchCard(product: Product) {
   <SiteHeader />
 
   <nav class="shop-chips" id="shopChips" aria-label="Product categories">
-    {groupedProducts.map(([category]) => (
-      <a href={`#${slugify(category)}`} data-chip-target={slugify(category)}>{category}</a>
+    {groups.map((group) => (
+      <a href={`#${group.id}`} data-chip-target={group.id}>{group.name}</a>
     ))}
   </nav>
 
   <main class="shop-page">
     <div id="fullCatalog">
-      {groupedProducts.map(([category, products], index) => (
-        <ProductRail
-          id={slugify(category)}
-          title={category}
-          products={products.map(toSearchCard)}
-          viewAllHref="/shop"
-          showViewAll={false}
-          noTopPadding={index === 0}
-          eagerCount={index === 0 ? 4 : 0}
-        />
+      {groups.map((group, index) => (
+        <div class="cat-group" id={group.id} data-cat-group>
+          {group.subList.length > 0 && (
+            <div class="shop wrap cat-head" style={index === 0 ? "padding-top:0;" : undefined}>
+              <h2>{group.name}</h2>
+              <nav class="cat-subs" aria-label={`${group.name} subcategories`}>
+                {group.subList.map((sub) => (
+                  <a href={`#${sub.id}`}>
+                    {sub.name} <span>{sub.products.length}</span>
+                  </a>
+                ))}
+              </nav>
+            </div>
+          )}
+          {group.subList.map((sub, subIndex) => (
+            <ProductRail
+              id={sub.id}
+              title={sub.name}
+              products={sub.products.map(toSearchCard)}
+              viewAllHref="/shop"
+              showViewAll={false}
+              noTopPadding
+              eagerCount={index === 0 && subIndex === 0 ? 4 : 0}
+            />
+          ))}
+          {group.direct.length > 0 && (
+            <ProductRail
+              id={group.subList.length ? `${group.id}-more` : undefined}
+              title={group.subList.length ? `More ${group.name}` : group.name}
+              products={group.direct.map(toSearchCard)}
+              viewAllHref="/shop"
+              showViewAll={false}
+              noTopPadding={index === 0 || group.subList.length > 0}
+              eagerCount={index === 0 && group.subList.length === 0 ? 4 : 0}
+            />
+          )}
+        </div>
       ))}
     </div>
 
@@ -182,11 +234,44 @@ function toSearchCard(product: Product) {
   </script>
 
   <style is:global>
-    /* Long catalogs: the browser skips layout and paint for category sections that are far off
-       screen, and builds them as they near the viewport. The first two sections stay normal. */
-    #fullCatalog > [data-product-section]:nth-child(n + 3) {
+    /* Long catalogs: the browser skips layout and paint for category groups that are far off
+       screen, and builds them as they near the viewport. The first group stays normal. */
+    #fullCatalog > [data-cat-group]:nth-child(n + 2) {
       content-visibility: auto;
-      contain-intrinsic-size: auto 560px;
+      contain-intrinsic-size: auto 900px;
+    }
+    .cat-group { scroll-margin-top: 90px; }
+    .cat-head { padding-bottom: 0; }
+    .cat-head h2 { font-family: var(--serif); font-size: clamp(26px, 3vw, 36px); line-height: 1.15; margin: 0 0 12px; }
+    .cat-subs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cat-subs a {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 14px;
+      border: 1px solid var(--grey); border-radius: 999px; background: var(--warm-white);
+      font-size: 12px; font-weight: 600; white-space: nowrap;
+    }
+    .cat-subs a span { color: #918f8f; font-weight: 500; }
+    .cat-subs a:hover { border-color: var(--black); }
+
+    /* The category bar is shown on desktop too (mobile styles live in mobile-ecommerce.css). */
+    @media (min-width: 881px) {
+      .shop-chips {
+        display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+        padding: 14px 24px; margin: 0 auto 8px; max-width: 1200px;
+      }
+      .shop-chips a {
+        display: inline-flex; align-items: center; min-height: 38px; padding: 0 18px;
+        border: 1px solid var(--grey); border-radius: 999px; background: var(--warm-white);
+        font-size: 12.5px; font-weight: 600;
+      }
+      .shop-chips a:hover { border-color: var(--black); }
+      .shop-chips a.active { background: var(--black); border-color: var(--black); color: var(--warm-white); }
+      body:has(#searchResults:not([hidden])) .shop-chips { display: none; }
+    }
+    @media (max-width: 880px) {
+      .cat-head h2 { font-size: 24px; margin-bottom: 10px; }
+      .cat-subs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--m-gutter)); padding: 0 var(--m-gutter) 4px; }
+      .cat-subs::-webkit-scrollbar { display: none; }
+      .cat-group { scroll-margin-top: calc(var(--header-h) + 56px); }
     }
   </style>
 </Layout>

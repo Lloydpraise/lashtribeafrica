@@ -20,7 +20,14 @@ export function formatKsh(value) {
 const PAGE_SIZE = 1000;
 const COLUMNS =
   "id, slug, name, description, features, note, badge, icon, market_price, now_price, retail_price, moq, " +
-  "images, videos, status, sort_order, complements, featured_sections, options, category:category_id(id,name,slug)";
+  "images, videos, status, sort_order, complements, featured_sections, options, " +
+  "category:category_id(id,name,slug,sort_order,parent:parent_id(id,name,slug,sort_order))";
+
+// A product's category is its subcategory when it has one; `parent` is then the main category (0025).
+function mapCategory(c) {
+  const parent = c.parent ? { id: c.parent.id, name: c.parent.name, slug: c.parent.slug, sortOrder: c.parent.sort_order ?? 0 } : null;
+  return { id: c.id, name: c.name, slug: c.slug, sortOrder: c.sort_order ?? 0, parent };
+}
 
 function mapRow(row, slugById) {
   const options = normalizeOptions(row.options);
@@ -42,7 +49,7 @@ function mapRow(row, slugById) {
     hasOptions: options.length > 0,
     optionsFromDelta: fromDelta, // lowest total price adjustment across the options
     priceVaries: varies, // true when choosing options changes the price
-    category: row.category ? { id: row.category.id, name: row.category.name, slug: row.category.slug } : null,
+    category: row.category ? mapCategory(row.category) : null,
     featuredSections: row.featured_sections || [],
     images: row.images || [],
     videos: row.videos || [],
@@ -50,8 +57,16 @@ function mapRow(row, slugById) {
   };
 }
 
+// Without the 0025 category tree (no parent_id / sort_order on categories yet).
+const FLAT_CATEGORY_COLUMNS = COLUMNS.replace(
+  "category:category_id(id,name,slug,sort_order,parent:parent_id(id,name,slug,sort_order))",
+  "category:category_id(id,name,slug)"
+);
 // Same list without the 0016 columns, so a site deployed before the migration is run still shows its products.
-const LEGACY_COLUMNS = COLUMNS.replace(" retail_price,", "").replace(" options,", "");
+const LEGACY_COLUMNS = FLAT_CATEGORY_COLUMNS.replace(" retail_price,", "").replace(" options,", "");
+
+const isMissingColumn = (error) =>
+  error.code === "42703" || error.code === "PGRST200" || /column .* does not exist|relationship/i.test(error.message || "");
 
 async function readAllActive(columns = COLUMNS) {
   const rows = [];
@@ -65,7 +80,13 @@ async function readAllActive(columns = COLUMNS) {
       .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
     if (error) {
-      if (columns === COLUMNS && (error.code === "42703" || /column .* does not exist/i.test(error.message || ""))) {
+      if (columns === COLUMNS && isMissingColumn(error)) {
+        console.warn(
+          "[ecommerce-products] Categories have no subcategories yet (migration 0025_category_tree.sql). Using flat categories."
+        );
+        return readAllActive(FLAT_CATEGORY_COLUMNS);
+      }
+      if (columns === FLAT_CATEGORY_COLUMNS && isMissingColumn(error)) {
         console.warn(
           "[ecommerce-products] The products table is missing the columns added by migration 0016_pricing_variants.sql. " +
             "Showing products without retail prices or options until it is run."

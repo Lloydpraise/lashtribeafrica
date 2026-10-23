@@ -54,7 +54,11 @@ const coverImage = product.images?.[0];
 const crumbs = [
   { label: "Home", href: "/ecommerce" },
   { label: "Shop", href: "/shop" },
-  ...(product.category ? [{ label: product.category.name, href: `/shop#${slugify(product.category.name)}` }] : []),
+  // main category, then subcategory (0025); the shop page anchors are the category slugs
+  ...(product.category?.parent
+    ? [{ label: product.category.parent.name, href: `/shop#${product.category.parent.slug || slugify(product.category.parent.name)}` }]
+    : []),
+  ...(product.category ? [{ label: product.category.name, href: `/shop#${product.category.slug || slugify(product.category.name)}` }] : []),
   { label: product.name },
 ];
 

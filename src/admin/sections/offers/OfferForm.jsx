@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { categoryOptions, categoryPath } from "../products/utils.js";
 
 export default function OfferForm({ offer, products, categories, onSave, onCancel }) {
   const [form, setForm] = useState({ ...offer });
@@ -124,14 +125,15 @@ export default function OfferForm({ offer, products, categories, onSave, onCance
                     <span>Categories</span>
                     <div className="checkbox-row">
                       {categories.length === 0 && <span className="form-hint">No categories yet.</span>}
-                      {categories.map((c) => (
-                        <label className="checkbox-pill" key={c.id}>
+                      {/* a main category's offer also covers its subcategories */}
+                      {categoryOptions(categories).map((c) => (
+                        <label className="checkbox-pill" key={c.id} style={c.isMain ? { fontWeight: 600 } : undefined}>
                           <input
                             type="checkbox"
                             checked={(form.category_ids || []).includes(c.id)}
                             onChange={() => toggleId("category_ids", c.id)}
                           />
-                          {c.name}
+                          {categoryPath(c.id, categories)}
                         </label>
                       ))}
                     </div>

@@ -14,7 +14,7 @@ export const GET: APIRoute = async () => {
       name: p.name,
       price: `${p.priceVaries ? "From " : ""}${formatKsh(p.effectiveFromPrice ?? p.effectivePrice ?? p.nowPrice)}`,
       image: p.images?.[0]?.url || "",
-      searchText: [p.name, p.slug, p.category?.name, (p.description || "").slice(0, 120), ...optionWords]
+      searchText: [p.name, p.slug, p.category?.parent?.name, p.category?.name, (p.description || "").slice(0, 120), ...optionWords]
         .filter(Boolean)
         .join(" "),
     };

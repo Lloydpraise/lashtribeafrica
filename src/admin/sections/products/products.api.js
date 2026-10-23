@@ -96,21 +96,43 @@ export async function fetchCategories() {
   return data ?? [];
 }
 
-export async function createCategory(name) {
-  const slug = name
+/** Adds a category; pass parentId to make it a subcategory. A clashing slug gets -2, -3 ... */
+export async function createCategory(name, parentId = null, sortOrder = null) {
+  const base = name
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  const { data, error } = await supabase
-    .from("categories")
-    .insert({ name, slug })
-    .select()
-    .single();
+  for (let n = 1; ; n += 1) {
+    const row = { name, slug: n === 1 ? base : `${base}-${n}` };
+    if (parentId) row.parent_id = parentId; // only sent when used, so a database without 0025 still works
+    if (sortOrder != null) row.sort_order = sortOrder;
+    const { data, error } = await supabase.from("categories").insert(row).select().single();
+    if (!error) return data;
+    if (error.code !== "23505" || n > 20) throw error;
+  }
+}
 
+export async function updateCategory(id, patch) {
+  const { data, error } = await supabase.from("categories").update(patch).eq("id", id).select().single();
   if (error) throw error;
   return data;
+}
+
+/** Deletes a category. Its products become uncategorised and its subcategories become main categories. */
+export async function deleteCategory(id) {
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** Sets the same columns (e.g. { status: "active" } or { category_id }) on many products at once. */
+export async function bulkUpdateProducts(productIds, patch) {
+  if (!productIds.length) return;
+  for (let i = 0; i < productIds.length; i += 200) {
+    const { error } = await supabase.from("products").update(patch).in("id", productIds.slice(i, i + 200));
+    if (error) throw error;
+  }
 }
 
 // payload = product columns; costs = { cost_kes, cost_usd } (kept in the private product_costs table).
