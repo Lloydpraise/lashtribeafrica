@@ -17,9 +17,9 @@ Every order joins the first open batch that is more than 7 days away. If the nex
 You pay when you place your order. After you order, we contact you straight away to confirm payment by M-Pesa or card. Your order is secured in its batch once payment is confirmed.
 
 # Shipping fees and delivery
-- The product total at checkout does not include shipping.
-- The shipping fee is confirmed with you directly, based on your delivery area.
-- When a free-shipping offer is active, it is applied automatically once your order meets the minimum.
+- Shipping is charged at checkout, together with your products, and is included in your order total.
+- It is calculated from the weight of your order and covers the cost of getting your goods to our offices.
+- You arrange how your goods reach you from our offices; that delivery is separate and paid by you.
 - When your batch arrives, we contact you to arrange delivery.
 
 # Changing or cancelling an order

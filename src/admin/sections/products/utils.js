@@ -42,6 +42,7 @@ export function emptyProduct() {
     cost_kes: "",
     cost_usd: "",
     moq: 1,
+    weight_kg: "", // estimated kg; shipping = weight x rate per kg
     stock_quantity: 0,
     low_stock_threshold: 5,
     images: [],

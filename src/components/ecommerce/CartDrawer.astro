@@ -23,6 +23,9 @@ import CartCatalogScript from "./CartCatalogScript.astro";
       <div class="savings-row saved">
         <span>You're saving</span><span id="savedTotal">Ksh 0</span>
       </div>
+      <div class="savings-row">
+        <span>Shipping to our offices</span><span id="shippingTotal">Ksh 0</span>
+      </div>
       <div class="savings-row total">
         <span>Total</span><span id="yourTotal">Ksh 0</span>
       </div>
@@ -33,7 +36,8 @@ import CartCatalogScript from "./CartCatalogScript.astro";
       >Checkout</button
     >
     <p class="note">
-      Shipping fee confirmed separately, based on your delivery area. This
+      Shipping (by weight) covers getting your goods to our offices and is
+      included in the total; you arrange how they reach you. This
       is a preorder for the next scheduled batch. See our
       <a href="/shipping-policy">Shipping Policy</a>.
     </p>
