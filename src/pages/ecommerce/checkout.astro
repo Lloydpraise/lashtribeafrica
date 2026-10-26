@@ -317,8 +317,8 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
       p1.textContent = `Thank you! Your order number is ${result.order_no} (${formatKsh(result.total)}).`;
       const p2 = document.createElement("p");
       p2.textContent = result?.ship_date
-        ? `Your order will ship with the ${formatBatchDate(result.ship_date)} batch. We'll contact you shortly to confirm payment and the shipping fee.`
-        : "We'll contact you shortly to confirm payment, your shipment date and the shipping fee.";
+        ? `Your order will ship with the ${formatBatchDate(result.ship_date)} batch. We'll contact you shortly to confirm payment.`
+        : "We'll contact you shortly to confirm payment and your shipment date.";
       wrap.append(h, p1, p2);
       if (payment?.note === "online_payment_unavailable") {
         const pn = document.createElement("p");
