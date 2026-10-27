@@ -69,11 +69,13 @@
   .cat-menu{position:absolute;left:0;right:0;top:100%;background:var(--warm-white);border-top:1px solid var(--grey);border-bottom:1px solid var(--grey);
     box-shadow:0 24px 48px rgba(0,0,0,.08);opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .2s ease,transform .2s ease,visibility .2s ease;z-index:60;}
   .nav-cats:hover .cat-menu,.nav-cats:focus-within .cat-menu{opacity:1;visibility:visible;transform:translateY(0);}
-  .cat-menu-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:48px;row-gap:36px;padding-top:34px;padding-bottom:40px;}
+  /* All main categories sit in one row and the panel stays under half the screen height. */
+  .cat-menu{max-height:50vh;max-height:50dvh;overflow-y:auto;overscroll-behavior:contain;}
+  .cat-menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));column-gap:28px;row-gap:22px;padding-top:24px;padding-bottom:26px;}
   .cat-col{display:flex;flex-direction:column;align-items:flex-start;}
-  nav.links a.cat-col-head{display:block;align-self:stretch;margin-bottom:10px;
-    font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--charcoal);}
-  nav.links a.cat-col-link{padding:7px 0;font-size:14.5px;letter-spacing:0;text-transform:none;font-weight:400;color:#4a5260;}
+  nav.links a.cat-col-head{display:block;align-self:stretch;margin-bottom:6px;
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--charcoal);}
+  nav.links a.cat-col-link{padding:4px 0;font-size:13px;line-height:1.35;letter-spacing:0;text-transform:none;font-weight:400;color:#4a5260;}
   nav.links a.cat-col-head:hover,nav.links a.cat-col-link:hover{color:var(--rose-deep);}
   .header-actions{display:flex;align-items:center;gap:10px;}
   .icon-btn{background:none;border:1px solid var(--grey);width:38px;height:38px;border-radius:50%;display:grid;place-items:center;cursor:pointer;transition:border-color .2s, transform .2s, background .2s ease;}
@@ -605,9 +607,13 @@
     nav.links a.nav-cats-trigger,.mobile-nav a.nav-cats-trigger{padding:12px 14px;margin:0 2px;}
     .nav-cats:hover .nav-cats-caret,.nav-cats:focus-within .nav-cats-caret{transform:none;}
     .nav-cats.open .nav-cats-caret{transform:rotate(180deg);}
-    .cat-menu{position:static;display:none;opacity:1;visibility:visible;transform:none;background:none;border:0;box-shadow:none;}
+    .cat-menu{position:static;display:none;opacity:1;visibility:visible;transform:none;background:none;border:0;box-shadow:none;max-height:none;overflow:visible;}
     .nav-cats.open .cat-menu{display:block;}
-    .cat-menu-grid.wrap{display:flex;flex-direction:column;gap:18px;padding:12px 4px 4px;}
+    .cat-menu-grid.wrap{display:flex;flex-direction:column;gap:14px;padding:8px 14px 4px;}
+    /* Sub-categories in two compact columns, so the open menu stays short. */
+    .cat-col{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;width:100%;}
+    .mobile-nav .cat-menu a.cat-col-head,nav.links .cat-menu a.cat-col-head{grid-column:1 / -1;min-height:0;margin:0 0 2px;padding:0;font-size:11px;letter-spacing:.1em;color:#f2b5a0;}
+    .mobile-nav .cat-menu a.cat-col-link,nav.links .cat-menu a.cat-col-link{min-height:0;padding:6px 0;font-size:12.5px;line-height:1.3;}
     nav.links a.cat-col-head,.mobile-nav a.cat-col-head{width:100%;margin:0 0 4px;padding:0;background:none;border-radius:0;color:var(--warm-white);font-size:12px;}
     nav.links a.cat-col-link,.mobile-nav a.cat-col-link{width:100%;margin:0;padding:8px 0;background:none;border-radius:0;color:rgba(255,255,255,.78);font-size:14px;}
     .header-actions{gap:8px;}
