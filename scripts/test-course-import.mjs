@@ -34,8 +34,8 @@ const norm = (blocks) => JSON.parse(JSON.stringify(blocks)).map((b) => {
 const lessons = C.modules.flatMap((m) => m.lessons);
 
 test("fixture has the expected shape", () => {
-  assert.equal(C.modules.length, 4);
-  assert.equal(lessons.length, 13);
+  assert.equal(C.modules.length, 7);
+  assert.equal(lessons.length, 23);
 });
 
 test("every reading lesson survives blocks -> Markdown -> blocks", () => {
@@ -60,8 +60,8 @@ test("the whole course survives export -> Markdown file -> import", () => {
   const { course, warnings } = parseImport(md, { restyle: false });
   assert.deepEqual(warnings, []);
   assert.equal(course.title, C.title);
-  assert.equal(course.modules.length, 4);
-  assert.equal(course.modules.flatMap((m) => m.lessons).length, 13);
+  assert.equal(course.modules.length, C.modules.length);
+  assert.equal(course.modules.flatMap((m) => m.lessons).length, lessons.length);
   course.modules.flatMap((m) => m.lessons).forEach((l, i) => {
     assert.equal(l.title, lessons[i].title);
     assert.equal(l.kind, lessons[i].kind);
@@ -72,13 +72,23 @@ test("the whole course survives export -> Markdown file -> import", () => {
 test("the whole course survives the portable JSON file", () => {
   const { course, warnings, stats } = parseImport(JSON.stringify(C), { restyle: false });
   assert.deepEqual(warnings, []);
-  assert.equal(stats.lessons, 13);
+  assert.equal(stats.lessons, lessons.length);
   assert.equal(stats.questions, lessons.flatMap((l) => l.blocks).filter((b) => b.type === "quiz").reduce((n, b) => n + b.questions.length, 0) + lessons.flatMap((l) => l.blocks).filter((b) => b.type === "checkpoint").length);
   assert.deepEqual(norm(course.modules[0].lessons[0].blocks), norm(lessons[0].blocks));
 });
 
 test("restyle keeps already-short story content unchanged", () => {
-  lessons.filter((l) => l.kind === "reading").forEach((l) => {
+  // the shipped course is long-form article prose now, so only lessons whose paragraphs are already short apply;
+  // the sample below always covers the case
+  const short = [
+    { type: "heading", text: "A short lesson" },
+    { type: "text", text: "One short sentence." },
+    { type: "steps", items: [{ title: "Step", text: "Do the thing." }] },
+    { type: "callout", tone: "tip", title: "Tip", text: "Keep it short." },
+    { type: "checkpoint", question: "Q?", options: ["A", "B"], answer: 0, explain: "Because." },
+  ];
+  assert.deepEqual(restyleBlocks(short).blocks, short);
+  lessons.filter((l) => l.kind === "reading" && l.blocks.every((b) => b.type !== "text" || b.text.length <= 200)).forEach((l) => {
     const { blocks } = restyleBlocks(l.blocks);
     assert.deepEqual(blocks, l.blocks, l.title);
   });
@@ -208,8 +218,8 @@ test("save payload / export / validation", () => {
   const editor = { ...course, id: "00000000-0000-4000-8000-000000000001", cover_url: "", hero_path: "", status: "draft", sort_order: 0 };
   const p = toSavePayload(editor);
   assert.equal(p.course.price, 4500);
-  assert.equal(p.modules.length, 4);
-  assert.equal(p.modules.flatMap((m) => m.lessons).length, 13);
+  assert.equal(p.modules.length, C.modules.length);
+  assert.equal(p.modules.flatMap((m) => m.lessons).length, lessons.length);
   assert.ok(p.modules.flatMap((m) => m.lessons).every((l) => /^[0-9a-f-]{36}$/.test(l.id)));
   const ex = toExport(editor);
   assert.equal(ex.format, "lashtribe-course@1");

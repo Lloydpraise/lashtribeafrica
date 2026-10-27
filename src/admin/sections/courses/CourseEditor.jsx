@@ -9,6 +9,8 @@ import PdfField from "./PdfField.jsx";
 import LessonEditor from "./LessonEditor.jsx";
 import ImportPanel from "./ImportPanel.jsx";
 import PreviewModal from "./PreviewModal.jsx";
+import ExamEditor from "./ExamEditor.jsx";
+import LessonWriter from "./writer/LessonWriter.jsx";
 
 const KIND_ICON = { reading: "▤", video: "▶", assessment: "?" };
 
@@ -25,6 +27,7 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
   const [problems, setProblems] = useState(null);
   const [preview, setPreview] = useState(null); // { lessonId? }
   const [confirm, setConfirm] = useState(null);
+  const [writing, setWriting] = useState(false); // full-screen lesson writer
   const savedRef = useRef(initial);
 
   const set = (patch) => { setCourse((c) => ({ ...c, ...patch })); setDirty(true); };
@@ -52,8 +55,15 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
   const mapModules = (fn) => set({ modules: fn(course.modules) });
   const defaultKind = course.course_type === "video" ? "video" : "reading";
 
-  const patchLesson = (lesson) =>
-    mapModules((ms) => ms.map((m) => ({ ...m, lessons: m.lessons.map((l) => (l.id === lesson.id ? lesson : l)) })));
+  // functional updates, so several quick edits (typing, an upload finishing) never undo each other
+  const patchLesson = (lesson) => {
+    setCourse((c) => ({ ...c, modules: c.modules.map((m) => ({ ...m, lessons: m.lessons.map((l) => (l.id === lesson.id ? lesson : l)) })) }));
+    setDirty(true);
+  };
+  const patchModule = (mid, patch) => {
+    setCourse((c) => ({ ...c, modules: c.modules.map((m) => (m.id === mid ? { ...m, ...patch } : m)) }));
+    setDirty(true);
+  };
 
   function addModule() {
     const m = newModule(`Module ${course.modules.length + 1}`, defaultKind);
@@ -65,6 +75,16 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
     mapModules((ms) => ms.map((m) => (m.id === mid ? { ...m, lessons: [...m.lessons, l] } : m)));
     setSelected(l.id);
     setLessonOpen(true);
+    return l.id;
+  }
+  /** "Create next module" in the lesson writer: a new module right after `afterId`, opened on its first lesson. */
+  function addModuleAfter(afterId) {
+    const at = course.modules.findIndex((m) => m.id === afterId);
+    const pos = at < 0 ? course.modules.length : at + 1;
+    const m = newModule(`Module ${pos + 1}`, defaultKind);
+    mapModules((ms) => [...ms.slice(0, pos), m, ...ms.slice(pos)]);
+    setSelected(m.lessons[0].id);
+    return { moduleId: m.id, lessonId: m.lessons[0].id, title: `Module ${pos + 1}` };
   }
   const moveIn = (arr, i, d) => {
     const j = i + d;
@@ -171,7 +191,9 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
       )}
 
       <div className="cs-tabs" role="tablist">
-        {[["details", "Details & pricing"], ["curriculum", `Curriculum (${total})`], ["import", "Import & export"]].map(([k, label]) => (
+        {[["details", "Details & pricing"], ["curriculum", `Curriculum (${total})`],
+          ...(course.exam !== undefined ? [["exam", course.exam?.enabled ? `Final exam (${course.exam.questions.length})` : "Final exam"]] : []),
+          ["import", "Import & export"]].map(([k, label]) => (
           <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{label}</button>
         ))}
       </div>
@@ -311,7 +333,7 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
             <button type="button" className="cs-back-lessons" onClick={() => setLessonOpen(false)}>← Lessons</button>
             {lessonRef ? (
               <LessonEditor key={lessonRef.l.id} lesson={lessonRef.l} courseId={course.id} onChange={patchLesson}
-                onPreview={() => setPreview({ lessonId: lessonRef.l.id })} />
+                onPreview={() => setPreview({ lessonId: lessonRef.l.id })} onOpenWriter={() => setWriting(true)} />
             ) : (
               <div className="cs-empty">
                 <p>{total ? "Pick a lesson on the left to edit it." : "This course has no lessons yet."}</p>
@@ -322,9 +344,21 @@ export default function CourseEditor({ initial, existingSlugs, startTab = "detai
         </div>
       )}
 
+      {tab === "exam" && course.exam !== undefined && (
+        <ExamEditor exam={course.exam} onChange={(exam) => set({ exam })} onPreview={() => setPreview({ lessonId: "__exam", show: "exam" })} />
+      )}
+
       {tab === "import" && <ImportPanel course={course} onApply={applyImport} />}
 
-      {preview && <PreviewModal course={course} lessonId={preview.lessonId} onClose={() => setPreview(null)} />}
+      {writing && lessonRef && (
+        <LessonWriter course={course} lessonId={lessonRef.l.id} onSelect={setSelected}
+          onPatchLesson={patchLesson} onPatchModule={patchModule}
+          onAddLesson={addLesson} onAddModule={addModuleAfter}
+          onSave={() => save()} saving={saving} dirty={dirty}
+          onPreviewCourse={() => setPreview({ lessonId: lessonRef.l.id })}
+          onClose={() => setWriting(false)} />
+      )}
+      {preview && <PreviewModal course={course} lessonId={preview.lessonId} startShow={preview.show} onClose={() => setPreview(null)} />}
       {confirm && (
         <ConfirmModal title={confirm.title} confirmLabel={confirm.confirmLabel || "Delete"} danger onCancel={() => setConfirm(null)}
           onConfirm={() => { confirm.run(); setConfirm(null); }}>

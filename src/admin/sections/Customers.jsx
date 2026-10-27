@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import EmptyState from "../components/EmptyState.jsx";
-import { fetchCustomers, fetchCustomerDetail, saveCustomerNotes } from "./customers/customers.api.js";
+import { fetchCustomers, fetchCustomerDetail, saveCustomerNotes, revokeCertificate } from "./customers/customers.api.js";
 
 const ksh = (v) => `Ksh ${Number(v || 0).toLocaleString()}`;
 const day = (iso) => (iso ? new Date(iso).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : "—");
@@ -89,13 +89,24 @@ function CustomerDetail({ customer, onClose, onUpdated }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState("");
 
+  const [reload, setReload] = useState(0);
   useEffect(() => {
     let live = true;
     fetchCustomerDetail(customer.id)
       .then((d) => live && setDetail(d))
       .catch((e) => live && setError(e.message || "Couldn't load this customer."));
     return () => { live = false; };
-  }, [customer.id]);
+  }, [customer.id, reload]);
+
+  async function revoke(c) {
+    if (!window.confirm(`Revoke certificate ${c.certificate_no} for ${c.course_title}?\n\nThe certificate stops verifying, and the student's progress, quiz and exam results for this course are cleared so they must complete it again.`)) return;
+    try {
+      await revokeCertificate(c.user_id, c.course_id, true);
+      setReload((n) => n + 1);
+    } catch (e) {
+      setError(e.message || "Couldn't revoke the certificate.");
+    }
+  }
 
   async function save() {
     setSaving(true);
@@ -190,13 +201,22 @@ function CustomerDetail({ customer, onClose, onUpdated }) {
                 ) : (
                   <table className="admin-table">
                     <thead>
-                      <tr><th>Course</th><th>Progress</th><th>Enrolled</th><th>Last studied</th><th>Certificate</th></tr>
+                      <tr><th>Course</th><th>Progress</th><th>Quizzes</th><th>Final exam</th><th>Last studied</th><th>Certificate</th></tr>
                     </thead>
                     <tbody>
                       {detail.courses.map((c) => {
                         const total = Number(c.total_lessons) || 0;
                         const done = Number(c.completed_lessons) || 0;
                         const pct = total ? Math.round((done / total) * 100) : 0;
+                        // best finished attempt per quiz lesson
+                        const best = {};
+                        (detail.quizzes || []).filter((q) => q.course_id === c.course_id).forEach((q) => {
+                          const b = best[q.lesson_id];
+                          best[q.lesson_id] = { title: q.lesson?.title || "Quiz", pct: Math.max(b?.pct ?? 0, q.pct ?? 0), passed: (b?.passed || q.passed), tries: (b?.tries || 0) + 1 };
+                        });
+                        const quizList = Object.values(best);
+                        const examRows = (detail.exams || []).filter((x) => x.course_id === c.course_id);
+                        const exam = examRows.find((x) => x.status === "passed") || examRows[0];
                         return (
                           <tr key={c.course_id}>
                             <td className="cx-name">
@@ -207,9 +227,24 @@ function CustomerDetail({ customer, onClose, onUpdated }) {
                               <span className={`cx-progress${total && done >= total ? " done" : ""}`}><i style={{ width: `${pct}%` }} /></span>
                               {done}/{total} · {pct}%
                             </td>
-                            <td>{day(c.enrolled_at)}</td>
-                            <td>{day(c.last_activity_at)}</td>
-                            <td>{c.certificate_no ? <span className="cx-tag student">{c.certificate_no}</span> : "—"}</td>
+                            <td>
+                              {quizList.length ? quizList.map((q, i) => (
+                                <div key={i} className="cx-sub" title={q.title}>{q.passed ? "✓" : "✗"} {q.pct}% · {q.tries} {q.tries === 1 ? "try" : "tries"}</div>
+                              )) : "—"}
+                            </td>
+                            <td>
+                              {exam ? (exam.status === "pending_review" ? "Waiting to be marked" : `${exam.status === "passed" ? "✓ Passed" : "✗ Failed"} ${exam.pct ?? ""}%`) : "—"}
+                              {examRows.length > 1 && <div className="cx-sub">{examRows.length} attempts</div>}
+                            </td>
+                            <td>{day(c.last_activity_at)}<div className="cx-sub">Enrolled {day(c.enrolled_at)}</div></td>
+                            <td>
+                              {c.certificate_no ? (
+                                <>
+                                  <span className="cx-tag student">{c.certificate_no}</span>
+                                  <div><button type="button" className="admin-btn secondary" style={{ marginTop: 6, padding: "4px 10px", fontSize: 12 }} onClick={() => revoke(c)}>Revoke</button></div>
+                                </>
+                              ) : "—"}
+                            </td>
                           </tr>
                         );
                       })}

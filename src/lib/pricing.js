@@ -19,6 +19,7 @@ export const num = (value, fallback = 0) => {
  * Options exactly as the product page / admin work with them:
  *   [{ name, type, values: [{ value, priceDelta, image, swatch }] }]
  * type    "auto" | "text" | "color" | "image": how the picker is drawn (see optionDisplayType).
+ * weightKg  estimated weight of that variation in kg (0 = use the product's weight); drives the shipping fee.
  * image   URL of a product photo linked to that value; the product page shows it when the value is picked.
  * swatch  optional colour (#hex) used by colour pickers when the value's name is not itself a CSS colour.
  * The database only checks name / value / price_delta, so the extra keys need no migration.
@@ -37,6 +38,7 @@ export function normalizeOptions(raw) {
           priceDelta: num(v?.price_delta ?? v?.priceDelta),
           image: String(v?.image ?? "").trim(),
           swatch: String(v?.swatch ?? "").trim(),
+          weightKg: Math.max(0, num(v?.weight_kg ?? v?.weightKg)),
         }))
         .filter((v) => v.value),
     }))
@@ -53,6 +55,7 @@ export function optionsForSave(options) {
       ...(v.priceDelta ? { price_delta: v.priceDelta } : {}),
       ...(v.image ? { image: v.image } : {}),
       ...(v.swatch ? { swatch: v.swatch } : {}),
+      ...(v.weightKg ? { weight_kg: v.weightKg } : {}),
     })),
   }));
 }
@@ -178,37 +181,42 @@ export function priceSpread(options) {
 }
 
 // ---------------------------------------------------------------------
-// Formula (Site Settings -> Pricing formula). Mirrors formula_prices() in the database.
+// Formula (Site Settings -> Pricing formula). Mirrors formula_prices() and the shipping helpers in the database
+// (migration 0029). The database stays the authority: place_order() recomputes prices AND shipping.
 // ---------------------------------------------------------------------
 export const DEFAULT_PRICING_SETTINGS = {
   fx_rate_kes_per_usd: 130,
-  fx_buffer_pct: 3,
-  landed_uplift_pct: 30,
-  wholesale_margin_pct: 35,
-  retail_markup_pct: 30,
-  market_markup_pct: 20,
+  wholesale_multiplier: 1.3,
+  retail_multiplier: 1.7,
+  market_uplift_min_pct: 30,
+  market_uplift_max_pct: 45,
+  shipping_rate_per_kg: 1700,
   rounding_step: 10,
 };
 
 /**
- * landed    = cost USD x rate x (1 + buffer%) x (1 + uplift%)
- * wholesale = landed / (1 - margin%)   retail = wholesale x (1 + retail markup%)   market = retail x (1 + market markup%)
+ * supplier price (Ksh) = cost in USD x exchange rate
+ * wholesale = supplier x wholesale multiplier    retail = supplier x retail multiplier
+ * market    = retail x (1 + a % between the min and max uplift; `rand` in 0..1 picks where, so each product differs)
  * each rounded to the rounding step. Returns null when there is no usable cost.
  */
-export function formulaPrices(costUsd, settings = DEFAULT_PRICING_SETTINGS) {
+export function formulaPrices(costUsd, settings = DEFAULT_PRICING_SETTINGS, rand = Math.random()) {
   const cost = num(costUsd, NaN);
   if (!Number.isFinite(cost) || cost <= 0) return null;
   const s = { ...DEFAULT_PRICING_SETTINGS, ...settings };
   const step = Math.max(1, num(s.rounding_step, 1));
-  const margin = num(s.wholesale_margin_pct);
-  if (margin >= 100) return null;
-  const landed =
-    cost * num(s.fx_rate_kes_per_usd) * (1 + num(s.fx_buffer_pct) / 100) * (1 + num(s.landed_uplift_pct) / 100);
-  const wholesale = Math.round(landed / (1 - margin / 100) / step) * step;
-  const retail = Math.round((wholesale * (1 + num(s.retail_markup_pct) / 100)) / step) * step;
-  const market = Math.round((retail * (1 + num(s.market_markup_pct) / 100)) / step) * step;
-  return { landed: Math.round(landed), wholesale, retail, market };
+  const supplier = cost * num(s.fx_rate_kes_per_usd);
+  const wholesale = Math.round((supplier * num(s.wholesale_multiplier)) / step) * step;
+  const retail = Math.round((supplier * num(s.retail_multiplier)) / step) * step;
+  const lo = num(s.market_uplift_min_pct);
+  const hi = Math.max(lo, num(s.market_uplift_max_pct));
+  const market = Math.round((retail * (1 + (lo + rand * (hi - lo)) / 100)) / step) * step;
+  return { supplier: Math.round(supplier), wholesale, retail, market };
 }
+
+/** Shipping to our offices: weight (kg) x rate per kg, rounded up to a whole shilling (same as the database). */
+export const shippingFor = (weightKg, ratePerKg = DEFAULT_PRICING_SETTINGS.shipping_rate_per_kg) =>
+  Math.ceil(Math.max(0, num(weightKg)) * num(ratePerKg));
 
 export const formatKsh = (value) => `Ksh ${Number(value || 0).toLocaleString()}`;
 

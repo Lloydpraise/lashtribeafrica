@@ -7,10 +7,12 @@ import MarketingPillars from "../../components/ecommerce/MarketingPillars.astro"
 import HowOrdering from "../../components/ecommerce/HowOrdering.astro";
 import ProductRail from "../../components/ecommerce/ProductRail.astro";
 import KitStrip from "../../components/ecommerce/KitStrip.astro";
+import OfferCampaign from "../../components/ecommerce/OfferCampaign.astro";
 import AcademyHook from "../../components/ecommerce/AcademyHook.astro";
 import SiteFooter from "../../components/ecommerce/SiteFooter.astro";
 import CartDrawer from "../../components/ecommerce/CartDrawer.astro";
 import { getEcommerceProducts, cardPrices } from "../../data/ecommerce-products.js";
+import { getActiveOffers, getCampaign } from "../../data/offers.js";
 
 const allProducts = await getEcommerceProducts();
 
@@ -25,6 +27,8 @@ function toRailCard(product) {
     ...cardPrices(product),
     hasOffer: product.hasOffer,
     offerBadge: product.offerBadge,
+    campaignBadge: product.campaignBadge,
+    dealNotes: product.dealNotes,
     note: product.note,
     description: product.description || "",
     moq: product.moq,
@@ -35,6 +39,10 @@ const topSelling = allProducts
   .filter((p) => p.featuredSections.includes("top_selling"))
   .slice(0, 4)
   .map(toRailCard);
+
+// Black Friday campaign: only exists while an offer of the campaign is live
+const campaign = getCampaign(await getActiveOffers(), allProducts);
+const campaignCards = campaign ? campaign.products.map(toRailCard) : [];
 
 const newIn = allProducts
   .filter((p) => p.featuredSections.includes("new_in"))
@@ -48,6 +56,9 @@ const newIn = allProducts
   <Hero />
   <MarketingPillars />
   <HowOrdering />
+  {campaign && (
+    <OfferCampaign title={campaign.title} bannerText={campaign.bannerText} products={campaignCards} />
+  )}
   {topSelling.length > 0 && (
     <ProductRail id="shop" title="Top Selling" products={topSelling} />
   )}

@@ -1,0 +1,12 @@
+---
+// Live preview used by the admin lesson writer (src/admin/sections/courses/writer). It shows one
+// lesson with the real story/article components, fed by postMessage from the admin page.
+import Layout from "../../layouts/academy/Layout.astro";
+import LessonPreview from "../../components/learn/LessonPreview.jsx";
+import "../../styles/learn.css";
+---
+
+<Layout title="Lesson preview">
+  <meta slot="head" name="robots" content="noindex, nofollow" />
+  <LessonPreview client:only="react" />
+</Layout>

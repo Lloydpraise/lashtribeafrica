@@ -56,6 +56,51 @@ export function newLesson(kind = "reading") {
   };
 }
 
+// ---------------------------------------------------------------------
+// final exam (migration 0028): one per course, after the last lesson
+// ---------------------------------------------------------------------
+export function newExamQuestion(type = "choice") {
+  return type === "text"
+    ? { id: uid(), type: "text", q: "", accepted: [], points: 1 }
+    : { id: uid(), type: "choice", q: "", options: ["", ""], answer: 0, points: 1 };
+}
+
+export function newExam() {
+  return { enabled: true, title: "Final exam", intro: "", pass_score: 70, auto_mark: true, questions: [newExamQuestion("choice")] };
+}
+
+/** course_exams row -> editor exam (null when the course has none). */
+export function examFromRow(row) {
+  if (!row) return null;
+  return {
+    enabled: row.enabled !== false,
+    title: row.title || "Final exam",
+    intro: row.intro || "",
+    pass_score: Number(row.pass_score) || 70,
+    auto_mark: row.auto_mark !== false,
+    questions: (Array.isArray(row.questions) ? row.questions : []).map((q) => ({
+      ...(q.type === "text" ? newExamQuestion("text") : newExamQuestion("choice")),
+      ...q,
+      id: q.id || uid(),
+    })),
+  };
+}
+
+/** Editor exam -> course_exams row. */
+export function examToRow(courseId, exam) {
+  return {
+    course_id: courseId,
+    enabled: !!exam.enabled,
+    title: (exam.title || "").trim() || "Final exam",
+    intro: exam.intro || "",
+    pass_score: Math.min(100, Math.max(1, Number(exam.pass_score) || 70)),
+    auto_mark: !!exam.auto_mark,
+    questions: exam.questions.map((q) => (q.type === "text"
+      ? { id: q.id, type: "text", q: q.q.trim(), accepted: (q.accepted || []).map((a) => String(a).trim()).filter(Boolean), points: Number(q.points) > 0 ? Number(q.points) : 1 }
+      : { id: q.id, type: "choice", q: q.q.trim(), options: (q.options || []).map((o) => String(o).trim()), answer: Number(q.answer) || 0, points: Number(q.points) > 0 ? Number(q.points) : 1 })),
+  };
+}
+
 export function newModule(title = "", defaultKind = "reading") {
   return { id: uid(), title, lessons: [newLesson(defaultKind)] };
 }
@@ -459,6 +504,8 @@ export function toPreviewCourse(course, { includeHidden = true } = {}) {
     sequential: p.course.sequential,
     certificate_enabled: p.course.certificate_enabled,
     bonus_points: p.course.bonus_points,
+    // the preview marks the exam in the browser, so it keeps the answers
+    exam: course.exam && course.exam.enabled && course.exam.questions.length ? examToRow(course.id, course.exam) : null,
     modules: p.modules.map((m) => ({
       id: m.id,
       title: m.title,
@@ -511,6 +558,23 @@ export function validateCourse(course, { publishing = false } = {}) {
       });
     });
   });
+  const ex = course.exam;
+  if (ex && ex.enabled) {
+    if (!ex.questions.length) errors.push("The final exam is switched on but has no questions. Add some, or switch it off.");
+    ex.questions.forEach((q, i) => {
+      const where = `Final exam question ${i + 1}`;
+      if (!q.q.trim()) (publishing ? errors : warnings).push(`${where} has no question text.`);
+      if (q.type === "text") {
+        if (ex.auto_mark && !(q.accepted || []).some((a) => String(a).trim())) {
+          errors.push(`${where} is a written answer but has no accepted answers. Add at least one, or switch off automatic marking so you mark it yourself.`);
+        }
+      } else if ((q.options || []).filter((o) => String(o).trim()).length < 2) {
+        (publishing ? errors : warnings).push(`${where} needs at least two options.`);
+      } else if (!String(q.options[q.answer] ?? "").trim()) {
+        (publishing ? errors : warnings).push(`${where}: the option marked correct is empty.`);
+      }
+    });
+  }
   if (publishing && lessonCount(course) === 0) errors.push("Add at least one lesson before publishing.");
   if (publishing && !course.cover_url) warnings.push("No hero image yet.");
   return { errors, warnings };

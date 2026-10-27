@@ -264,7 +264,7 @@ export default function Story({ blocks, title, summary, minutes = 3, startAt = 0
           )}
           <div className="st-meta">
             <span className="st-meta-title">{title}</span>
-            <button type="button" className="st-article" onClick={onArticle}>Article view</button>
+            {onArticle && <button type="button" className="st-article" onClick={onArticle}>Article view</button>}
           </div>
         </div>
 

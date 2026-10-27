@@ -121,5 +121,6 @@ end;
 $$;
 
 revoke all on function public.admin_save_course(jsonb) from public;
-grant execute on function public.admin_save_course(jsonb) to anon, authenticated;
+revoke all on function public.admin_save_course(jsonb) from anon;
+grant execute on function public.admin_save_course(jsonb) to authenticated;  -- signed-in admins only (see 0026)
 

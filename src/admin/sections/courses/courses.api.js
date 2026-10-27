@@ -1,5 +1,5 @@
 import { supabase } from "../../../services/service.js";
-import { courseFromRows, toSavePayload, uid, slugify } from "./courseModel.js";
+import { courseFromRows, toSavePayload, uid, slugify, examFromRow, examToRow } from "./courseModel.js";
 
 export const BUCKET = "course-media";
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // keep in step with file_size_limit in 0008_admin_courses.sql
@@ -59,13 +59,50 @@ export async function fetchCourseFull(id) {
     return { lesson_id: l.id, video: c?.video || null, blocks: c?.blocks || [] };
   });
   const { course_modules, lessons: _l, ...course } = data;
-  return courseFromRows({ course, modules: course_modules || [], lessons, content });
+  const full = courseFromRows({ course, modules: course_modules || [], lessons, content });
+  // final exam (migration 0028). undefined = the table isn't there yet, so the editor hides the exam tab.
+  const ex = await supabase.from("course_exams").select("*").eq("course_id", id).maybeSingle();
+  full.exam = ex.error ? undefined : examFromRow(ex.data);
+  return full;
+}
+
+/** Saves (or removes, when exam is null) the course's final exam. */
+export async function saveExam(courseId, exam) {
+  const { error } = exam
+    ? await supabase.from("course_exams").upsert(examToRow(courseId, exam), { onConflict: "course_id" })
+    : await supabase.from("course_exams").delete().eq("course_id", courseId);
+  if (error) throw error;
+}
+
+/** Exams handed in with answers waiting for a person to mark, oldest first, with the student's name. */
+export async function fetchExamsToMark() {
+  const { data, error } = await supabase
+    .from("exam_attempts")
+    .select("*, course:courses(title, slug)")
+    .eq("status", "pending_review")
+    .order("submitted_at", { ascending: true });
+  if (error) throw error;
+  const ids = [...new Set((data || []).map((a) => a.user_id))];
+  const people = {};
+  if (ids.length) {
+    const { data: cs } = await supabase.from("customers").select("user_id, full_name, email, phone").in("user_id", ids);
+    (cs || []).forEach((c) => (people[c.user_id] = c));
+  }
+  return (data || []).map((a) => ({ ...a, student: people[a.user_id] || null }));
+}
+
+/** marks: { [questionId]: true|false } for the questions a person had to check. */
+export async function markExam(attemptId, marks, feedback) {
+  const { data, error } = await supabase.rpc("admin_mark_exam", { p_attempt: attemptId, p_marks: marks, p_feedback: feedback || null });
+  if (error) throw error;
+  return data;
 }
 
 export async function saveCourse(course) {
   const payload = toSavePayload(course);
   const { error } = await supabase.rpc("admin_save_course", { p: payload });
   if (error) throw error;
+  if (course.exam !== undefined) await saveExam(course.id, course.exam);
   return course.id;
 }
 

@@ -3,7 +3,7 @@ import { Field, Toggle } from "./fields.jsx";
 import BlockEditor from "./BlockEditor.jsx";
 import VideoSourceEditor from "./VideoSourceEditor.jsx";
 
-export default function LessonEditor({ lesson, onChange, courseId, onPreview }) {
+export default function LessonEditor({ lesson, onChange, courseId, onPreview, onOpenWriter }) {
   const set = (patch) => onChange({ ...lesson, ...patch });
 
   function changeKind(kind) {
@@ -43,8 +43,16 @@ export default function LessonEditor({ lesson, onChange, courseId, onPreview }) 
           <Toggle checked={lesson.status === "draft"} onChange={(v) => set({ status: v ? "draft" : "published" })} label="Hide from students" hint="Keeps the lesson in the editor but out of the course." />
         </div>
         <div className="cs-row">
+          {onOpenWriter && (
+            <button type="button" className="admin-btn" onClick={onOpenWriter}>
+              {lesson.kind === "assessment" ? "Open full-screen editor" : "Open full-screen writer"}
+            </button>
+          )}
           <button type="button" className="admin-btn secondary" onClick={onPreview}>Preview this lesson</button>
         </div>
+        {onOpenWriter && lesson.kind !== "assessment" && (
+          <p className="form-hint">The writer edits the lesson like a document, with blocks on the left and a live story and article preview on the right.</p>
+        )}
       </div>
 
       {lesson.kind === "video" && (

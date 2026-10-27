@@ -143,3 +143,37 @@ site needs its normal deploy step re-run.
    advanced become advanced) and updates `admin_save_course()` to save it. Set a course's category in
    **Admin → Courses → open a course → Category**. Run after 0017 and **before deploying the new site code**; safe to re-run
    (it never overwrites categories you have already set).
+
+26. **`0026_security_hardening.sql`** – **Stop trusting the browser.** Course tables, lessons and bundles: the public sees
+   published items only and only signed-in `academy_admins` can write (undoes 0009). Lesson content is only readable by
+   students with access (or free preview lessons). Course PDFs (`course_resources`, `course-files` bucket) are admin-only.
+   The `course-media` bucket keeps its public links but can no longer be listed or changed by the public. Lesson progress
+   must point at a lesson of the same course. Sign-up no longer claims someone else's guest customer record by phone; only a
+   **confirmed** email links a new login to earlier guest orders. Admin and internal functions can't be called with the
+   public key. Run after 0025; safe to re-run; does not need 0018. Keep **Authentication → Confirm email** switched on.
+27. **`0027_verified_course_completion.sql`** – **Lessons and quizzes are checked by the database.** Quiz answers never reach
+   the browser (`get_lesson_content()`); `quiz_answer()` marks each answer and records attempts (`quiz_attempts`).
+   Students can't set "completed" themselves: `complete_lesson()` marks a quiz lesson done after a passed attempt, a video
+   or reading lesson after it has been open for half its length / reading time (`start_lesson()` notes the first visit).
+   `issue_certificate()` also needs every quiz passed. `admin_revoke_certificate()` takes a certificate back.
+   **Deploy the new site code first, then run this.** Safe to re-run.
+28. **`0028_course_exams.sql`** – **Final exams.** One per course (`course_exams`), edited in Admin → Courses → a course →
+   Final exam: multiple-choice and one-line written questions, a pass mark, and "mark every question automatically".
+   Students take it after the last lesson (`get_course_exam()`, `submit_exam()`); written answers that aren't auto-marked
+   wait in Admin → Courses → Exams to mark (`admin_mark_exam()`). The certificate needs a passed exam. Run after 0027.
+37. **`0037_course_beginner_lashtech_guide.sql`** – **Beginner Lashtech Guide - Start Here** (free, 7 modules, 25 lessons,
+   from the Lashes by Shazz Academy manual; source `src/data/courses/beginner-lashtech-guide.js`, images in
+   `public/course-media/beginner-lashtech-guide/`). Also adds `courses.reading_view`: `'article'` makes the learn page
+   always use the article view and hides the Story/Article switch (this course is set to `'article'`); `null` keeps the
+   switch. Works with or without 0014/0018. Re-runs refresh the lessons but keep admin price/status/category/cover.
+   **Deploy the new site code first, then run this.**
+38. **`0038_infinityglow_article_rewrite.sql`** – **InfinityGlow™ Mastery rewritten for article mode** (6 modules, 20 lessons,
+   same prose style as 0037, quizzes after each big part, same final assessment; source
+   `src/data/courses/infinityglow-mastery.js`). Sets `reading_view = 'article'`. **Replaces the course's old lessons**, so any
+   student progress on this course starts fresh; price, status, category and cover are kept. Works with or without 0020.
+   Needs the site code that ships with 0037. Safe to re-run.
+39. **`0039_classic_article_rewrite.sql`** – **Classic Set Essentials rewritten for article mode** (7 modules, 23 lessons,
+   same prose style as 0037/0038, quizzes after each big part and a final assessment; source
+   `src/data/courses/classic-set-essentials.js`). Sets `reading_view = 'article'`. **Replaces the course's old lessons**, so any
+   student progress on this free course starts fresh; price, status, category and cover are kept. Works with or without 0007.
+   Needs the site code that ships with 0037. Safe to re-run.

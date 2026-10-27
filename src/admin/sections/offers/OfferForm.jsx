@@ -5,6 +5,7 @@ export default function OfferForm({ offer, products, categories, onSave, onCance
   const [form, setForm] = useState({ ...offer });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [q, setQ] = useState("");
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -25,6 +26,14 @@ export default function OfferForm({ offer, products, categories, onSave, onCance
       setError("Enter a discount percentage greater than 0.");
       return;
     }
+    if (form.type === "reduced_moq" && (!form.moq_value || Number(form.moq_value) < 1)) {
+      setError("Enter the reduced MOQ (1 or more).");
+      return;
+    }
+    if (form.scope === "products" && (form.product_ids || []).length === 0) {
+      setError("Pick at least one product, or switch \"Applies to\".");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -32,8 +41,11 @@ export default function OfferForm({ offer, products, categories, onSave, onCance
         label: form.label,
         badge_text: form.badge_text || null,
         type: form.type,
-        scope: form.type === "free_shipping" ? "all" : form.scope,
+        scope: form.scope,
         value: form.type === "percentage_off" ? Number(form.value) || 0 : 0,
+        moq_value: form.type === "reduced_moq" ? Math.round(Number(form.moq_value)) || null : null,
+        campaign: form.campaign || null,
+        banner_text: form.campaign ? form.banner_text || null : null,
         product_ids: form.scope === "products" ? form.product_ids || [] : [],
         category_ids: form.scope === "categories" ? form.category_ids || [] : [],
         min_order_value: form.type === "free_shipping" ? Number(form.min_order_value) || 0 : 0,
@@ -49,6 +61,7 @@ export default function OfferForm({ offer, products, categories, onSave, onCance
 
   const isPercentage = form.type === "percentage_off";
   const isFreeShipping = form.type === "free_shipping";
+  const isMoq = form.type === "reduced_moq";
 
   return (
     <div className="admin-modal-backdrop" onMouseDown={onCancel}>
@@ -71,6 +84,7 @@ export default function OfferForm({ offer, products, categories, onSave, onCance
               <span>Type</span>
               <select value={form.type} onChange={(e) => set("type", e.target.value)}>
                 <option value="percentage_off">% off</option>
+                <option value="reduced_moq">Reduced MOQ (wholesale price from a lower quantity)</option>
                 <option value="free_shipping">Free shipping</option>
               </select>
             </label>
@@ -81,7 +95,7 @@ export default function OfferForm({ offer, products, categories, onSave, onCance
                 type="text"
                 value={form.badge_text || ""}
                 onChange={(e) => set("badge_text", e.target.value)}
-                placeholder={isPercentage ? "e.g. 20% OFF" : "e.g. FREE SHIPPING"}
+                placeholder={isPercentage ? "e.g. 20% OFF" : isMoq ? "e.g. MOQ 2" : "e.g. FREE SHIPPING"}
               />
             </label>
 
@@ -92,60 +106,90 @@ export default function OfferForm({ offer, products, categories, onSave, onCance
                   <input type="number" min="1" max="90" value={form.value || ""} onChange={(e) => set("value", e.target.value)} required />
                 </label>
 
-                <label className="form-field">
-                  <span>Applies to</span>
-                  <select value={form.scope} onChange={(e) => set("scope", e.target.value)}>
-                    <option value="all">All products</option>
-                    <option value="products">Specific products</option>
-                    <option value="categories">Specific categories</option>
-                  </select>
-                </label>
-
-                {form.scope === "products" && (
-                  <div className="form-field span-2">
-                    <span>Products</span>
-                    <div className="checkbox-row">
-                      {products.length === 0 && <span className="form-hint">No products yet.</span>}
-                      {products.map((p) => (
-                        <label className="checkbox-pill" key={p.id}>
-                          <input
-                            type="checkbox"
-                            checked={(form.product_ids || []).includes(p.id)}
-                            onChange={() => toggleId("product_ids", p.id)}
-                          />
-                          {p.name}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {form.scope === "categories" && (
-                  <div className="form-field span-2">
-                    <span>Categories</span>
-                    <div className="checkbox-row">
-                      {categories.length === 0 && <span className="form-hint">No categories yet.</span>}
-                      {/* a main category's offer also covers its subcategories */}
-                      {categoryOptions(categories).map((c) => (
-                        <label className="checkbox-pill" key={c.id} style={c.isMain ? { fontWeight: 600 } : undefined}>
-                          <input
-                            type="checkbox"
-                            checked={(form.category_ids || []).includes(c.id)}
-                            onChange={() => toggleId("category_ids", c.id)}
-                          />
-                          {categoryPath(c.id, categories)}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </>
+            )}
+
+            {isMoq && (
+              <label className="form-field">
+                <span>Reduced MOQ (units)</span>
+                <input type="number" min="1" value={form.moq_value || ""} onChange={(e) => set("moq_value", e.target.value)} required />
+                <small className="form-hint">Buyers get the wholesale price from this quantity. Only applies when it is lower than the product's own MOQ.</small>
+              </label>
+            )}
+
+            <label className="form-field">
+              <span>Applies to</span>
+              <select value={form.scope} onChange={(e) => set("scope", e.target.value)}>
+                <option value="all">All products</option>
+                <option value="products">Specific products</option>
+                <option value="categories">Specific categories</option>
+              </select>
+            </label>
+
+            {form.scope === "products" && (
+              <div className="form-field span-2">
+                <span>Products ({(form.product_ids || []).length} selected)</span>
+                <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products…" style={{ marginBottom: 8 }} />
+                <div className="checkbox-row">
+                  {products.length === 0 && <span className="form-hint">No products yet.</span>}
+                  {products.filter((p) => !q.trim() || (p.name || "").toLowerCase().includes(q.trim().toLowerCase())).map((p) => (
+                    <label className="checkbox-pill" key={p.id}>
+                      <input
+                        type="checkbox"
+                        checked={(form.product_ids || []).includes(p.id)}
+                        onChange={() => toggleId("product_ids", p.id)}
+                      />
+                      {p.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {form.scope === "categories" && (
+              <div className="form-field span-2">
+                <span>Categories</span>
+                <div className="checkbox-row">
+                  {categories.length === 0 && <span className="form-hint">No categories yet.</span>}
+                  {/* a main category's offer also covers its subcategories */}
+                  {categoryOptions(categories).map((c) => (
+                    <label className="checkbox-pill" key={c.id} style={c.isMain ? { fontWeight: 600 } : undefined}>
+                      <input
+                        type="checkbox"
+                        checked={(form.category_ids || []).includes(c.id)}
+                        onChange={() => toggleId("category_ids", c.id)}
+                      />
+                      {categoryPath(c.id, categories)}
+                    </label>
+                  ))}
+                </div>
+              </div>
             )}
 
             {isFreeShipping && (
               <label className="form-field">
-                <span>Minimum order value (Ksh)</span>
+                <span>Minimum order value (Ksh) — leave empty for free shipping on the chosen products</span>
                 <input type="number" min="0" value={form.min_order_value || ""} onChange={(e) => set("min_order_value", e.target.value)} />
+              </label>
+            )}
+
+            <label className="form-field">
+              <span>Campaign (homepage banner, product strip, black badge)</span>
+              <select value={form.campaign || ""} onChange={(e) => set("campaign", e.target.value)}>
+                <option value="">None, a normal offer</option>
+                <option value="black_friday">Black Friday Sale</option>
+              </select>
+            </label>
+
+            {form.campaign && (
+              <label className="form-field">
+                <span>Moving banner text (optional)</span>
+                <input
+                  type="text"
+                  value={form.banner_text || ""}
+                  onChange={(e) => set("banner_text", e.target.value)}
+                  placeholder="e.g. BLACK FRIDAY SALE · UP TO 20% OFF"
+                />
               </label>
             )}
 

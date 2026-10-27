@@ -1,0 +1,128 @@
+---
+// Homepage campaign block (Black Friday): a faint banner that drifts right to left, then a strip of the
+// products on offer. Rendered only while an offer of the campaign is live, so with no active offer
+// the homepage is unchanged. Offers and the products they cover are chosen in Admin -> Offers.
+import ProductCard from "./ProductCard.astro";
+
+interface Props {
+  title: string;
+  bannerText: string;
+  products: any[];
+}
+
+const { title, bannerText, products } = Astro.props;
+const message = (bannerText || title).toUpperCase();
+// one group = the message + a separator; the track holds two identical halves so the loop has no seam
+const group = Array.from({ length: 6 }, () => message);
+const delayClasses = ["", "d1", "d2", "d3"];
+---
+
+<section class="offer-campaign" aria-label={title}>
+  <div class="oc-banner" role="presentation">
+    <div class="oc-track oc-track-big" aria-hidden="true">
+      {[0, 1].map(() => (
+        <div class="oc-group">
+          {group.map(() => (<span>{message}<i class="oc-star">✦</i></span>))}
+        </div>
+      ))}
+    </div>
+    <div class="oc-track oc-track-small" aria-hidden="true">
+      {[0, 1].map(() => (
+        <div class="oc-group">
+          {group.map(() => (<span>{message}<i class="oc-dot"></i></span>))}
+        </div>
+      ))}
+    </div>
+    <p class="oc-static">{message}</p>
+  </div>
+
+  {products.length > 0 && (
+    <div class="wrap oc-strip-wrap">
+      <div class="oc-strip-head">
+        <h2>{title}</h2>
+        <span class="oc-count">{products.length} deal{products.length === 1 ? "" : "s"}</span>
+      </div>
+      <div class="oc-strip">
+        {products.slice(0, 12).map((product, i) => (
+          <ProductCard product={product} delay={delayClasses[i % delayClasses.length]} />
+        ))}
+      </div>
+    </div>
+  )}
+</section>
+
+<style>
+  .offer-campaign { padding: 28px 0 8px; }
+
+  /* ---- moving banner: faint on purpose, it should build anticipation, not shout ---- */
+  .oc-banner {
+    position: relative;
+    overflow: hidden;
+    padding: 18px 0 14px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.035), rgba(0,0,0,0) );
+    border-top: 1px solid rgba(0,0,0,0.06);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+  .oc-track { display: flex; width: max-content; will-change: transform; }
+  .oc-group { display: flex; flex: none; }
+  .oc-group span { display: inline-flex; align-items: center; white-space: nowrap; }
+
+  /* big outlined letters, very light */
+  .oc-track-big { animation: oc-left 420s linear infinite; }
+  .oc-track-big span {
+    font-family: 'Jost', var(--sans, Helvetica, Arial, sans-serif);
+    font-size: clamp(30px, 5vw, 54px);
+    font-weight: 300;
+    letter-spacing: 0.14em;
+    line-height: 1.1;
+    color: transparent;
+    -webkit-text-stroke: 0.6px rgba(0,0,0,0.13);
+  }
+  .oc-star { font-style: normal; font-size: 0.45em; margin: 0 1.4em; color: rgba(0,0,0,0.14); animation: oc-twinkle 8s ease-in-out infinite; }
+
+  /* thin solid line underneath, slower, so the two layers drift against each other */
+  .oc-track-small { margin-top: 8px; animation: oc-right 520s linear infinite; }
+  .oc-track-small span {
+    font-family: 'Jost', var(--sans, Helvetica, Arial, sans-serif);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.34em;
+    color: rgba(0,0,0,0.28);
+  }
+  .oc-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(0,0,0,0.3); margin: 0 2.2em; }
+
+  .oc-static { display: none; margin: 0; text-align: center; font-weight: 700; letter-spacing: 0.2em; font-size: 12px; color: rgba(0,0,0,0.55); }
+
+  @keyframes oc-left { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @keyframes oc-right { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+  @keyframes oc-twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .oc-track { display: none; }
+    .oc-static { display: block; }
+    .oc-banner { padding: 14px 16px; -webkit-mask-image: none; mask-image: none; }
+  }
+
+  /* ---- products on offer ---- */
+  .oc-strip-wrap { padding-top: 26px; padding-bottom: 8px; }
+  .oc-strip-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+  .oc-strip-head h2 { font-size: 24px; margin: 0; }
+  .oc-count { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; background: #000; color: #fff; padding: 4px 9px; }
+  .oc-strip {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    padding: 4px 2px 18px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .oc-strip > :global(.card) { flex: 0 0 min(230px, 62vw); scroll-snap-align: start; }
+
+  @media (max-width: 640px) {
+    .oc-strip-head h2 { font-size: 20px; }
+    .oc-strip { gap: 12px; }
+  }
+</style>

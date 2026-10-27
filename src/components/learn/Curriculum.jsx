@@ -6,10 +6,11 @@ const I = {
   assessment: <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l2 2 4-4M5 4h14v16H5z" /></svg>,
   done: <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5 9-10" /></svg>,
   lock: <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>,
+  exam: <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3H6v18h12V7z" /><path d="M14 3v4h4M9 13h6M9 17h4" /></svg>,
   cert: <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9" r="5" /><path d="M9 13l-2 8 5-3 5 3-2-8" /></svg>,
 };
 
-export default function Curriculum({ course, modules, lessons, progress, currentId, stateOf, onPick, pct, doneCount, certReady, certEnabled }) {
+export default function Curriculum({ course, modules, lessons, progress, currentId, stateOf, onPick, pct, doneCount, certReady, certEnabled, exam, examPassed, lessonsDone }) {
   return (
     <nav className="lx-curr" aria-label="Course curriculum">
       <div className="lx-curr-head">
@@ -39,10 +40,17 @@ export default function Curriculum({ course, modules, lessons, progress, current
           </div>
         );
       })}
+      {exam && (
+        <button className={"lx-lesson exam" + (currentId === "__exam" ? " now" : "") + (examPassed ? " done" : lessonsDone ? "" : " locked")} onClick={() => onPick("__exam")}>
+          <span className="lx-lesson-ic">{examPassed ? I.done : lessonsDone ? I.exam : I.lock}</span>
+          <span className="lx-lesson-tx"><strong>{exam.title || "Final exam"}</strong>
+            <small>{examPassed ? "Passed" : exam.latest?.status === "pending_review" ? "Being marked" : lessonsDone ? `${exam.questions?.length || 0} questions · pass ${exam.pass_score}%` : "Finish every lesson"}</small></span>
+        </button>
+      )}
       {certEnabled && (
         <button className={"lx-lesson cert" + (currentId === "__certificate" ? " now" : "") + (certReady ? " done" : " locked")} onClick={() => onPick("__certificate")}>
           <span className="lx-lesson-ic">{certReady ? I.done : I.cert}</span>
-          <span className="lx-lesson-tx"><strong>Course complete</strong><small>{certReady ? "Unlocked" : "Finish every lesson"}</small></span>
+          <span className="lx-lesson-tx"><strong>Course complete</strong><small>{certReady ? "Unlocked" : exam && lessonsDone ? "Pass the final exam" : "Finish every lesson"}</small></span>
         </button>
       )}
     </nav>

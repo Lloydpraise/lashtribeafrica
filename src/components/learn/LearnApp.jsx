@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import "../../styles/learn.css";
 import {
   HAS_DB, loadCourse, loadLessonContent, loadProgress, saveProgress, enrollFree,
+  startLesson, completeLesson, answerQuiz, loadExam, submitExam,
   loadNotes, addNote, deleteNote, resolveProducts, addToShopCart, getUser, signIn, signUp, hasAcademyDemoSession, touchCourse,
 } from "../../services/academy.js";
 import { issueCertificate } from "../../services/customers.js";
@@ -15,6 +16,7 @@ import Curriculum from "./Curriculum.jsx";
 const VideoStage = lazy(() => import("./VideoStage.jsx"));
 const Story = lazy(() => import("./Story.jsx"));
 const Assessment = lazy(() => import("./Assessment.jsx"));
+const Exam = lazy(() => import("./Exam.jsx"));
 const Transcript = lazy(() => import("./Panels.jsx").then((m) => ({ default: m.Transcript })));
 const Notes = lazy(() => import("./Panels.jsx").then((m) => ({ default: m.Notes })));
 const Shop = lazy(() => import("./Panels.jsx").then((m) => ({ default: m.Shop })));
@@ -136,6 +138,9 @@ export default function LearnApp() {
   const [lessonId, setLessonId] = useState(null);
   const [cache, setCache] = useState({});
   const [lessonState, setLessonState] = useState("idle"); // idle | loading | locked | error
+  const [exam, setExam] = useState(null); // the final exam (0028), without answers
+  const [examPassed, setExamPassed] = useState(false);
+  const retryTimer = useRef(null);
   const [products, setProducts] = useState({});
   const [added, setAdded] = useState({});
   const [notes, setNotes] = useState([]);
@@ -178,7 +183,8 @@ export default function LearnApp() {
       setCtx(c); setProgress(prog);
       const want = params().get("lesson");
       const first = c.lessons.find((l) => !prog[l.id]?.completed) || c.lessons[0];
-      setLessonId(c.lessons.some((l) => l.id === want) || want === "__certificate" ? want : first?.id || null);
+      setLessonId(c.lessons.some((l) => l.id === want) || want === "__certificate" || want === "__exam" ? want : first?.id || null);
+      loadExam(c).then((e) => { setExam(e); setExamPassed(e?.latest?.status === "passed"); }).catch(() => {});
       setBoot("ready");
       enrollFree(c);
       touchCourse(c);
@@ -208,7 +214,9 @@ export default function LearnApp() {
   const idx = lesson ? lessons.indexOf(lesson) : -1;
   const doneCount = lessons.filter((l) => progress[l.id]?.completed).length;
   const pct = lessons.length ? Math.round((doneCount / lessons.length) * 100) : 0;
-  const certReady = lessons.length > 0 && doneCount === lessons.length;
+  const lessonsDone = lessons.length > 0 && doneCount === lessons.length;
+  const certReady = lessonsDone && (!exam || examPassed);
+  const finishTarget = exam && !examPassed ? "__exam" : "__certificate";
 
   const stateOf = useCallback((l) => {
     if (!ctx) return "open";
@@ -222,7 +230,7 @@ export default function LearnApp() {
   }, [ctx, lessons, progress]);
 
   const go = useCallback((id) => {
-    if (id !== "__certificate") {
+    if (id !== "__certificate" && id !== "__exam") {
       const l = lessons.find((x) => x.id === id);
       if (l && stateOf(l) === "sequence") { say("Finish the previous lesson to unlock this one."); return; }
     }
@@ -254,6 +262,17 @@ export default function LearnApp() {
       .catch(() => live && setLessonState("error"));
     return () => { live = false; };
   }, [ctx, lessonId]); // eslint-disable-line
+
+  useEffect(() => {
+    if (lessonsDone && exam && !exam.unlocked && ctx) loadExam(ctx).then((e) => e && setExam(e)).catch(() => {});
+  }, [lessonsDone]); // eslint-disable-line
+
+  // The database notes when a lesson was first opened (completion needs real time spent on it).
+  useEffect(() => {
+    clearTimeout(retryTimer.current);
+    if (ctx && lesson) startLesson(ctx, lesson.id);
+  }, [ctx, lessonId]); // eslint-disable-line
+  useEffect(() => () => clearTimeout(retryTimer.current), []);
 
   useEffect(() => {
     if (!ctx || !lesson) return;
@@ -310,14 +329,25 @@ export default function LearnApp() {
   const watermark = "lashtribeafrica.com";
 
   // ---------- progress ----------
-  const complete = useCallback((id, quiet) => {
+  const completeRef = useRef(null);
+  const complete = useCallback(async (id, quiet) => {
     if (progress[id]?.completed) return;
+    const r = await completeLesson(ctx, id);
+    if (!r?.completed) {
+      if (r?.reason === "time" && r.wait_seconds) {
+        // too soon: try again quietly once the lesson has been open long enough
+        clearTimeout(retryTimer.current);
+        retryTimer.current = setTimeout(() => completeRef.current?.(id, true), (r.wait_seconds + 2) * 1000);
+        if (!quiet) say(`Take your time: this lesson completes in about ${Math.max(1, Math.ceil(r.wait_seconds / 60))} min`);
+      } else if (r?.reason === "quiz") say("Pass the quiz to complete this lesson");
+      return;
+    }
     setProgress((p) => ({ ...p, [id]: { ...(p[id] || {}), completed: true } }));
-    saveProgress(ctx, id, { completed: true });
     const left = lessons.filter((l) => l.id !== id && !progress[l.id]?.completed).length;
     if (left === 0) { burstConfetti(70); say("Course complete! 🎓"); }
     else { if (!quiet) burstConfetti(24); say("Lesson complete ✓"); }
   }, [ctx, lessons, progress, say]);
+  completeRef.current = complete;
 
   const onSave = useCallback((t) => {
     if (!lesson) return;
@@ -355,7 +385,11 @@ export default function LearnApp() {
     return <div className="lx-root"><SignInGate course={ctx?.course} onDone={() => { setBoot("loading"); boots(); }} /></div>;
 
   const course = ctx.course;
+  // a course can fix its reading view (courses.reading_view, 0037); otherwise the learner's choice applies
+  const fixedView = course.reading_view === "article" || course.reading_view === "story" ? course.reading_view : null;
+  const readView = fixedView || view;
   const isCert = lessonId === "__certificate";
+  const isExam = lessonId === "__exam" && !!exam;
   const done = lesson ? !!progress[lesson.id]?.completed : false;
   const prev = idx > 0 ? lessons[idx - 1] : null;
   const next = idx >= 0 && idx < lessons.length - 1 ? lessons[idx + 1] : null;
@@ -380,7 +414,7 @@ export default function LearnApp() {
     if (lesson.kind === "assessment" && !done) return <span className="lx-bar-hint">Pass the quiz to complete this lesson</span>;
     if (done) return next
       ? <button className="lx-btn dark" onClick={() => go(next.id)}>Next lesson →</button>
-      : <button className="lx-btn dark" onClick={() => go("__certificate")}>Finish course →</button>;
+      : <button className="lx-btn dark" onClick={() => go(finishTarget)}>{finishTarget === "__exam" ? "Take the final exam →" : "Finish course →"}</button>;
     if (lesson.kind === "reading")
       return <span className="lx-bar-hint">{seenInfo.waiting === "flip" ? "Flip the card to keep reading"
         : seenInfo.waiting ? "Answer the question to keep reading"
@@ -394,16 +428,16 @@ export default function LearnApp() {
       timed={timed} onAdd={onAddProduct} watermark={watermark} /></Suspense>
   ) : null;
 
-  const storyActive = !!lesson && lesson.kind === "reading" && view === "story" && lessonState === "idle" && !!content && bodyBlocks.length > 0;
+  const storyActive = !!lesson && lesson.kind === "reading" && readView === "story" && lessonState === "idle" && !!content && bodyBlocks.length > 0;
 
   const storyView = storyActive && (
     <Suspense fallback={viewFallback}><Story key={lesson.id} blocks={bodyBlocks} title={lesson.title} summary={lesson.summary} minutes={lesson.read_minutes || 3}
       startAt={done ? 0 : progress[lesson.id]?.position || 0} watermark={watermark}
       onFinish={() => complete(lesson.id)}
       onPosition={(i) => { setProgress((p) => ({ ...p, [lesson.id]: { ...(p[lesson.id] || {}), position: i } })); saveProgress(ctx, lesson.id, { position: i }); }}
-      onArticle={() => pickView("article")}
+      onArticle={fixedView ? undefined : () => pickView("article")}
       nextLabel={next ? "Next lesson →" : "Finish course →"}
-      onNext={() => (next ? go(next.id) : go("__certificate"))} /></Suspense>
+      onNext={() => (next ? go(next.id) : go(finishTarget))} /></Suspense>
   );
 
   const lessonView = lesson && (
@@ -414,7 +448,7 @@ export default function LearnApp() {
         </div>
         <h1>{lesson.title}</h1>
         {lesson.summary && <p className="lx-sum">{lesson.summary}</p>}
-        {lesson.kind === "reading" && (
+        {lesson.kind === "reading" && !fixedView && (
           <div className="lx-modes" role="group" aria-label="Reading view">
             <button className={view === "story" ? "on" : ""} onClick={() => pickView("story")}>Story</button>
             <button className={view === "article" ? "on" : ""} onClick={() => pickView("article")}>Article</button>
@@ -426,7 +460,8 @@ export default function LearnApp() {
       {lessonState === "locked" && <Locked course={course} preview={lessons.some((l) => l.is_preview)} demoSession={demoSession} />}
       {lessonState === "idle" && content && (
         lesson.kind === "assessment"
-          ? <Suspense fallback={viewFallback}><Assessment key={lesson.id} quiz={quiz} completed={done} onPass={() => complete(lesson.id)} /></Suspense>
+          ? <Suspense fallback={viewFallback}><Assessment key={lesson.id} quiz={quiz} completed={done} onPass={() => complete(lesson.id)}
+              grader={content?.graded ? (q, choice, attemptId) => answerQuiz(lesson.id, q, choice, attemptId) : null} /></Suspense>
           : bodyBlocks.length > 0 && (
             video
               ? <div className="lx-notes-body"><div className="lx-sec-label">Lesson notes</div>
@@ -456,7 +491,8 @@ export default function LearnApp() {
           onDelete={async (id) => { await deleteNote(ctx, lesson.id, id); setNotes((x) => x.filter((n) => n.id !== id)); }}
           onSeek={seek} />}</Suspense>;
 
-  const currProps = { course, modules: ctx.modules, lessons, progress, currentId: lessonId, stateOf, onPick: go, pct, doneCount, certReady, certEnabled: course.certificate_enabled };
+  const currProps = { course, modules: ctx.modules, lessons, progress, currentId: lessonId, stateOf, onPick: go, pct, doneCount, certReady, certEnabled: course.certificate_enabled,
+    exam, examPassed, lessonsDone };
 
   return (
     <div className={"lx-root" + (lesson?.kind === "reading" && !isCert ? " reading" : "") + (isWide && courseOpen ? " course-open" : "") + (!isMobile && notesOpen ? " notes-open" : "")}>
@@ -485,7 +521,17 @@ export default function LearnApp() {
         <main className="lx-main">
           {isCert ? (
             certReady ? <Certificate ctx={ctx} onBack={() => (window.location.href = "/academy/")} />
-              : <div className="lx-locked"><div className="lx-lock-ic">★</div><h2>Almost there</h2><p>Complete every lesson to unlock your course completion.</p></div>
+              : <div className="lx-locked"><div className="lx-lock-ic">★</div><h2>Almost there</h2>
+                  <p>{lessonsDone && exam ? "Pass the final exam to unlock your course completion." : "Complete every lesson to unlock your course completion."}</p>
+                  {lessonsDone && exam && <button className="lx-btn dark" onClick={() => go("__exam")}>Take the final exam →</button>}
+                </div>
+          ) : isExam ? (
+            <Suspense fallback={viewFallback}>
+              <Exam key={exam.latest?.id || "exam"} exam={exam} preview={ctx.source === "demo"}
+                onSubmit={(answers) => submitExam(ctx, answers)}
+                onPassed={() => { setExamPassed(true); burstConfetti(70); say("Exam passed! 🎓"); }}
+                onCertificate={() => go("__certificate")} />
+            </Suspense>
           ) : lesson ? (
             <>
               {!isMobile && (!notesOpen || (isWide && !courseOpen)) && (

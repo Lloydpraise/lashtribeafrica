@@ -10,7 +10,7 @@
   //   quantity at or above the MOQ -> wholesale price, below it -> retail price.
 
   const CACHE_KEY = 'lashtribe_quote_v1';
-  const state = { lines: {}, freeShipping: null, failed: false };
+  const state = { lines: {}, freeShipping: null, shippingFee: null, failed: false };
   let seq = 0;
   let timer = null;
 
@@ -44,13 +44,14 @@
       if (cached && cached.lines && typeof cached.lines === 'object') {
         state.lines = cached.lines;
         state.freeShipping = cached.freeShipping || null;
+        state.shippingFee = typeof cached.shippingFee === 'number' ? cached.shippingFee : null;
       }
     } catch (error) { /* storage blocked: draw after the first answer */ }
   }
 
   function writeCache() {
     try {
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ lines: state.lines, freeShipping: state.freeShipping }));
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ lines: state.lines, freeShipping: state.freeShipping, shippingFee: state.shippingFee }));
     } catch (error) { /* ignore */ }
   }
 
@@ -75,6 +76,7 @@
         image: q.image,
         icon: q.icon,
         moq,
+        minQty: Math.max(1, Number(q.min_qty) || 1),
         tier,
         unit,
         wholesale: Number(q.wholesale),
@@ -97,11 +99,12 @@
     return new Set(lines.map((l) => l.id)).size;
   }
 
-  function shippingState(subtotal) {
-    const fs = state.freeShipping;
-    if (fs && subtotal >= fs.minOrderValue) return { label: 'Free', free: true };
-    if (fs) return { label: 'TBD (free over ' + money(fs.minOrderValue) + ')', free: false };
-    return { label: 'TBD', free: false };
+  // Shipping = weight x rate per kg (cost of getting the goods to our offices). The database works it out
+  // (cart_quote.shipping_fee) and place_order() charges the same amount, so this is only for display.
+  function shippingState() {
+    if (state.shippingFee === null) return { label: 'Calculating…', fee: 0 };
+    if (state.shippingFee <= 0) return { label: 'Free', fee: 0 };
+    return { label: money(state.shippingFee), fee: state.shippingFee };
   }
 
   function lineThumb(line) {
@@ -121,6 +124,7 @@
 
   // "Add 2 more for the wholesale price" while the quantity is below the MOQ
   function tierHint(line) {
+    if (line.minQty > 1 && line.qty < line.minQty) return 'Minimum for this shipment: ' + line.minQty + ' (add ' + (line.minQty - line.qty) + ' more)';
     if (line.tier !== 'retail' || !(line.wholesale < line.retail)) return '';
     const need = line.moq - line.qty;
     return 'Add ' + need + ' more (MOQ ' + line.moq + ') for wholesale ' + money(line.wholesale) + ' each';
@@ -191,7 +195,8 @@
     const set = (id, text) => { const node = document.getElementById(id); if (node) node.textContent = text; };
     set('marketTotal', money(marketTotal));
     set('savedTotal', money(saved));
-    set('yourTotal', money(subtotal));
+    set('shippingTotal', shippingState().label);
+    set('yourTotal', money(subtotal + shippingState().fee));
 
     if (Cart()) Cart().syncCartBadges();
   }
@@ -245,8 +250,8 @@
     }
 
     const { subtotal, saved } = totalsFromLines(lines);
-    const shipping = shippingState(subtotal);
-    const total = subtotal; // shipping fee (when due) is confirmed separately, not added here
+    const shipping = shippingState();
+    const total = subtotal + shipping.fee;
     const count = productCount(lines);
 
     const setText = (id, text) => {
@@ -312,6 +317,7 @@
         (data.lines || []).forEach((l) => { if (l && l.key) byKey[l.key] = l; });
         state.lines = byKey;
         const fs = data.free_shipping;
+        state.shippingFee = data.shipping_fee === undefined || data.shipping_fee === null ? null : Number(data.shipping_fee) || 0;
         state.freeShipping = fs ? { minOrderValue: Number(fs.min_order_value) || 0, badgeText: fs.badge_text, label: fs.label } : null;
         state.failed = false;
         writeCache();

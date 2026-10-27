@@ -42,6 +42,8 @@ export function emptyProduct() {
     cost_kes: "",
     cost_usd: "",
     moq: 1,
+    supplier_moq: 1, // supplier's own minimum; a batch must reach it (migration 0035)
+    weight_kg: "", // estimated kg; shipping = weight x rate per kg
     stock_quantity: 0,
     low_stock_threshold: 5,
     images: [],

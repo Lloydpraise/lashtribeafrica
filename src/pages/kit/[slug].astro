@@ -35,6 +35,8 @@ type Product = {
   hasOptions?: boolean;
   hasOffer?: boolean;
   offerBadge?: string;
+  campaignBadge?: string;
+  dealNotes?: string[];
   moq?: number;
   images?: { url?: string }[];
   category?: { name?: string; slug?: string } | null;
@@ -55,6 +57,8 @@ function toSearchCard(product: Product) {
     hasOptions: Boolean(product.hasOptions),
     hasOffer: product.hasOffer,
     offerBadge: product.offerBadge,
+    campaignBadge: product.campaignBadge,
+    dealNotes: product.dealNotes,
     note: product.note || "",
     moq: product.moq,
   };

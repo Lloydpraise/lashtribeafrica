@@ -52,10 +52,11 @@ function CertificatePreview({ course }) {
   );
 }
 
-export default function PreviewModal({ course, lessonId, onClose }) {
+export default function PreviewModal({ course, lessonId, startShow = "course", onClose }) {
   const [device, setDevice] = useState("phone");
   const [run, setRun] = useState(0);
-  const [show, setShow] = useState("course"); // course | certificate
+  const hasExam = !!(course.exam && course.exam.enabled && course.exam.questions.length);
+  const [show, setShow] = useState(startShow === "exam" && !hasExam ? "course" : startShow); // course | exam | certificate
 
   const src = useMemo(() => {
     try {
@@ -68,10 +69,11 @@ export default function PreviewModal({ course, lessonId, onClose }) {
       /* private mode: the iframe will say the course isn't available */
     }
     const q = new URLSearchParams({ course: "__preview__" });
-    if (lessonId) q.set("lesson", lessonId);
+    if (show === "exam") q.set("lesson", "__exam");
+    else if (lessonId && lessonId !== "__exam") q.set("lesson", lessonId);
     return `/academy/learn/?${q.toString()}`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [run, lessonId]);
+  }, [run, lessonId, show]);
 
   const empty = lessonCount(course) === 0;
 
@@ -83,9 +85,10 @@ export default function PreviewModal({ course, lessonId, onClose }) {
           <span className="form-hint">As students see it · your unsaved changes are included</span>
           <div className="cs-seg" role="group" aria-label="Show">
             <button type="button" className={show === "course" ? "on" : ""} onClick={() => setShow("course")}>Course</button>
+            {hasExam && <button type="button" className={show === "exam" ? "on" : ""} onClick={() => setShow("exam")}>Preview exam</button>}
             <button type="button" className={show === "certificate" ? "on" : ""} onClick={() => setShow("certificate")}>Certificate</button>
           </div>
-          {show === "course" && (
+          {show !== "certificate" && (
             <>
               <div className="cs-seg" role="group" aria-label="Device">
                 <button type="button" className={device === "phone" ? "on" : ""} onClick={() => setDevice("phone")}>Phone</button>

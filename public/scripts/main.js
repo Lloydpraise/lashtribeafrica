@@ -138,6 +138,8 @@
 
   document.addEventListener('click', (event) => {
     const target = event.target;
+    // a click on something the page just redrew (e.g. the cart's quantity buttons) leaves the page; it was not an outside click
+    if (target && target.isConnected === false) return;
     const clickedOnNav = navLinks && navLinks.contains(target);
     const clickedOnBurger = burger && burger.contains(target);
     const clickedOnSearchToggle = searchToggle && searchToggle.contains(target);

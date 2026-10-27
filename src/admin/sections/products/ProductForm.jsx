@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import MediaUploader from "./MediaUploader.jsx";
 import ComplementsPicker from "./ComplementsPicker.jsx";
 import OptionsEditor, { optionsToEditor, editorToOptions, pruneOptionImages } from "./OptionsEditor.jsx";
 import { createCategory, fetchPricingSettings } from "./products.api.js";
-import { DEFAULT_PRICING_SETTINGS, formulaPrices, normalizeOptions } from "../../../lib/pricing.js";
+import { DEFAULT_PRICING_SETTINGS, formulaPrices, normalizeOptions, shippingFor } from "../../../lib/pricing.js";
 import { createSupplier } from "../batches/batches.api.js";
 import {
   slugify,
@@ -32,6 +32,8 @@ export default function ProductForm({
     retail_price: Number(product.retail_price) > 0 ? product.retail_price : "",
     cost_kes: product.cost_kes ?? "",
     cost_usd: product.cost_usd ?? "",
+    weight_kg: Number(product.weight_kg) > 0 ? product.weight_kg : "",
+    supplier_moq: Number(product.supplier_moq) > 0 ? product.supplier_moq : 1,
   }));
   const [pricing, setPricing] = useState(DEFAULT_PRICING_SETTINGS);
 
@@ -46,7 +48,13 @@ export default function ProductForm({
     () => allProducts.filter((p) => p.id !== product.id).flatMap((p) => normalizeOptions(p.options)),
     [allProducts, product.id]
   );
-  const suggested = useMemo(() => formulaPrices(form.cost_usd, pricing), [form.cost_usd, pricing]);
+  // one random draw per form, so the suggested market price (retail + a random 30-45%) doesn't jump while typing
+  const marketDraw = useRef(Math.random());
+  // supplier price: USD cost, or a Ksh cost converted back at the formula's exchange rate
+  const costUsd = Number(form.cost_usd) > 0
+    ? Number(form.cost_usd)
+    : Number(form.cost_kes) > 0 ? Number(form.cost_kes) / (Number(pricing.fx_rate_kes_per_usd) || 1) : 0;
+  const suggested = useMemo(() => formulaPrices(costUsd, pricing, marketDraw.current), [costUsd, pricing]);
   const [slugTouched, setSlugTouched] = useState(false);
   const [newFeature, setNewFeature] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -152,7 +160,7 @@ export default function ProductForm({
       return;
     }
     if (form.price_mode === "formula" && !suggested) {
-      setError("To keep this product on the formula, add its cost in USD. Or switch it to manual pricing.");
+      setError("To keep this product on the formula, add its supplier cost. Or switch it to manual pricing.");
       return;
     }
 
@@ -179,6 +187,10 @@ export default function ProductForm({
         options,
         price_mode: form.price_mode,
         moq: Number(form.moq) || 1,
+        // only sent once the column exists (migration 0035) or when a supplier MOQ above 1 is typed
+        ...(Number(form.supplier_moq) > 1 || product.supplier_moq !== undefined ? { supplier_moq: Math.max(1, Math.round(Number(form.supplier_moq) || 1)) } : {}),
+        // only sent once the column exists (migration 0029) or when a weight is typed
+        ...(Number(form.weight_kg) > 0 || product.weight_kg !== undefined ? { weight_kg: Number(form.weight_kg) > 0 ? Number(form.weight_kg) : 0 } : {}),
         stock_quantity: Number(form.stock_quantity) || 0,
         low_stock_threshold: Number(form.low_stock_threshold) || 0,
         images: form.images || [],
@@ -506,7 +518,7 @@ export default function ProductForm({
                     </button>
                   </>
                 ) : (
-                  <span>Enter the cost in USD to see the formula's suggested prices. You can always type your own.</span>
+                  <span>Enter the supplier cost to see the formula's suggested prices. You can always type your own.</span>
                 )}
                 {form.price_mode === "formula" && suggested && (
                   <span className="form-hint" style={{ flexBasis: "100%" }}>
@@ -556,6 +568,37 @@ export default function ProductForm({
                 value={form.moq}
                 onChange={(e) => set("moq", e.target.value)}
               />
+            </label>
+
+            <label className="form-field">
+              <span>Supplier MOQ (e.g. Alibaba minimum)</span>
+              <input
+                type="number"
+                min="1"
+                value={form.supplier_moq}
+                onChange={(e) => set("supplier_moq", e.target.value)}
+              />
+              <small className="form-hint">
+                Buyers never see this. Orders are pooled per shipment; until this many are paid, the site's MOQ rises to what is still missing. Batches shows the pool. We only sell 10 or fewer. 1 = no minimum.
+              </small>
+            </label>
+
+            <label className="form-field">
+              <span>Weight (kg, estimate)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.001"
+                placeholder="e.g. 0.15"
+                value={form.weight_kg}
+                onChange={(e) => set("weight_kg", e.target.value)}
+              />
+              <small className="form-hint">
+                Shipping to our offices = weight × {formatKsh(pricing.shipping_rate_per_kg)} per kg
+                {Number(form.weight_kg) > 0 ? ` = ${formatKsh(shippingFor(form.weight_kg, pricing.shipping_rate_per_kg))} per unit` : ""}.
+                Added to the order total at checkout. A variation can have its own weight under Variants.
+                {!(Number(form.weight_kg) > 0) ? " Blank = no shipping charged for this product." : ""}
+              </small>
             </label>
 
             <div className="form-field span-2">

@@ -14,6 +14,9 @@ function emptyOffer() {
     product_ids: [],
     category_ids: [],
     min_order_value: "",
+    moq_value: "",
+    campaign: "",
+    banner_text: "",
     starts_at: null,
     ends_at: null,
     is_active: true,
@@ -21,8 +24,8 @@ function emptyOffer() {
 }
 
 function describeScope(offer) {
-  if (offer.type === "free_shipping") {
-    return offer.min_order_value > 0 ? `Orders over Ksh ${Number(offer.min_order_value).toLocaleString()}` : "All orders";
+  if (offer.type === "free_shipping" && offer.min_order_value > 0) {
+    return `Orders over Ksh ${Number(offer.min_order_value).toLocaleString()} (not charged by the checkout)`;
   }
   if (offer.scope === "all") return "All products";
   if (offer.scope === "products") return `${(offer.product_ids || []).length} product(s)`;
@@ -107,7 +110,7 @@ export default function Offers() {
       ) : offers.length === 0 ? (
         <EmptyState
           title="No offers yet"
-          description="Add a percentage-off or free-shipping offer. Active offers show automatically on the grid, product pages, ticker, and checkout — nothing changes when there's no active offer."
+          description="Add a percentage-off, reduced-MOQ or free-shipping offer. Active offers show automatically on the grid, product pages, ticker, and checkout — nothing changes when there's no active offer."
         />
       ) : (
         <div className="admin-card table-card">
@@ -130,7 +133,8 @@ export default function Offers() {
                     {o.badge_text && <div className="table-secondary">{o.badge_text}</div>}
                   </td>
                   <td className="table-secondary">
-                    {o.type === "percentage_off" ? `${o.value}% off` : "Free shipping"}
+                    {o.type === "percentage_off" ? `${o.value}% off` : o.type === "reduced_moq" ? `MOQ ${o.moq_value}` : "Free shipping"}
+                    {o.campaign === "black_friday" && " · Black Friday"}
                   </td>
                   <td className="table-secondary">{describeScope(o)}</td>
                   <td className="table-secondary">

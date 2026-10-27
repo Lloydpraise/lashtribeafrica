@@ -59,6 +59,16 @@ export async function fetchSupplierLines(batchId, includeUnpaid = false) {
   return data || [];
 }
 
+/** Per product in a batch: pooled quantity against the supplier MOQ (migration 0035; empty before it is run). */
+export async function fetchSupplierPool(batchId, includeUnpaid = false) {
+  const { data, error } = await supabase.rpc("batch_supplier_pool", {
+    p_batch: batchId,
+    p_include_unpaid: includeUnpaid,
+  });
+  if (error) return [];
+  return data || [];
+}
+
 // ---------- suppliers ----------
 export async function fetchSuppliers() {
   const { data, error } = await supabase.from("suppliers").select("*").order("name", { ascending: true });

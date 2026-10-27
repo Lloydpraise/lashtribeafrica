@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import CourseList from "./courses/CourseList.jsx";
 import CourseEditor from "./courses/CourseEditor.jsx";
 import Bundles from "./courses/Bundles.jsx";
-import { fetchCourses, fetchBundles, fetchCourseFull, explain } from "./courses/courses.api.js";
+import { fetchCourses, fetchBundles, fetchCourseFull, fetchExamsToMark, explain } from "./courses/courses.api.js";
+import ExamReview from "./courses/ExamReview.jsx";
 import { newCourse } from "./courses/courseModel.js";
 import { Notice } from "./courses/fields.jsx";
 
@@ -30,7 +31,8 @@ function NewCourseModal({ onPick, onCancel }) {
 }
 
 function CoursesHome() {
-  const [view, setView] = useState("courses"); // courses | bundles
+  const [view, setView] = useState("courses"); // courses | bundles | exams
+  const [toMark, setToMark] = useState(null); // null = exams not set up (migration 0028)
   const [courses, setCourses] = useState([]);
   const [bundles, setBundles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +47,7 @@ function CoursesHome() {
       const [c, b] = await Promise.all([fetchCourses(), fetchBundles()]);
       setCourses(c);
       setBundles(b);
+      fetchExamsToMark().then(setToMark).catch(() => setToMark(null));
     } catch (err) {
       setError(explain(err, "Couldn't load courses."));
     } finally {
@@ -95,6 +98,7 @@ function CoursesHome() {
         <div className="cs-seg" role="tablist" aria-label="Academy catalog">
           <button type="button" className={view === "courses" ? "on" : ""} onClick={() => setView("courses")}>Courses ({courses.length})</button>
           <button type="button" className={view === "bundles" ? "on" : ""} onClick={() => setView("bundles")}>Bundles ({bundles.length})</button>
+          {toMark && <button type="button" className={view === "exams" ? "on" : ""} onClick={() => setView("exams")}>Exams to mark ({toMark.length})</button>}
         </div>
       </div>
 
@@ -103,6 +107,8 @@ function CoursesHome() {
 
       {loading ? (
         <p className="form-hint">Loading…</p>
+      ) : view === "exams" && toMark ? (
+        <ExamReview attempts={toMark} onReload={() => fetchExamsToMark().then(setToMark).catch(() => {})} />
       ) : view === "courses" ? (
         <CourseList courses={courses} bundles={bundles} onEdit={edit} onReload={load} onCreate={() => setPicking(true)} />
       ) : (

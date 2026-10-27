@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { updateBatch, fetchSupplierLines } from "./batches.api.js";
+import { useEffect, useMemo, useState } from "react";
+import { updateBatch, fetchSupplierLines, fetchSupplierPool } from "./batches.api.js";
 import { buildBatchPdf, downloadPdfBytes, batchPdfName } from "./batchPdf.js";
 import { daysUntil, formatBatchDate, nairobiToday } from "../../../data/batches.js";
 import { itemLabel } from "../../../lib/pricing.js";
@@ -71,9 +71,53 @@ function PdfPanel({ batch, orders, suppliers, onClose }) {
   );
 }
 
+/** Pooled quantity per product against its supplier MOQ: what is full, what is still short. */
+function PoolPanel({ batch, orderKey }) {
+  const [rows, setRows] = useState(null);
+  const [unpaid, setUnpaid] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    fetchSupplierPool(batch.id, unpaid).then((r) => live && setRows(r));
+    return () => { live = false; };
+  }, [batch.id, unpaid, orderKey]);
+
+  if (rows === null) return <p className="form-hint">Loading…</p>;
+  const tracked = rows.filter((r) => Number(r.supplier_moq) > 1);
+  const rest = rows.length - tracked.length;
+  return (
+    <div className="bt-pdf-panel">
+      <label className="bt-check"><input type="checkbox" checked={unpaid} onChange={(e) => setUnpaid(e.target.checked)} /> Include orders awaiting payment</label>
+      {tracked.length === 0 ? (
+        <p className="form-hint" style={{ margin: "8px 0 0" }}>No product with a supplier MOQ in this shipment yet.</p>
+      ) : (
+        <ul className="bt-orders">
+          {tracked.map((r) => {
+            const full = Number(r.short_by) === 0;
+            return (
+              <li key={r.product_id || r.product_name}>
+                <div>
+                  <div className="cx-name">{r.product_name}</div>
+                  <div className="cx-sub">{r.supplier_name} · {r.orders_count} order{Number(r.orders_count) === 1 ? "" : "s"}</div>
+                </div>
+                <div className="bt-order-side">
+                  <span className="cx-money">{r.quantity} / {r.supplier_moq}</span>
+                  <span className={`cx-status ${full ? "paid" : "pending"}`}>{full ? "Lot full" : `${r.short_by} short`}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {rest > 0 && <p className="form-hint" style={{ margin: "8px 0 0" }}>{rest} more product{rest === 1 ? "" : "s"} with no supplier MOQ.</p>}
+    </div>
+  );
+}
+
 function BatchCard({ batch, orders, suppliers, cutoff, onOpenOrder, onBatchChanged, defaultOpen }) {
   const [open, setOpen] = useState(defaultOpen);
   const [pdf, setPdf] = useState(false);
+  const [pool, setPool] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -132,9 +176,11 @@ function BatchCard({ batch, orders, suppliers, cutoff, onOpenOrder, onBatchChang
         <button type="button" className="admin-btn secondary" onClick={() => setOpen((v) => !v)}>
           {open ? "Hide orders" : `Show orders (${orders.length})`}
         </button>
+        {batch && <button type="button" className="admin-btn secondary" onClick={() => setPool((v) => !v)}>Supplier MOQ pool</button>}
         {batch && <button type="button" className="admin-btn" onClick={() => setPdf((v) => !v)}>Supplier PDF</button>}
       </div>
 
+      {pool && batch && <PoolPanel batch={batch} orderKey={orders.map((o) => o.id + o.status).join()} />}
       {pdf && batch && <PdfPanel batch={batch} orders={counted} suppliers={suppliers} onClose={() => setPdf(false)} />}
 
       {open && (

@@ -24,6 +24,8 @@ type Product = {
   optionsFromDelta?: number;
   hasOffer?: boolean;
   offerBadge?: string;
+  campaignBadge?: string;
+  dealNotes?: string[];
   moq?: number;
   images?: { url?: string }[];
   category?: Category | null;
@@ -85,6 +87,8 @@ function toSearchCard(product: Product) {
     ...cardPrices(product),
     hasOffer: product.hasOffer,
     offerBadge: product.offerBadge,
+    campaignBadge: product.campaignBadge,
+    dealNotes: product.dealNotes,
     note: product.note || "",
     description: product.description || "",
     moq: product.moq,

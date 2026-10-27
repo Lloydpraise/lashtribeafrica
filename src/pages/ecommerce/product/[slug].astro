@@ -46,6 +46,8 @@ const relatedProducts = [...sameCategory, ...otherProducts].slice(0, 4).map((ite
   hasOptions: Boolean(item.hasOptions),
   hasOffer: item.hasOffer,
   offerBadge: item.offerBadge,
+  campaignBadge: item.campaignBadge,
+  dealNotes: item.dealNotes,
   moq: item.moq,
 }));
 
@@ -92,7 +94,8 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
       <div class="product-gallery">
         <div class:list={["product-visual", product.images.length > 0 && "has-gallery"]} id="productVisual">
           <span class="product-badge">{product.badge}</span>
-          {product.hasOffer && <span class="offer-badge">{product.offerBadge}</span>}
+          {product.campaignBadge && <span class="badge-deal badge-deal-lg">{product.campaignBadge}</span>}
+          {product.hasOffer && <span class:list={["offer-badge", product.campaignBadge && "below-deal"]}>{product.offerBadge}</span>}
           {product.images.length > 0 ? (
             <div class="gallery-track" id="galleryTrack" tabindex="0" aria-label="Product photos">
               {product.images.map((img, i) => (
@@ -207,11 +210,12 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
             <span class="price-sub" id="priceSub">per unit</span>
           </div>
           <p class="tier-hint" id="tierHint"></p>
-          <div class="moq-row">
-            <span class="label">Wholesale price from</span>
-            <span>{product.moq} {product.moq === 1 ? "unit" : "units"}</span>
-          </div>
+          {product.dealNotes?.length > 0 && (
+            <p class="deal-notes deal-notes-lg">{product.dealNotes.map((note) => <span>{note}</span>)}</p>
+          )}
         </div>
+
+        <p class="tier-hint" id="minNote" hidden></p>
 
         <div class="qty-row">
           <span class="label">Quantity</span>
@@ -325,6 +329,8 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
 
     const $ = (id: string) => document.getElementById(id);
     const qtyInput = $("qtyInput") as HTMLInputElement | null;
+    const minNote = $("minNote");
+    let minQty = 1; // what this shipment still needs of this product (the live MOQ), 1 = nothing
     const addButton = $("addToCart") as HTMLButtonElement | null;
     const optionMsg = $("optionMsg");
 
@@ -341,6 +347,11 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
     function quantity() {
       const n = Math.round(Number(qtyInput?.value));
       return Number.isFinite(n) && n >= 1 ? Math.min(100000, n) : 1;
+    }
+
+    // the quantity to add to the cart: never below the live minimum
+    function orderQuantity() {
+      return Math.max(quantity(), minQty);
     }
 
     function update() {
@@ -361,10 +372,13 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
         badge.classList.toggle("tier-retail", p.tier !== "wholesale");
       }
 
+      if (minNote) {
+        minNote.textContent = qty < minQty ? `Minimum order: ${minQty}. Quantity set to ${minQty} when you add it.` : "";
+        minNote.hidden = !minNote.textContent;
+      }
+
       if (p.tier === "retail" && wholesaleCheaper) {
         text("tierHint", `Order ${config.moq} or more to get the wholesale price of ${formatKsh(p.wholesale)} each (save ${formatKsh(p.retail - p.wholesale)} per unit).`);
-      } else if (p.tier === "wholesale" && p.retail > p.wholesale) {
-        text("tierHint", `Wholesale price applied: ${formatKsh(p.retail - p.wholesale)} less per unit than retail.`);
       } else {
         text("tierHint", "");
       }
@@ -460,6 +474,27 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
       if (e.key === "ArrowLeft") { e.preventDefault(); goToSlide(Math.max(0, current - 1)); }
     });
 
+    // Live minimum for the next shipment (the database counts what is already paid); the MOQ shown goes up to it
+    (async () => {
+      try {
+        const cfg = JSON.parse(document.getElementById("lashtribe-config")?.textContent || "{}");
+        if (!cfg.url || !cfg.key) return;
+        const res = await fetch(cfg.url.replace(/\/$/, "") + "/rest/v1/rpc/product_shipment_min", {
+          method: "POST",
+          headers: { apikey: cfg.key, "Content-Type": "application/json" },
+          body: JSON.stringify({ p_product: config.id }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const n = Math.round(Number(data?.min_qty));
+        if (!Number.isFinite(n) || n <= 1) return;
+        minQty = n;
+        if (n > config.moq) config.moq = n;
+        if (qtyInput && quantity() < n) qtyInput.value = String(n);
+        update();
+      } catch (error) { /* page still works at its normal MOQ; checkout enforces the minimum */ }
+    })();
+
     function openDrawer() {
       $("cartDrawer")?.classList.add("open");
       $("overlay")?.classList.add("open");
@@ -479,7 +514,7 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
         document.getElementById("optionGroups")?.scrollIntoView({ behavior: "smooth", block: "center" });
         return false;
       }
-      cart()?.add(config.id, quantity(), chosen);
+      cart()?.add(config.id, orderQuantity(), chosen);
       return true;
     }
 

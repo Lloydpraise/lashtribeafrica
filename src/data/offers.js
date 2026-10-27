@@ -17,12 +17,15 @@ function mapOffer(row) {
     id: row.id,
     label: row.label,
     badgeText: row.badge_text || "",
-    type: row.type, // 'percentage_off' | 'free_shipping'
+    type: row.type, // 'percentage_off' | 'free_shipping' | 'reduced_moq'
     scope: row.scope, // 'all' | 'products' | 'categories'
     value: Number(row.value) || 0,
     productIds: row.product_ids || [],
     categoryIds: row.category_ids || [],
     minOrderValue: Number(row.min_order_value) || 0,
+    moqValue: Number(row.moq_value) || 0, // reduced_moq offers (0040: columns may not exist yet -> 0)
+    campaign: row.campaign || "", // '' | 'black_friday'
+    bannerText: row.banner_text || "",
     startsAt: row.starts_at,
     endsAt: row.ends_at,
   };
@@ -48,6 +51,7 @@ function defaultBadge(offer) {
   if (offer.badgeText) return offer.badgeText;
   if (offer.type === "percentage_off") return `${offer.value}% OFF`;
   if (offer.type === "free_shipping") return "FREE SHIPPING";
+  if (offer.type === "reduced_moq") return offer.moqValue ? `MOQ ${offer.moqValue}` : "LOWER MOQ";
   return "OFFER";
 }
 
@@ -72,20 +76,48 @@ function offerAppliesToProduct(offer, product) {
 //                    price tier (wholesale / retail) the quantity falls in
 //   fromPrice / effectiveFromPrice — wholesale price with the cheapest options chosen (cards show
 //                    "From Ksh X" when priceVaries is true)
+export const CAMPAIGN_BADGES = { black_friday: "BLACK FRIDAY DEAL" };
+
 export function applyOfferPricing(products, offers) {
   const percentageOffers = offers.filter((o) => o.type === "percentage_off");
+  const moqOffers = offers.filter((o) => o.type === "reduced_moq" && o.moqValue >= 1);
+  const shipOffers = offers.filter((o) => o.type === "free_shipping" && !(o.minOrderValue > 0));
   const off = (price, pct) => Math.max(0, Math.round(price * (1 - pct / 100)));
 
   return products.map((product) => {
     const fromPrice = Math.max(0, product.nowPrice + (product.optionsFromDelta || 0));
     const applicable = percentageOffers.filter((o) => offerAppliesToProduct(o, product));
+
+    // reduced MOQ and free shipping (mirrors _offer_moq / _offer_free_ship in the database)
+    const moqHit = moqOffers.filter((o) => offerAppliesToProduct(o, product));
+    const reducedMoq = moqHit.length ? Math.min(...moqHit.map((o) => o.moqValue)) : 0;
+    const moqReduced = reducedMoq > 0 && reducedMoq < (product.moq || 1);
+    const freeShipping = shipOffers.some((o) => offerAppliesToProduct(o, product));
+    // a campaign deal = any live offer of a campaign that covers this product
+    const campaignOffers = offers.filter((o) => o.campaign && offerAppliesToProduct(o, product));
+    const campaign = campaignOffers[0]?.campaign || "";
+    const extras = {
+      moq: moqReduced ? reducedMoq : product.moq,
+      originalMoq: product.moq,
+      moqReduced,
+      freeShipping,
+      campaign,
+      campaignBadge: campaign ? CAMPAIGN_BADGES[campaign] || "SALE" : "",
+      dealNotes: [
+        ...(moqReduced ? [`Order from ${reducedMoq}`] : []),
+        ...(freeShipping ? ["Free shipping"] : []),
+      ],
+    };
+
     if (applicable.length === 0) {
       return {
         ...product,
+        ...extras,
         effectivePrice: product.nowPrice,
         fromPrice,
         effectiveFromPrice: fromPrice,
         offerPct: 0,
+        // a non-percentage deal still gets a small corner pill (the campaign badge is separate)
         hasOffer: false,
         offerBadge: "",
         offerId: null,
@@ -97,6 +129,7 @@ export function applyOfferPricing(products, offers) {
 
     return {
       ...product,
+      ...extras,
       effectivePrice,
       fromPrice,
       effectiveFromPrice: off(fromPrice, best.value),
@@ -108,9 +141,27 @@ export function applyOfferPricing(products, offers) {
   });
 }
 
+// What the homepage campaign banner + strip need. Null when no campaign offer is live (the section is then
+// not rendered at all). products: the output of applyOfferPricing.
+export function getCampaign(offers, products, name = "black_friday") {
+  const live = offers.filter((o) => o.campaign === name);
+  if (live.length === 0) return null;
+  const dealProducts = products.filter((p) => p.campaign === name);
+  const bannerText =
+    live.find((o) => o.bannerText)?.bannerText ||
+    live.map((o) => o.label.replace(/\s*\(TEST\)/i, "")).join(" · ");
+  return {
+    name,
+    title: name === "black_friday" ? "Black Friday Sale" : "Sale",
+    bannerText,
+    products: dealProducts,
+  };
+}
+
 // The single site-wide free-shipping offer, if one is active.
 export function getFreeShippingOffer(offers) {
-  const offer = offers.find((o) => o.type === "free_shipping");
+  // only a site-wide offer takes over the top ticker; per-product / campaign free shipping shows on the products
+  const offer = offers.find((o) => o.type === "free_shipping" && o.scope === "all" && !o.campaign);
   if (!offer) return null;
   return {
     id: offer.id,

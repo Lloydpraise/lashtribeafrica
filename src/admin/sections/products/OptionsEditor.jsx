@@ -4,6 +4,7 @@ import { normalizeOptions, swatchColor, OPTION_TYPES } from "../../../lib/pricin
 // Variant editor. Nothing is hardcoded: the admin types whatever option types a product needs
 // ("Curl", "Colour", "Tray size"...) and the values under each. Each value can have
 //   - a price change (added to the wholesale, retail and market price),
+//   - an estimated weight in kg (blank = the product's own weight), used for the shipping fee,
 //   - a linked product photo (chosen from the product's own images): the product page slides to that photo
 //     when the customer picks the value, and image-style pickers show it as the tile,
 //   - a swatch colour (for colour-style pickers).
@@ -22,6 +23,7 @@ export function optionsToEditor(raw) {
       delta: v.priceDelta ? String(v.priceDelta) : "",
       image: v.image || "",
       swatch: v.swatch || "",
+      weight: v.weightKg ? String(v.weightKg) : "",
     })),
   }));
 }
@@ -32,7 +34,7 @@ export function editorToOptions(rows) {
   const names = new Set();
   for (const row of rows || []) {
     const name = row.name.trim();
-    const values = (row.values || []).filter((v) => v.value.trim() || String(v.delta).trim());
+    const values = (row.values || []).filter((v) => v.value.trim() || String(v.delta).trim() || String(v.weight || "").trim());
     if (!name && !values.length) continue; // empty row: ignore
     if (!name) throw new Error("Give every variant type a name (e.g. Curl, Size).");
     if (names.has(name.toLowerCase())) throw new Error(`"${name}" is listed twice. Use each variant type once.`);
@@ -49,6 +51,10 @@ export function editorToOptions(rows) {
       if (!Number.isFinite(delta)) throw new Error(`The price change for "${value}" under "${name}" isn't a number.`);
       const entry = { value };
       if (delta) entry.price_delta = delta;
+      const rawWeight = String(v.weight ?? "").trim();
+      const weight = rawWeight === "" ? 0 : Number(rawWeight);
+      if (!Number.isFinite(weight) || weight < 0) throw new Error(`The weight for "${value}" under "${name}" isn't a number.`);
+      if (weight) entry.weight_kg = weight;
       if (v.image) entry.image = v.image;
       if (v.swatch && row.type === "color") entry.swatch = v.swatch;
       return entry;
@@ -90,9 +96,9 @@ export default function OptionsEditor({ rows, onChange, knownOptions = [], image
   const setRow = (i, patch) => onChange(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   const setValue = (i, j, patch) =>
     setRow(i, { values: rows[i].values.map((v, idx) => (idx === j ? { ...v, ...patch } : v)) });
-  const addValue = (i) => setRow(i, { values: [...rows[i].values, { value: "", delta: "", image: "", swatch: "" }] });
+  const addValue = (i) => setRow(i, { values: [...rows[i].values, { value: "", delta: "", image: "", swatch: "", weight: "" }] });
   const removeValue = (i, j) => setRow(i, { values: rows[i].values.filter((_, idx) => idx !== j) });
-  const addType = (name = "") => onChange([...rows, { name, type: "auto", values: [{ value: "", delta: "", image: "", swatch: "" }] }]);
+  const addType = (name = "") => onChange([...rows, { name, type: "auto", values: [{ value: "", delta: "", image: "", swatch: "", weight: "" }] }]);
   const removeType = (i) => onChange(rows.filter((_, idx) => idx !== i));
 
   // Bulk: paste "C, D, DD" or one per line into the last value box and it splits into rows.
@@ -100,7 +106,7 @@ export default function OptionsEditor({ rows, onChange, knownOptions = [], image
     const parts = text.split(/[\n,;]+/).map((t) => t.trim()).filter(Boolean);
     if (parts.length < 2) return false;
     const current = rows[i].values.filter((_, idx) => idx !== j);
-    setRow(i, { values: [...current, ...parts.map((value) => ({ value, delta: "", image: "", swatch: "" }))] });
+    setRow(i, { values: [...current, ...parts.map((value) => ({ value, delta: "", image: "", swatch: "", weight: "" }))] });
     return true;
   }
 
@@ -197,6 +203,18 @@ export default function OptionsEditor({ rows, onChange, knownOptions = [], image
                           aria-label="Price change in Ksh"
                         />
                         {final !== null && <span className="opt-final">= Ksh {final.toLocaleString()}</span>}
+                      </div>
+                      <div className="opt-price">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.001"
+                          placeholder="Weight kg (est.)"
+                          value={v.weight || ""}
+                          onChange={(e) => setValue(i, j, { weight: e.target.value })}
+                          aria-label="Estimated weight in kg"
+                          title="Estimated weight of this variation in kg. Leave blank to use the product's weight."
+                        />
                       </div>
                       {row.type === "color" && (
                         <input

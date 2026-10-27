@@ -451,3 +451,25 @@
   .st-checks{gap:7px}
   .st-checks button{padding:10px 16px;font-size:17px}
 }
+
+/* final exam (Exam.jsx) */
+.ex{display:grid;gap:18px;max-width:720px}
+.ex-note{margin:0;font-size:13px;color:#7a6a6a;background:#f7f1ef;border-radius:10px;padding:10px 12px}
+.ex-q{border:0;margin:0;padding:0;display:grid;gap:10px}
+.ex-q legend{font-size:18px;line-height:1.4;color:var(--ink);font-weight:600;padding:0;margin-bottom:10px}
+.ex-q legend span{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--rose-deep);margin-bottom:4px}
+.ex-text{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px;background:var(--warm-white);color:var(--charcoal)}
+.ex-text:focus{outline:none;border-color:var(--rose)}
+.qz-opts button.picked{border-color:var(--rose-deep);background:#fbeff1}
+.qz-opts button.picked span{background:var(--rose-deep);color:#fff}
+.ex-feedback{font-style:italic}
+.lx-lesson.exam .lx-lesson-ic{color:var(--rose-deep)}
+
+/* admin lesson writer: live preview page (pages/academy/lesson-preview.astro) */
+.lp-root{--top:0px;min-height:100vh}
+.lp-empty{min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center;color:#8a7f81;font-size:14px}
+.lp-story .st-wrap{margin:0 auto}
+.lp-story .st{height:100vh;height:100dvh;border-radius:0;box-shadow:none}
+.lp-article{padding:14px 10px 40px}
+.lp-article .reader.mode-scroll{border-radius:16px}
+@media (max-width:699px){.lp-article .reader.mode-scroll{background:#fff;padding:4px 16px 24px}}

@@ -1,12 +1,42 @@
 ---
-const navItems = [
-  { href: "/shop", label: "Shop" },
-  { href: "/ecommerce#new-in", label: "New In" },
-  { href: "/ecommerce#how-ordering", label: "How Preorders Work" },
-];
+import { getNavCategories } from "../../data/nav-categories.js";
+
+const categories = await getNavCategories();
 ---
 
 <nav class="links mobile-nav" id="navLinks" aria-label="Main navigation">
-  {navItems.map((item) => <a href={item.href}>{item.label}</a>)}
+  <a href="/shop">Shop</a>
+  {categories.length > 0 && (
+    <div class="nav-cats" data-nav-cats>
+      <a href="/shop" class="nav-cats-trigger" aria-haspopup="true" aria-expanded="false">Categories <span class="nav-cats-caret" aria-hidden="true">▾</span></a>
+      <div class="cat-menu">
+        <div class="wrap cat-menu-grid">
+          {categories.map((cat) => (
+            <div class="cat-col">
+              <a class="cat-col-head" href={`/shop#${cat.id}`}>{cat.name}</a>
+              {cat.subs.map((sub) => <a class="cat-col-link" href={`/shop#${sub.id}`}>{sub.name}</a>)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )}
+  <a href="/ecommerce#how-ordering">How Preorders Work</a>
   <a href="/academy" class="academy-link">Lashtribe Academy →</a>
 </nav>
+
+<script is:inline>
+  // On phones the Categories row expands inside the menu instead of opening on hover.
+  (function () {
+    var box = document.querySelector('[data-nav-cats]');
+    if (!box) return;
+    var trigger = box.querySelector('.nav-cats-trigger');
+    var phone = window.matchMedia('(max-width: 880px)');
+    trigger.addEventListener('click', function (event) {
+      if (!phone.matches) return; // desktop: the link goes to /shop, the menu opens on hover
+      event.preventDefault();
+      var open = box.classList.toggle('open');
+      trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  })();
+</script>

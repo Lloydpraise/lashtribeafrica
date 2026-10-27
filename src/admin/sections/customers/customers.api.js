@@ -39,7 +39,25 @@ export async function fetchCustomerDetail(customerId) {
   if (orders.error) throw orders.error;
   if (products.error) throw products.error;
   if (courses.error) throw courses.error;
-  return { orders: orders.data || [], products: products.data || [], courses: courses.data || [] };
+  // quiz and final-exam results (migrations 0027 / 0028; empty before they are run)
+  const users = [...new Set((courses.data || []).map((c) => c.user_id).filter(Boolean))];
+  let quizzes = [];
+  let exams = [];
+  if (users.length) {
+    const [q, e] = await Promise.all([
+      supabase.from("quiz_attempts").select("course_id, lesson_id, pct, passed, finished_at, lesson:lessons(title)").in("user_id", users).not("finished_at", "is", null),
+      supabase.from("exam_attempts").select("course_id, status, pct, submitted_at").in("user_id", users).order("submitted_at", { ascending: false }),
+    ]);
+    quizzes = q.error ? [] : q.data || [];
+    exams = e.error ? [] : e.data || [];
+  }
+  return { orders: orders.data || [], products: products.data || [], courses: courses.data || [], quizzes, exams };
+}
+
+/** Takes a certificate away. With reset, the student also starts the course again (progress, quizzes, exam). */
+export async function revokeCertificate(userId, courseId, reset = true) {
+  const { error } = await supabase.rpc("admin_revoke_certificate", { p_user: userId, p_course: courseId, p_reset_progress: reset });
+  if (error) throw error;
 }
 
 export async function saveCustomerNotes(id, { notes, tags }) {
