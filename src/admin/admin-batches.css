@@ -72,3 +72,4 @@
   .bt-inline { width: 100%; }
   .bt-inline input, .bt-inline select { flex: 1 1 140px; }
 }
+.bt-status.arrived { background: rgba(63, 122, 84, 0.2); color: var(--green); font-weight: 700; }

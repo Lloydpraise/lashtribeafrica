@@ -17,6 +17,7 @@ let authBridgeStarted = false;
 export function startAuthBridge() {
   if (authBridgeStarted || !HAS_DB || typeof window === "undefined") return;
   authBridgeStarted = true;
+  startCartSync();
   supabase.auth.onAuthStateChange((event, session) => {
     window.dispatchEvent(new CustomEvent("lashtribe:auth-changed", { detail: { event, session } }));
   });
@@ -40,11 +41,11 @@ export async function signInProfile(email, password) {
 }
 
 /** Creates the login. The database trigger links it to any earlier guest orders (same email or phone). */
-export async function signUpProfile({ name, email, phone, password }) {
+export async function signUpProfile({ name, email, phone, password, marketing = false }) {
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password,
-    options: { data: { full_name: name.trim(), phone: (phone || "").trim() } },
+    options: { data: { full_name: name.trim(), phone: (phone || "").trim(), marketing_pref: Boolean(marketing) } },
   });
   if (error) {
     if (/already registered/i.test(error.message)) {
@@ -53,9 +54,76 @@ export async function signUpProfile({ name, email, phone, password }) {
     throw new Error(error.message);
   }
   if (!data.session) {
-    throw new Error("Your profile was created but needs email confirmation. Turn off 'Confirm email' in Supabase → Authentication → Providers → Email.");
+    // "Confirm email" is on: Supabase has emailed a 6-digit code. The caller shows a box to type it in.
+    rememberPendingVerify(email.trim());
+    const wait = new Error("We emailed you a 6-digit code. Enter it to finish creating your profile.");
+    wait.needsCode = true;
+    wait.email = email.trim();
+    throw wait;
   }
+  if (marketing) await setMyMarketing(true);
   return data.session;
+}
+
+// ---------- email confirmation code (OTP) ----------
+const VERIFY_KEY = "lashtribe_verify_email";
+export function rememberPendingVerify(email) {
+  try { sessionStorage.setItem(VERIFY_KEY, email); } catch { /* storage blocked */ }
+}
+export function pendingVerifyEmail() {
+  try { return sessionStorage.getItem(VERIFY_KEY) || ""; } catch { return ""; }
+}
+export function clearPendingVerify() {
+  try { sessionStorage.removeItem(VERIFY_KEY); } catch { /* storage blocked */ }
+}
+
+/** Confirms the 6-digit code from the sign-up email and signs the person in. */
+export async function verifySignupCode(email, token) {
+  const { data, error } = await supabase.auth.verifyOtp({ email: email.trim(), token: String(token).trim(), type: "signup" });
+  if (error) {
+    throw new Error(/expired|invalid/i.test(error.message) ? "That code isn't right or has expired. Check it, or ask for a new one." : error.message);
+  }
+  clearPendingVerify();
+  // the "email me offers" tick from the sign-up form is applied now that the profile exists
+  if (data.session?.user?.user_metadata?.marketing_pref) await setMyMarketing(true).catch(() => {});
+  return data.session;
+}
+
+export async function resendSignupCode(email) {
+  const { error } = await supabase.auth.resend({ type: "signup", email: email.trim() });
+  if (error) throw new Error(error.message);
+}
+
+/** The customer's own "email me about offers" choice. Never set for them, only by them. */
+export async function setMyMarketing(optIn) {
+  const { error } = await supabase.rpc("set_my_marketing", { p_opt_in: Boolean(optIn) });
+  if (error) throw new Error(error.message);
+}
+
+// ---------- saved cart, for abandoned-cart reminders (signed-in shoppers only) ----------
+let cartSyncStarted = false;
+let cartTimer;
+async function pushCart(userAction) {
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (!data?.session) return;
+    const cart = window.LashtribeCart?.getCart?.() || {};
+    // signing in on a new device with an empty cart must not wipe the cart saved from another one
+    if (!userAction && !Object.keys(cart).length) return;
+    await supabase.rpc("save_cart", { p_cart: cart });
+  } catch { /* reminders are a nicety: never get in the shopper's way */ }
+}
+export function startCartSync() {
+  if (cartSyncStarted || !HAS_DB || typeof window === "undefined") return;
+  cartSyncStarted = true;
+  window.addEventListener("lashtribe:cart-updated", () => {
+    clearTimeout(cartTimer);
+    cartTimer = setTimeout(() => pushCart(true), 2500);
+  });
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_IN") setTimeout(() => pushCart(false), 1500);
+  });
+  setTimeout(() => pushCart(false), 3000);
 }
 
 export async function signOutProfile() {

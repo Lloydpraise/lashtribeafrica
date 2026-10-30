@@ -60,6 +60,19 @@ export async function revokeCertificate(userId, courseId, reset = true) {
   if (error) throw error;
 }
 
+/** user_ids of every admin (admins can read academy_admins; migration 0047). */
+export async function fetchAdminIds() {
+  const { data, error } = await supabase.from("academy_admins").select("user_id");
+  if (error) throw error;
+  return new Set((data || []).map((a) => a.user_id));
+}
+
+/** Makes an account an admin or removes it. The database checks that you are an admin. */
+export async function setUserAdmin(userId, makeAdmin) {
+  const { error } = await supabase.rpc("set_user_admin", { p_user: userId, p_make_admin: makeAdmin });
+  if (error) throw error;
+}
+
 export async function saveCustomerNotes(id, { notes, tags }) {
   const { data, error } = await supabase
     .from("customers")

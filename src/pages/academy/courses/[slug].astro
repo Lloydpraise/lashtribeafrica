@@ -1,6 +1,7 @@
 ---
 import Layout from "../../../layouts/academy/Layout.astro";
 import Breadcrumbs from "../../../components/ecommerce/Breadcrumbs.astro";
+import ReviewsCard from "../../../components/reviews/ReviewsCard.astro";
 import SiteFooter from "../../../components/ecommerce/SiteFooter.astro";
 import { getPublishedCourses, formatKsh } from "../../../data/academy-catalog.js";
 import "../../../styles/course-info.css";
@@ -117,6 +118,8 @@ const jsonLd = {
         </div>
       </div>
     </section>
+
+    <ReviewsCard kind="course" id={course.id} />
 
     {related.length > 0 && (
       <section class="ci-related">

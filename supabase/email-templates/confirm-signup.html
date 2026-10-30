@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm your email</title></head>
+<body style="margin:0;padding:0;background:#F7F1F2;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F7F1F2;"><tr><td align="center" style="padding:28px 14px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+    <tr><td align="center" style="padding:0 0 18px;">
+      <a href="{{ .SiteURL }}" style="text-decoration:none;color:#222222;"><span style="font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;letter-spacing:.28em;">LASHTRIBE</span><span style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:18px;color:#A96A78;"> Africa</span></a>
+    </td></tr>
+    <tr><td style="background:#ffffff;border-radius:14px;border:1px solid #EADDE0;overflow:hidden;">
+      <div style="height:5px;background:#C98A96;"></div>
+      <div style="padding:30px 30px 8px;font-family:Helvetica,Arial,sans-serif;">
+        <h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-weight:600;font-size:26px;line-height:1.25;color:#222222;">Confirm your email</h1>
+        <p style="margin:0 0 18px;color:#222222;font-size:15px;line-height:1.65;">Welcome to Lashtribe Africa! Enter this 6-digit code on the sign-up page to finish creating your profile. It works for one hour.</p>
+        <div style="margin:6px 0 22px;padding:18px;background:#F3E4E7;border-radius:10px;text-align:center;"><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#A96A78;font-weight:700;margin-bottom:6px;">Your code</div><div style="font-family:Helvetica,Arial,sans-serif;font-size:36px;font-weight:700;letter-spacing:.35em;color:#222222;">{{ .Token }}</div></div>
+        
+        <p style="margin:0 0 22px;color:#6b6b6b;font-size:13px;line-height:1.6;">Didn't sign up? You can safely ignore this email and nothing will happen.</p>
+      </div>
+    </td></tr>
+    <tr><td align="center" style="padding:20px 16px 0;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.7;color:#6b6b6b;">
+      <div>This is an account email from Lashtribe Africa, sent to {{ .Email }}.</div>
+      <div style="margin-top:8px;color:#9a9a9a;">Lashtribe Africa &middot; Nairobi, Kenya</div>
+    </td></tr>
+  </table>
+</td></tr></table></body></html>

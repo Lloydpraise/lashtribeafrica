@@ -1,0 +1,42 @@
+/* Admin > Communications. Reuses the admin tokens from admin.css. */
+.cm-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; border-bottom: 1px solid var(--grey); }
+.cm-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 14px; font: 600 13px var(--sans); color: #777; cursor: pointer; margin-bottom: -1px; }
+.cm-tab.active { color: var(--black); border-bottom-color: var(--rose-deep); }
+.cm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.cm-stat { background: #fff; border: 1px solid var(--grey); border-radius: var(--radius); padding: 14px 16px; }
+.cm-stat b { display: block; font: 700 24px var(--serif); }
+.cm-stat span { font-size: 12px; color: #777; }
+.cm-stat.warn b { color: #b23a3a; }
+.cm-check { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cm-check li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.5; }
+.cm-dot { flex: none; width: 18px; height: 18px; border-radius: 50%; margin-top: 2px; background: var(--grey); display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700; }
+.cm-dot.ok { background: var(--green); }
+.cm-dot.todo { background: #c98a96; }
+.cm-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 980px) { .cm-split { grid-template-columns: 1fr; } }
+.cm-list { display: grid; gap: 8px; }
+.cm-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--grey); border-radius: var(--radius); padding: 11px 14px; cursor: pointer; text-align: left; font: 13.5px var(--sans); width: 100%; }
+.cm-item.active { border-color: var(--rose-deep); box-shadow: 0 0 0 2px rgba(169, 106, 120, 0.15); }
+.cm-item small { color: #888; display: block; margin-top: 2px; font-size: 12px; }
+.cm-kind { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 3px 8px; border-radius: 100px; white-space: nowrap; }
+.cm-kind.service { background: rgba(63, 122, 84, .14); color: var(--green); }
+.cm-kind.nudge { background: rgba(201, 138, 150, .2); color: var(--rose-deep); }
+.cm-kind.marketing { background: #111; color: #fff; }
+.cm-off { opacity: .55; }
+.cm-preview { width: 100%; height: 620px; border: 1px solid var(--grey); border-radius: var(--radius); background: #f7f1f2; }
+.cm-body { width: 100%; min-height: 190px; font: 13px/1.55 ui-monospace, Menlo, Consolas, monospace; padding: 10px 12px; border: 1px solid var(--grey); border-radius: var(--radius-sm); }
+.cm-hint { font-size: 12px; color: #777; line-height: 1.55; }
+.cm-hint code { background: #f3ecee; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+.cm-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.cm-row input[type="email"], .cm-row input[type="text"], .cm-row input[type="datetime-local"], .cm-row select { padding: 9px 12px; border: 1px solid var(--grey); border-radius: var(--radius-sm); font: 13px var(--sans); background: #fff; }
+.cm-st { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; background: var(--grey); color: #555; }
+.cm-st.sent { background: rgba(63, 122, 84, .15); color: var(--green); }
+.cm-st.failed { background: rgba(178, 58, 58, .12); color: #b23a3a; }
+.cm-st.queued, .cm-st.sending { background: rgba(201, 138, 150, .2); color: var(--rose-deep); }
+.cm-banner { padding: 12px 14px; border-radius: var(--radius); font-size: 13.5px; line-height: 1.5; margin-bottom: 16px; }
+.cm-banner.off { background: #fff4f4; border: 1px solid #f0c9c9; color: #8a2f2f; }
+.cm-banner.test { background: #fff9ec; border: 1px solid #efd9a0; color: #7a5a14; }
+.cm-banner.on { background: #f1f8f3; border: 1px solid #c8e0d0; color: #2f6a45; }
+.cm-secret { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; background: #f7f1f2; padding: 6px 8px; border-radius: 6px; }
+.cm-pre { background: #1d1b1c; color: #f3e4e7; padding: 12px 14px; border-radius: var(--radius); font: 12px/1.6 ui-monospace, Menlo, Consolas, monospace; overflow-x: auto; white-space: pre; }
+.cm-section-title { font: 700 11px var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--rose-deep); margin: 0 0 10px; }

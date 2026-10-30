@@ -1,0 +1,85 @@
+---
+import Layout from "../layouts/ecommerce/Layout.astro";
+import SiteHeader from "../components/ecommerce/SiteHeader.astro";
+import SiteFooter from "../components/ecommerce/SiteFooter.astro";
+---
+
+<Layout title="Email preferences | Lashtribe Africa">
+  <SiteHeader />
+  <main>
+    <div class="un-wrap">
+      <div class="un-eyebrow">Lashtribe Africa</div>
+      <h1 id="unTitle">Email preferences</h1>
+      <p class="un-sub" id="unText">One moment…</p>
+      <div class="un-actions">
+        <button id="unYes" type="button" hidden>Unsubscribe me</button>
+        <button id="unBack" type="button" class="ghost" hidden>Resubscribe</button>
+      </div>
+      <p class="un-note">You will still get emails about your orders, payments, shipping and courses, because those are about something you did.</p>
+    </div>
+  </main>
+  <SiteFooter />
+
+  <style is:global>
+    .un-wrap { max-width: 520px; margin: 0 auto; padding: 56px 20px 90px; text-align: center; font-family: var(--sans); }
+    .un-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: var(--rose-deep); font-weight: 700; margin-bottom: 8px; }
+    .un-wrap h1 { font-family: var(--serif); font-size: 34px; margin: 0 0 10px; }
+    .un-sub { color: #666; font-size: 15px; margin: 0 0 24px; line-height: 1.6; }
+    .un-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .un-actions button { background: var(--black); color: #fff; border: none; border-radius: 100px; padding: 13px 28px; font: 600 12px var(--sans); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+    .un-actions button.ghost { background: #fff; color: var(--black); border: 1px solid var(--grey); }
+    .un-note { color: #999; font-size: 12.5px; margin-top: 28px; line-height: 1.6; }
+  </style>
+
+  <script>
+    import { supabase } from "../services/service.js";
+
+    const token = new URLSearchParams(window.location.search).get("t") || "";
+    const text = document.getElementById("unText")!;
+    const title = document.getElementById("unTitle")!;
+    const yes = document.getElementById("unYes") as HTMLButtonElement;
+    const back = document.getElementById("unBack") as HTMLButtonElement;
+    const valid = /^[0-9a-f-]{36}$/i.test(token);
+
+    function ask() {
+      title.textContent = "Unsubscribe from marketing emails?";
+      text.textContent = "We will stop sending offers, cart reminders and newsletters to this address.";
+      yes.hidden = false;
+      back.hidden = true;
+    }
+
+    if (!valid) {
+      title.textContent = "This link doesn't look right";
+      text.textContent = "Please use the unsubscribe link from one of our emails, or reply to the email and we will remove you by hand.";
+    } else {
+      ask();
+    }
+
+    yes.addEventListener("click", async () => {
+      yes.disabled = true;
+      const { data, error } = await supabase.rpc("email_unsubscribe", { p_token: token });
+      yes.disabled = false;
+      if (error || !data) {
+        text.textContent = "Something went wrong. Please try again, or reply to any of our emails and we will remove you by hand.";
+        return;
+      }
+      title.textContent = "You're unsubscribed";
+      text.textContent = "We won't send you marketing emails any more. Changed your mind? You can resubscribe below.";
+      yes.hidden = true;
+      back.hidden = false;
+    });
+
+    back.addEventListener("click", async () => {
+      back.disabled = true;
+      const { data, error } = await supabase.rpc("email_resubscribe", { p_token: token });
+      back.disabled = false;
+      if (error || !data) {
+        text.textContent = "Something went wrong. Please try again.";
+        return;
+      }
+      title.textContent = "Welcome back";
+      text.textContent = "You're subscribed again. Thank you!";
+      back.hidden = true;
+    });
+  </script>
+</Layout>

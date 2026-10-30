@@ -3,6 +3,7 @@ import EmptyState from "../components/EmptyState.jsx";
 import OfferForm from "./offers/OfferForm.jsx";
 import { fetchOffers, createOffer, updateOffer, deleteOffer, toggleOfferActive } from "./offers/offers.api.js";
 import { fetchProducts, fetchCategories } from "./products/products.api.js";
+import { draftFromOffer } from "./communications/comms.api.js";
 
 function emptyOffer() {
   return {
@@ -153,6 +154,16 @@ export default function Offers() {
                     <div className="table-actions">
                       <button className="admin-btn secondary" onClick={() => handleToggle(o)}>
                         {o.is_active ? "Deactivate" : "Activate"}
+                      </button>
+                      <button
+                        className="admin-btn secondary"
+                        title="Write an email about this offer to customers who opted in"
+                        onClick={() => {
+                          try { sessionStorage.setItem("comms:new-campaign", JSON.stringify(draftFromOffer(o))); } catch { /* storage blocked */ }
+                          window.location.hash = "communications";
+                        }}
+                      >
+                        ✉ Email this offer
                       </button>
                       <button className="admin-btn secondary" onClick={() => setEditing(o)}>Edit</button>
                       <button className="admin-btn secondary danger" onClick={() => setConfirmDelete(o)}>Delete</button>

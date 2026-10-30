@@ -10,9 +10,12 @@ import Orders from "./sections/Orders.jsx";
 import SiteSettings from "./sections/SiteSettings.jsx";
 import Kits from "./sections/Kits.jsx";
 import Offers from "./sections/Offers.jsx";
+import Communications from "./sections/Communications.jsx";
+import Reviews from "./sections/Reviews.jsx";
 import Policies from "./sections/Policies.jsx";
 import AdminLogin from "./AdminLogin.jsx";
 import { supabase } from "../services/service.js";
+import { getSettings as getCommsSettings, emailsLive } from "./sections/communications/comms.api.js";
 import "./admin.css";
 import "./admin-mobile.css";
 import "./admin-customers.css";
@@ -55,6 +58,8 @@ const SECTIONS = {
   settings: { title: "Site Settings", subtitle: "Hero, shipping batches, suppliers & announcement ticker", Component: SiteSettings },
   kits: { title: "Kits", subtitle: "Kit Strip bundles — pick which one is live", Component: Kits },
   offers: { title: "Offers", subtitle: "% off and free shipping promotions", Component: Offers },
+  communications: { title: "Communications", subtitle: "Automatic emails, campaigns and delivery log", Component: Communications },
+  reviews: { title: "Reviews", subtitle: "What paying customers say, shown on product and course pages", Component: Reviews },
   policies: { title: "Policies", subtitle: "Privacy, shipping & terms pages", Component: Policies },
 };
 
@@ -65,7 +70,14 @@ function sectionFromHash() {
 
 function AdminShell({ onLogout }) {
   const [active, setActive] = useState("dashboard");
+  const [commsLive, setCommsLive] = useState(false);
   const contentRef = useRef(null);
+
+  // Until email is connected (domain moved), the Communications header just says it's waiting.
+  useEffect(() => {
+    if (active !== "communications") return;
+    getCommsSettings().then((s) => setCommsLive(emailsLive(s))).catch(() => setCommsLive(false));
+  }, [active]);
 
   useEffect(() => {
     setActive(sectionFromHash());
@@ -102,7 +114,8 @@ function AdminShell({ onLogout }) {
     window.scrollTo(0, 0);
   }
 
-  const { title, subtitle, Component, action } = SECTIONS[active] ?? SECTIONS.dashboard;
+  const { title, subtitle: baseSubtitle, Component, action } = SECTIONS[active] ?? SECTIONS.dashboard;
+  const subtitle = active === "communications" && !commsLive ? "Emails awaiting domain transfer" : baseSubtitle;
 
   return (
     <div className="admin-root">

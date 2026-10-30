@@ -7,6 +7,8 @@ const NAV_ITEMS = [
   { key: "settings", label: "Site Settings" },
   { key: "kits", label: "Kits" },
   { key: "offers", label: "Offers" },
+  { key: "communications", label: "Communications" },
+  { key: "reviews", label: "Reviews" },
   { key: "policies", label: "Policies" },
 ];
 
@@ -34,6 +36,12 @@ const ICONS = {
   ),
   offers: (
     <path d="M2 8.6 8.6 2H14v5.4L7.4 14 2 8.6Z M11 5.3a.4.4 0 1 0 0-.8.4.4 0 0 0 0 .8Z" strokeLinecap="round" strokeLinejoin="round" />
+  ),
+  communications: (
+    <path d="M2 4.5h12v8H2Zm0 .5 6 4.5L14 5" strokeLinecap="round" strokeLinejoin="round" />
+  ),
+  reviews: (
+    <path d="M8 1.8l1.9 4 4.3.55-3.15 3 .8 4.3L8 11.55 4.15 13.65l.8-4.3-3.15-3 4.3-.55Z" strokeLinecap="round" strokeLinejoin="round" />
   ),
   policies: (
     <path d="M4 1.5h6l3 3V14a.5.5 0 0 1-.5.5h-9A.5.5 0 0 1 3 14V2a.5.5 0 0 1 .5-.5H4Zm5.5.2V5h3.2M5.5 8.5h5M5.5 11h5" strokeLinecap="round" strokeLinejoin="round" />

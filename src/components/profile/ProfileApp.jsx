@@ -115,7 +115,7 @@ function Overview({ session, customer, orders, courses, certificates, onSaved })
         </div>
         <label className="pf-check">
           <input type="checkbox" checked={form.marketing} onChange={(e) => setForm({ ...form, marketing: e.target.checked })} />
-          <span>Send me restock alerts and offers.</span>
+          <span>Email me about my cart, new stock, offers and Academy news. I can unsubscribe at any time.</span>
         </label>
         {msg.text && <p className={msg.type === "error" ? "pf-error" : "pf-ok"}>{msg.text}</p>}
         <button className="pf-btn" type="submit" disabled={saving}>{saving ? "Saving…" : "Save details"}</button>

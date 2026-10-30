@@ -1,0 +1,282 @@
+---
+import Layout from "../layouts/ecommerce/Layout.astro";
+import SiteHeader from "../components/ecommerce/SiteHeader.astro";
+import SiteFooter from "../components/ecommerce/SiteFooter.astro";
+import "../styles/reviews.css";
+---
+
+<Layout title="Leave a review | Lashtribe Africa">
+  <SiteHeader />
+  <main>
+    <div class="rvp-wrap">
+      <div class="rvp-eyebrow">Lashtribe Africa</div>
+      <h1 id="rvTitle">Leave a review</h1>
+      <p class="rvp-sub" id="rvSub">One moment…</p>
+      <div id="rvBanner" class="rvp-banner" hidden>
+        <strong>Preview.</strong> This is exactly what your customers see when they open the link in the email. Nothing you do here is saved.
+      </div>
+
+      <form id="rvForm" class="rvp-card" hidden novalidate>
+        <div class="rvp-block">
+          <span class="rvp-label" id="rvRateLabel">How would you rate it?</span>
+          <div class="rvp-rate" id="rvRate" role="slider" tabindex="0" aria-labelledby="rvRateLabel" aria-valuemin="1" aria-valuemax="5" aria-valuenow="0" aria-valuetext="No rating yet">
+            {
+              [1, 2, 3, 4, 5].map(() => (
+                <svg class="rvp-star" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 2.2l2.95 6.2 6.8.9-4.98 4.7 1.27 6.75L12 17.4l-6.04 3.35 1.27-6.75L2.25 9.3l6.8-.9z" />
+                </svg>
+              ))
+            }
+          </div>
+          <div class="rvp-rate-label" id="rvRateText">Slide across the stars, or tap one</div>
+        </div>
+
+        <div class="rvp-block">
+          <span class="rvp-label">Where should it show up?</span>
+          <div class="rvp-items" id="rvItems"></div>
+          <p class="rvp-hint">Your review appears on each one you keep ticked. Untick any it doesn't apply to.</p>
+        </div>
+
+        <div class="rvp-block">
+          <label class="rvp-label" for="rvText">Tell us more (optional)</label>
+          <textarea id="rvText" class="rvp-text" maxlength="2000" placeholder="What did you like? How did it work for your clients?"></textarea>
+          <div class="rvp-count"><span id="rvCount">0</span> / 2000</div>
+        </div>
+
+        <div class="rvp-block">
+          <label class="rvp-label" for="rvName">Name shown with your review</label>
+          <input id="rvName" class="rvp-input" type="text" maxlength="40" autocomplete="name" placeholder="e.g. Wanjiru K." />
+        </div>
+
+        <p class="rvp-err" id="rvErr" role="alert" hidden></p>
+        <button class="rvp-btn" id="rvSubmit" type="submit">Post my review</button>
+      </form>
+
+      <div id="rvDone" class="rvp-card rvp-done" hidden></div>
+    </div>
+  </main>
+  <SiteFooter />
+
+  <script>
+    import { supabase } from "../services/service.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("t") || "";
+    const preview = params.get("preview") === "1";
+
+    const $ = (id: string) => document.getElementById(id)!;
+    const title = $("rvTitle");
+    const sub = $("rvSub");
+    const form = $("rvForm") as HTMLFormElement;
+    const done = $("rvDone");
+    const err = $("rvErr");
+    const submit = $("rvSubmit") as HTMLButtonElement;
+    const rate = $("rvRate");
+    const rateText = $("rvRateText");
+    const itemsBox = $("rvItems");
+    const text = $("rvText") as HTMLTextAreaElement;
+    const nameInput = $("rvName") as HTMLInputElement;
+
+    type Item = { kind: "product" | "course"; id: string; name: string; slug?: string; image?: string | null };
+    let items: Item[] = [];
+    let rating = 0;
+    const picked = new Set<string>();
+    const LABELS = ["", "Poor", "Fair", "Good", "Very good", "Excellent!"];
+
+    const el = (tag: string, cls?: string, content?: string) => {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (content != null) e.textContent = content;
+      return e;
+    };
+
+    // ---- the stars: slide, tap or use the arrow keys
+    function paint() {
+      rate.querySelectorAll(".rvp-star").forEach((s, i) => s.classList.toggle("on", i < rating));
+      rate.setAttribute("aria-valuenow", String(rating));
+      rate.setAttribute("aria-valuetext", rating ? `${rating} out of 5, ${LABELS[rating]}` : "No rating yet");
+      rateText.textContent = rating ? LABELS[rating] : "Slide across the stars, or tap one";
+    }
+    function fromPointer(e: PointerEvent) {
+      const box = rate.getBoundingClientRect();
+      const stars = Array.from(rate.querySelectorAll(".rvp-star")).map((s) => s.getBoundingClientRect());
+      const first = stars[0].left;
+      const last = stars[stars.length - 1].right;
+      const x = Math.max(first, Math.min(last, e.clientX));
+      const next = Math.max(1, Math.min(5, Math.ceil(((x - first) / (last - first)) * 5)));
+      void box;
+      if (next !== rating) {
+        rating = next;
+        paint();
+      }
+    }
+    let dragging = false;
+    rate.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      rate.setPointerCapture(e.pointerId);
+      fromPointer(e);
+    });
+    rate.addEventListener("pointermove", (e) => dragging && fromPointer(e));
+    const stop = () => (dragging = false);
+    rate.addEventListener("pointerup", stop);
+    rate.addEventListener("pointercancel", stop);
+    rate.addEventListener("keydown", (e) => {
+      let next = rating;
+      if (e.key === "ArrowRight" || e.key === "ArrowUp") next = Math.min(5, rating + 1);
+      else if (e.key === "ArrowLeft" || e.key === "ArrowDown") next = Math.max(1, rating - 1);
+      else if (e.key === "Home") next = 1;
+      else if (e.key === "End") next = 5;
+      else if (/^[1-5]$/.test(e.key)) next = Number(e.key);
+      else return;
+      e.preventDefault();
+      rating = next;
+      paint();
+    });
+
+    text.addEventListener("input", () => ($("rvCount").textContent = String(text.value.length)));
+
+    // ---- which products / courses
+    const keyOf = (i: Item) => `${i.kind}:${i.id}`;
+    function drawItems() {
+      itemsBox.replaceChildren();
+      items.forEach((it) => {
+        const k = keyOf(it);
+        const row = el("label", "rvp-item" + (picked.has(k) ? " on" : ""));
+        const box = document.createElement("input");
+        box.type = "checkbox";
+        box.checked = picked.has(k);
+        box.addEventListener("change", () => {
+          if (box.checked) picked.add(k);
+          else picked.delete(k);
+          row.classList.toggle("on", box.checked);
+        });
+        const tick = el("span", "rvp-tick", "✓");
+        tick.setAttribute("aria-hidden", "true");
+        let thumb: HTMLElement;
+        if (it.image) {
+          const img = document.createElement("img");
+          img.src = it.image;
+          img.alt = "";
+          img.loading = "lazy";
+          thumb = img;
+        } else thumb = el("span", "rvp-noimg");
+        const label = el("span", "rvp-name", it.name);
+        const kind = el("span", "rvp-kind", it.kind === "course" ? "Course" : "Product");
+        row.append(box, tick, thumb, label, kind);
+        itemsBox.append(row);
+      });
+    }
+
+    // ---- loading
+    function closed(heading: string, message: string) {
+      title.textContent = heading;
+      sub.textContent = message;
+      form.hidden = true;
+    }
+
+    async function init() {
+      if (preview) {
+        $("rvBanner").hidden = false;
+        title.textContent = "How was your order?";
+        sub.textContent = "Order LT-1042 · tell other lash artists what you think.";
+        items = [
+          { kind: "product", id: "sample-1", name: "Pro Bond Adhesive 5ml" },
+          { kind: "product", id: "sample-2", name: "Classic Lash Tray, C Curl 0.15" },
+          { kind: "course", id: "sample-3", name: "Classic Lashes Masterclass" },
+        ];
+        nameInput.value = "Wanjiru K.";
+      } else if (!/^[0-9a-f-]{36}$/i.test(token)) {
+        closed("This link doesn't look right", "Please use the button in your review email, or reply to the email and we will help.");
+        return;
+      } else {
+        const { data, error } = await supabase.rpc("review_request_info", { p_token: token });
+        if (error || !data) {
+          closed("Something went wrong", "Please try the link again in a moment.");
+          return;
+        }
+        if (data.state === "used") return closed("Thank you!", "We already have your review for this order. It means a lot to us.");
+        if (data.state !== "open") return closed("This link isn't valid", "It may have expired. Reply to your email and we will sort it out.");
+        const first = data.first_name ? `${data.first_name}, how` : "How";
+        title.textContent = `${first} was your order?`;
+        sub.textContent = `Order ${data.order_no} · your review helps other lash artists choose.`;
+        items = data.items || [];
+        nameInput.value = data.suggested_name || "";
+      }
+      items.forEach((i) => picked.add(keyOf(i)));
+      drawItems();
+      form.hidden = false;
+    }
+
+    // ---- sending
+    function sampleCard(r: { rating: number; name: string; body: string }) {
+      const c = el("article", "rv-card");
+      const wrap = el("span", "rv-stars");
+      const fill = el("span");
+      fill.style.width = `${r.rating * 20}%`;
+      wrap.append(fill);
+      c.append(wrap);
+      if (r.body) c.append(el("p", "", r.body));
+      const who = el("div", "rv-who");
+      const nm = el("span");
+      nm.append(el("strong", "", r.name || "Verified buyer"));
+      who.append(nm, el("span", "rv-verified", "Verified buyer"));
+      c.append(who);
+      return c;
+    }
+
+    function thanks(r: { rating: number; name: string; body: string }, chosen: Item[]) {
+      form.hidden = true;
+      $("rvBanner").hidden = !preview;
+      title.textContent = preview ? "Preview: this is the thank-you" : "Thank you!";
+      sub.textContent = preview ? "Nothing was saved." : "Your review is live. This is how it looks:";
+      done.replaceChildren();
+      const check = el("div", "rvp-check", "✓");
+      done.append(check, sampleCard(r));
+      if (!preview) {
+        const links = el("div", "rvp-links");
+        chosen.forEach((it) => {
+          if (!it.slug) return;
+          const a = document.createElement("a");
+          a.href = it.kind === "course" ? `/academy/courses/${it.slug}` : `/ecommerce/product/${it.slug}`;
+          a.textContent = `See it on ${it.name}`;
+          links.append(a);
+        });
+        if (links.childElementCount) done.append(links);
+      }
+      done.hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      err.hidden = true;
+      const chosen = items.filter((i) => picked.has(keyOf(i)));
+      const fail = (m: string) => {
+        err.textContent = m;
+        err.hidden = false;
+      };
+      if (!rating) return fail("Please choose your stars first: slide across them or tap one.");
+      if (!chosen.length) return fail("Tick at least one product or course this review is about.");
+
+      const review = { rating, name: nameInput.value.trim(), body: text.value.trim() };
+      if (preview) return thanks(review, chosen);
+
+      submit.disabled = true;
+      submit.textContent = "Posting…";
+      const { data, error } = await supabase.rpc("submit_review", {
+        p_token: token,
+        p_rating: rating,
+        p_body: review.body,
+        p_name: review.name,
+        p_targets: chosen.map((i) => ({ kind: i.kind, id: i.id })),
+      });
+      submit.disabled = false;
+      submit.textContent = "Post my review";
+      if (error || !data) return fail(error?.message || "Something went wrong. Please try again.");
+      thanks({ rating, name: data.name, body: data.body }, chosen);
+    });
+
+    paint();
+    init();
+  </script>
+</Layout>

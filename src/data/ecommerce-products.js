@@ -29,6 +29,22 @@ function mapCategory(c) {
   return { id: c.id, name: c.name, slug: c.slug, sortOrder: c.sort_order ?? 0, parent };
 }
 
+const text = (v) => (typeof v === "string" ? v.trim() : "");
+const list = (v) => (Array.isArray(v) ? v : []);
+
+// Keeps only well-formed SEO entries, so a half-filled row never breaks a product page.
+function mapSeo(seo) {
+  if (!seo || typeof seo !== "object") return null;
+  return {
+    title: text(seo.title),
+    meta: text(seo.meta),
+    alt: text(seo.alt),
+    sections: list(seo.sections).filter((s) => text(s?.heading) && text(s?.body)),
+    specs: list(seo.specs).filter((s) => text(s?.label) && text(s?.value)),
+    faqs: list(seo.faqs).filter((f) => text(f?.q) && text(f?.a)),
+  };
+}
+
 function mapRow(row, slugById) {
   const options = normalizeOptions(row.options);
   const { fromDelta, varies } = priceSpread(options);
@@ -38,6 +54,7 @@ function mapRow(row, slugById) {
     name: row.name,
     description: row.description || "",
     features: row.features || [],
+    seo: mapSeo(row.seo),
     note: row.note || "",
     badge: row.badge || "",
     icon: row.icon || "",
@@ -65,33 +82,41 @@ const FLAT_CATEGORY_COLUMNS = COLUMNS.replace(
 // Same list without the 0016 columns, so a site deployed before the migration is run still shows its products.
 const LEGACY_COLUMNS = FLAT_CATEGORY_COLUMNS.replace(" retail_price,", "").replace(" options,", "");
 
+// SEO copy (0045): { title, meta, keyword, sections:[{heading,body}], specs:[{label,value}], faqs:[{q,a}], alt }.
+// Read separately so the shop still builds before the migration is run.
+const SEO_COLUMN = ", seo";
+
 const isMissingColumn = (error) =>
   error.code === "42703" || error.code === "PGRST200" || /column .* does not exist|relationship/i.test(error.message || "");
 
-async function readAllActive(columns = COLUMNS) {
+async function readAllActive(columns = COLUMNS, withSeo = true) {
   const rows = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await supabase
       .from("products")
-      .select(columns)
+      .select(withSeo ? columns + SEO_COLUMN : columns)
       .eq("status", "active")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false })
       .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
     if (error) {
+      if (withSeo && isMissingColumn(error) && /seo/.test(error.message || "")) {
+        console.warn("[ecommerce-products] No SEO copy yet (migration 0045_product_seo.sql). Showing plain descriptions.");
+        return readAllActive(columns, false);
+      }
       if (columns === COLUMNS && isMissingColumn(error)) {
         console.warn(
           "[ecommerce-products] Categories have no subcategories yet (migration 0025_category_tree.sql). Using flat categories."
         );
-        return readAllActive(FLAT_CATEGORY_COLUMNS);
+        return readAllActive(FLAT_CATEGORY_COLUMNS, withSeo);
       }
       if (columns === FLAT_CATEGORY_COLUMNS && isMissingColumn(error)) {
         console.warn(
           "[ecommerce-products] The products table is missing the columns added by migration 0016_pricing_variants.sql. " +
             "Showing products without retail prices or options until it is run."
         );
-        return readAllActive(LEGACY_COLUMNS);
+        return readAllActive(LEGACY_COLUMNS, withSeo);
       }
       throw error;
     }

@@ -44,8 +44,8 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
           </div>
 
           <label class="checkbox-row">
-            <input type="checkbox" checked />
-            <span>Send me preorder updates and stock alerts for future batches.</span>
+            <input type="checkbox" id="marketingOptIn" />
+            <span>Email me about my cart, new stock and offers. I can unsubscribe at any time.</span>
           </label>
 
           <div id="profileBlock">
@@ -279,11 +279,19 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
       placing = true;
       buttons.forEach((b) => { b.disabled = true; b.textContent = "Placing order…"; });
       try {
+        const marketing = (document.getElementById("marketingOptIn") as HTMLInputElement | null)?.checked ?? false;
+        let needsCode = false;
         if (wantsProfile) {
-          await signUpProfile({ name, email, phone, password });
-          signedIn = true;
+          try {
+            await signUpProfile({ name, email, phone, password, marketing });
+            signedIn = true;
+          } catch (err: any) {
+            // "Confirm email" is on: the order still goes through as a guest order, and the 6-digit code is
+            // entered on the profile page (the guest order is linked to the profile once it is confirmed)
+            if (!err?.needsCode) throw err;
+            needsCode = true;
+          }
         }
-        const marketing = (document.querySelector('.checkout-form input[type="checkbox"]') as HTMLInputElement | null)?.checked ?? false;
         const result = await placeOrder({
           customer: { full_name: name, email, phone, delivery_area: area, marketing_opt_in: marketing },
           items,
@@ -297,7 +305,7 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
           window.location.href = payment.redirectUrl;
           return;
         }
-        showDone(result, wantsProfile, payment);
+        showDone(result, wantsProfile, payment, needsCode ? email : "");
       } catch (err: any) {
         say(err?.message || "We couldn't place your order. Please try again.", "error");
         buttons.forEach((b) => { b.disabled = false; b.textContent = "Place order"; });
@@ -305,7 +313,7 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
       }
     }
 
-    function showDone(result: any, createdProfile: boolean, payment?: any) {
+    function showDone(result: any, createdProfile: boolean, payment?: any, confirmEmail = "") {
       const panel = document.querySelector(".checkout-panel");
       if (!panel) return;
       panel.innerHTML = "";
@@ -320,6 +328,15 @@ import CartCatalogScript from "../../components/ecommerce/CartCatalogScript.astr
         ? `Your order will ship with the ${formatBatchDate(result.ship_date)} batch. We'll contact you shortly to confirm payment.`
         : "We'll contact you shortly to confirm payment and your shipment date.";
       wrap.append(h, p1, p2);
+      if (confirmEmail) {
+        const pc = document.createElement("p");
+        pc.textContent = `We emailed a 6-digit code to ${confirmEmail}. `;
+        const ac = document.createElement("a");
+        ac.href = "/profile";
+        ac.textContent = "Enter it on your profile page to finish creating your profile →";
+        pc.append(ac);
+        wrap.append(pc);
+      }
       if (payment?.note === "online_payment_unavailable") {
         const pn = document.createElement("p");
         pn.textContent = "Online payment isn't available right now, so we'll confirm payment with you directly. Your order is safe.";

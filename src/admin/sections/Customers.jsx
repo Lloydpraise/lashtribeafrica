@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import EmptyState from "../components/EmptyState.jsx";
-import { fetchCustomers, fetchCustomerDetail, saveCustomerNotes, revokeCertificate } from "./customers/customers.api.js";
+import { fetchCustomers, fetchCustomerDetail, saveCustomerNotes, revokeCertificate, fetchAdminIds, setUserAdmin } from "./customers/customers.api.js";
 
 const ksh = (v) => `Ksh ${Number(v || 0).toLocaleString()}`;
 const day = (iso) => (iso ? new Date(iso).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : "—");
@@ -16,6 +16,7 @@ const SEGMENTS = [
   { key: "inactive", label: "No order in 60+ days" },
   { key: "profile_only", label: "Profile, no orders" },
   { key: "guests", label: "Guests (no profile)" },
+  { key: "admins", label: "Admins" },
 ];
 
 function inSegment(c, key) {
@@ -27,6 +28,7 @@ function inSegment(c, key) {
     case "inactive": return c.orders_count > 0 && (daysSince(c.last_order_at) ?? 0) >= 60;
     case "profile_only": return c.user_id && c.orders_count === 0;
     case "guests": return !c.user_id;
+    case "admins": return c.is_admin;
     default: return true;
   }
 }
@@ -41,6 +43,7 @@ const SORTS = {
 function TypeTags({ c }) {
   return (
     <div className="cx-tags">
+      {c.is_admin && <span className="cx-tag repeat">Admin</span>}
       {c.bought_products && <span className="cx-tag shopper">Shopper</span>}
       {c.bought_courses && <span className="cx-tag student">Student</span>}
       {c.orders_count >= 2 && <span className="cx-tag repeat">Repeat</span>}
@@ -81,7 +84,7 @@ function SpendByMonth({ orders }) {
   );
 }
 
-function CustomerDetail({ customer, onClose, onUpdated }) {
+function CustomerDetail({ customer, onClose, onUpdated, onAdminChanged }) {
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState("");
   const [notes, setNotes] = useState(customer.notes || "");
@@ -105,6 +108,26 @@ function CustomerDetail({ customer, onClose, onUpdated }) {
       setReload((n) => n + 1);
     } catch (e) {
       setError(e.message || "Couldn't revoke the certificate.");
+    }
+  }
+
+  const [adminBusy, setAdminBusy] = useState(false);
+  async function toggleAdmin() {
+    const make = !customer.is_admin;
+    const who = customer.full_name || customer.email || "this account";
+    const msg = make
+      ? `Make ${who} an admin?\n\nThey will be able to see and change everything in this admin, including orders, customers and other admins.`
+      : `Remove admin access from ${who}?`;
+    if (!window.confirm(msg)) return;
+    setAdminBusy(true);
+    setError("");
+    try {
+      await setUserAdmin(customer.user_id, make);
+      onAdminChanged(customer.user_id, make);
+    } catch (e) {
+      setError(e.message || "Couldn't change admin access.");
+    } finally {
+      setAdminBusy(false);
     }
   }
 
@@ -145,6 +168,11 @@ function CustomerDetail({ customer, onClose, onUpdated }) {
             {wa && <a className="admin-btn secondary" href={wa} target="_blank" rel="noreferrer">WhatsApp</a>}
             {customer.phone && <a className="admin-btn secondary" href={`tel:${customer.phone}`}>Call</a>}
             {customer.email && <a className="admin-btn secondary" href={`mailto:${customer.email}`}>Email</a>}
+            {customer.user_id && (
+              <button className="admin-btn secondary" type="button" onClick={toggleAdmin} disabled={adminBusy}>
+                {adminBusy ? "Saving…" : customer.is_admin ? "Remove admin" : "Make admin"}
+              </button>
+            )}
             <TypeTags c={customer} />
           </div>
 
@@ -312,8 +340,8 @@ export default function Customers() {
   const [open, setOpen] = useState(null);
 
   useEffect(() => {
-    fetchCustomers()
-      .then(setRows)
+    Promise.all([fetchCustomers(), fetchAdminIds().catch(() => new Set())])
+      .then(([list, admins]) => setRows(list.map((c) => ({ ...c, is_admin: Boolean(c.user_id && admins.has(c.user_id)) }))))
       .catch((e) => setError(e.message || "Couldn't load customers. Has migration 0011 been run, and are you signed in as an admin?"))
       .finally(() => setLoading(false));
   }, []);
@@ -347,6 +375,12 @@ export default function Customers() {
   function updateRow(next) {
     setRows((prev) => prev.map((c) => (c.id === next.id ? next : c)));
     setOpen(next);
+  }
+
+  // one auth account can sit on more than one customer row, so update them all
+  function adminChanged(userId, isAdmin) {
+    setRows((prev) => prev.map((c) => (c.user_id === userId ? { ...c, is_admin: isAdmin } : c)));
+    setOpen((o) => (o && o.user_id === userId ? { ...o, is_admin: isAdmin } : o));
   }
 
   if (error) return <p className="admin-gate-error">{error}</p>;
@@ -409,7 +443,7 @@ export default function Customers() {
         </div>
       )}
 
-      {open && <CustomerDetail key={open.id} customer={open} onClose={() => setOpen(null)} onUpdated={updateRow} />}
+      {open && <CustomerDetail key={open.id} customer={open} onClose={() => setOpen(null)} onUpdated={updateRow} onAdminChanged={adminChanged} />}
     </div>
   );
 }

@@ -1,0 +1,109 @@
+---
+// Customer reviews for one product or course. The page is built ahead of time, so the reviews are fetched in the
+// browser (get_reviews). Add ?preview-reviews to any product or course address to see a clearly labelled sample card.
+import "../../styles/reviews.css";
+
+interface Props {
+  kind: "product" | "course";
+  id: string;
+  heading?: string;
+}
+const { kind, id, heading = "Customer reviews" } = Astro.props;
+---
+
+<section class="rv-section" data-rv-kind={kind} data-rv-id={id} aria-label={heading}>
+  <div class="rv-head">
+    <h2>{heading}</h2>
+    <div class="rv-summary" hidden></div>
+  </div>
+  <div class="rv-list" aria-live="polite"></div>
+</section>
+
+<script>
+  import { supabase } from "../../services/service.js";
+
+  const SAMPLE = {
+    rating: 5,
+    name: "Wanjiru K.",
+    body: "The quality is amazing and it arrived exactly when they said it would. I have already reordered for my clients.",
+    at: new Date().toISOString(),
+    sample: true,
+  };
+
+  const stars = (rating: number, small = false) => {
+    const wrap = document.createElement("span");
+    wrap.className = "rv-stars" + (small ? " sm" : "");
+    wrap.setAttribute("role", "img");
+    wrap.setAttribute("aria-label", `${rating} out of 5 stars`);
+    const fill = document.createElement("span");
+    fill.style.width = `${Math.max(0, Math.min(5, rating)) * 20}%`;
+    wrap.append(fill);
+    return wrap;
+  };
+
+  const el = (tag: string, cls?: string, text?: string) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  };
+
+  const dateLabel = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleDateString("en-KE", { month: "short", year: "numeric" });
+    } catch {
+      return "";
+    }
+  };
+
+  function card(r: { rating: number; name: string; body: string; at: string; sample?: boolean }) {
+    const c = el("article", "rv-card" + (r.sample ? " sample" : ""));
+    if (r.sample) c.append(el("span", "rv-sample-tag", "Sample: only you can see this"));
+    c.append(stars(r.rating, true));
+    if (r.body) c.append(el("p", "", r.body));
+    const who = el("div", "rv-who");
+    const name = el("span");
+    name.append(el("strong", "", r.name));
+    const right = el("span");
+    right.append(el("span", "rv-verified", "Verified buyer"));
+    const when = dateLabel(r.at);
+    if (when) right.append(document.createTextNode(` · ${when}`));
+    who.append(name, right);
+    c.append(who);
+    return c;
+  }
+
+  async function load(section: HTMLElement) {
+    const kind = section.dataset.rvKind!;
+    const id = section.dataset.rvId!;
+    const list = section.querySelector<HTMLElement>(".rv-list")!;
+    const summary = section.querySelector<HTMLElement>(".rv-summary")!;
+    const preview = new URLSearchParams(window.location.search).has("preview-reviews");
+
+    let data: { count: number; avg: number | null; items: any[] } = { count: 0, avg: null, items: [] };
+    try {
+      const res = await supabase.rpc("get_reviews", { p_kind: kind, p_id: id, p_limit: 12 });
+      if (!res.error && res.data) data = res.data;
+    } catch {
+      /* show the empty state */
+    }
+
+    list.replaceChildren();
+    const items = [...(preview ? [SAMPLE] : []), ...(data.items || [])];
+    if (!items.length) {
+      const empty = el("div", "rv-empty");
+      empty.append(el("strong", "", "No reviews yet"), document.createTextNode("Reviews come from customers after their order has been delivered."));
+      list.append(empty);
+      return;
+    }
+    items.forEach((r) => list.append(card(r)));
+
+    const count = Number(data.count) || 0;
+    if (count > 0 && data.avg != null) {
+      summary.hidden = false;
+      summary.replaceChildren(el("b", "", Number(data.avg).toFixed(1)), stars(Number(data.avg)), el("span", "", `${count} review${count === 1 ? "" : "s"}`));
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>(".rv-section").forEach((s) => load(s));
+</script>

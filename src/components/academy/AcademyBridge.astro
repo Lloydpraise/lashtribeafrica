@@ -114,6 +114,8 @@
         await signUpProfile({ name, email, phone, password });
         await enter(true);
       } catch (err: any) {
+        // "Confirm email" is on: the 6-digit code is entered on the profile page
+        if (err?.needsCode) { window.location.href = "/profile"; return; }
         showError("Create", err.message);
       }
     });

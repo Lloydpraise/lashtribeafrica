@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your sign-in link</title></head>
+<body style="margin:0;padding:0;background:#F7F1F2;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F7F1F2;"><tr><td align="center" style="padding:28px 14px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+    <tr><td align="center" style="padding:0 0 18px;">
+      <a href="{{ .SiteURL }}" style="text-decoration:none;color:#222222;"><span style="font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;letter-spacing:.28em;">LASHTRIBE</span><span style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:18px;color:#A96A78;"> Africa</span></a>
+    </td></tr>
+    <tr><td style="background:#ffffff;border-radius:14px;border:1px solid #EADDE0;overflow:hidden;">
+      <div style="height:5px;background:#C98A96;"></div>
+      <div style="padding:30px 30px 8px;font-family:Helvetica,Arial,sans-serif;">
+        <h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-weight:600;font-size:26px;line-height:1.25;color:#222222;">Your sign-in link</h1>
+        <p style="margin:0 0 18px;color:#222222;font-size:15px;line-height:1.65;">Press the button to sign in to your Lashtribe profile. The link works once.</p>
+        
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin:8px 0 26px;"><tr><td style="border-radius:100px;background:#000;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 30px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#ffffff;text-decoration:none;border-radius:100px;">Sign in</a></td></tr></table>
+        <p style="margin:0 0 22px;color:#6b6b6b;font-size:13px;line-height:1.6;">Didn't ask for this? You can safely ignore this email.</p>
+      </div>
+    </td></tr>
+    <tr><td align="center" style="padding:20px 16px 0;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.7;color:#6b6b6b;">
+      <div>This is an account email from Lashtribe Africa, sent to {{ .Email }}.</div>
+      <div style="margin-top:8px;color:#9a9a9a;">Lashtribe Africa &middot; Nairobi, Kenya</div>
+    </td></tr>
+  </table>
+</td></tr></table></body></html>

@@ -6,6 +6,7 @@ import SiteFooter from "../../../components/ecommerce/SiteFooter.astro";
 import Breadcrumbs from "../../../components/ecommerce/Breadcrumbs.astro";
 import { getEcommerceProducts, formatKsh, cardPrices } from "../../../data/ecommerce-products.js";
 import ProductCard from "../../../components/ecommerce/ProductCard.astro";
+import ReviewsCard from "../../../components/reviews/ReviewsCard.astro";
 import { linePrices, previewDelta, optionDisplayType, swatchColor } from "../../../lib/pricing.js";
 
 export async function getStaticPaths() {
@@ -82,9 +83,42 @@ const start = linePrices(config, {}, product.moq, { preview: true });
 const startPartial = previewDelta(product.options, {}).partial;
 const startSave = start.market > start.unit ? start.market - start.unit : 0;
 const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
+
+// SEO copy from 0045 (null until it is written for this product: the page then falls back to the plain description).
+const seo = product.seo;
+const pageTitle = seo?.title || `${product.name} | Lashtribe Africa`;
+const metaDescription = seo?.meta || product.description.slice(0, 155) || undefined;
+const photoAlt = seo?.alt || product.name;
+const toUrl = (path) => (Astro.site && path ? new URL(path, Astro.site).href : path);
+const productLd = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: product.name,
+  description: metaDescription,
+  image: product.images.map((img) => toUrl(img.url)),
+  ...(product.category ? { category: product.category.name } : {}),
+  brand: { "@type": "Brand", name: "Lashtribe Africa" },
+  offers: {
+    "@type": "Offer",
+    priceCurrency: "KES",
+    price: start.unit,
+    availability: "https://schema.org/PreOrder",
+    url: toUrl(`/ecommerce/product/${product.slug}`),
+  },
+};
+const faqLd = seo?.faqs.length
+  ? {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: seo.faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+    }
+  : null;
+const ld = (data) => JSON.stringify(data).replace(/</g, "\\u003c");
 ---
 
-<Layout title={`${product.name} | Lashtribe Africa`}>
+<Layout title={pageTitle} description={metaDescription}>
+  <script is:inline type="application/ld+json" set:html={ld(productLd)} slot="head" />
+  {faqLd && <script is:inline type="application/ld+json" set:html={ld(faqLd)} slot="head" />}
   <SiteHeader />
 
   <Breadcrumbs items={crumbs} />
@@ -102,7 +136,7 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
                 <div class="gallery-slide" data-image-url={img.url}>
                   <img
                     src={img.url}
-                    alt={img.alt || product.name}
+                    alt={i === 0 ? photoAlt : img.alt || product.name}
                     loading={i === 0 ? "eager" : "lazy"}
                     fetchpriority={i === 0 ? "high" : undefined}
                     decoding="async"
@@ -289,16 +323,54 @@ const deltaLabel = (d) => `${d > 0 ? "+" : "−"}${formatKsh(Math.abs(d))}`;
           </button>
         </div>
 
-        <div class="product-description">
-          <h2>Product Details</h2>
-          <p>{product.description}</p>
-          <p>
-            Preorder from Lashtribe Africa and receive direct sourcing value on every order,
-            with flexible batch volumes and fast dispatch on the next available production run.
-          </p>
-        </div>
       </div>
+
     </section>
+
+    <section class="product-info wrap">
+      <div class="product-description">
+        <h2>Product Details</h2>
+        <p>{product.description}</p>
+        {seo?.specs.length > 0 && (
+          <section class="seo-section key-specs">
+            <h3>Key specs</h3>
+            <table class="seo-specs">
+              <tbody>
+                {seo.specs.map((spec) => (
+                  <tr>
+                    <th scope="row">{spec.label}</th>
+                    <td>{spec.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+        {seo?.sections.map((section) => (
+          <section class="seo-section">
+            <h3>{section.heading}</h3>
+            {section.body.split(/\n\s*\n/).map((para) => <p>{para}</p>)}
+          </section>
+        ))}
+        <p>
+          Preorder from Lashtribe Africa and receive direct sourcing value on every order,
+          with flexible batch volumes and fast dispatch on the next available production run.
+        </p>
+      </div>
+      {seo?.faqs.length > 0 && (
+        <aside class="product-faqs">
+          <h2>Frequently asked questions</h2>
+          {seo.faqs.map((faq, i) => (
+            <details open={i === 0}>
+              <summary>{faq.q}</summary>
+              <p>{faq.a}</p>
+            </details>
+          ))}
+        </aside>
+      )}
+    </section>
+
+    <ReviewsCard kind="product" id={product.id} />
 
     <section class="related-products wrap">
       <div class="section-head related-head">

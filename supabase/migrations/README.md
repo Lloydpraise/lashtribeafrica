@@ -177,3 +177,8 @@ site needs its normal deploy step re-run.
    `src/data/courses/classic-set-essentials.js`). Sets `reading_view = 'article'`. **Replaces the course's old lessons**, so any
    student progress on this free course starts fresh; price, status, category and cover are kept. Works with or without 0007.
    Needs the site code that ships with 0037. Safe to re-run.
+47. **`0047_admin_roles.sql`** – **Admins can make other accounts admins** from Admin → Customers (Make admin / Remove admin
+   on a customer with a profile). Goes through `set_user_admin(p_user, p_make_admin)`, which checks inside the database that
+   the caller is an admin and refuses to remove the last admin. `academy_admins` can no longer be written through the API at
+   all (privileges revoked, plus a trigger that rejects writes made as `anon`/`authenticated`). The SQL editor still works for
+   adding the first admin. Run after 0026. Safe to re-run.

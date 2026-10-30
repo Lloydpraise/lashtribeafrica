@@ -6,7 +6,7 @@ import {
 } from "./batches.api.js";
 import { daysUntil, formatBatchDate, nairobiToday } from "../../../data/batches.js";
 
-const STATUS_LABEL = { open: "Open", closed: "Closed", ordered: "Ordered from supplier", shipped: "Shipped" };
+const STATUS_LABEL = { open: "Open", closed: "Closed", ordered: "Ordered from supplier", shipped: "Shipped", arrived: "Arrived, ready to collect" };
 
 function dayChip(shipDate) {
   const d = daysUntil(shipDate);

@@ -5,7 +5,7 @@ import { daysUntil, formatBatchDate, nairobiToday } from "../../../data/batches.
 import { itemLabel } from "../../../lib/pricing.js";
 
 const ksh = (v) => `Ksh ${Number(v || 0).toLocaleString()}`;
-const STATUS_LABEL = { open: "Open", closed: "Closed", ordered: "Ordered from supplier", shipped: "Shipped" };
+const STATUS_LABEL = { open: "Open", closed: "Closed", ordered: "Ordered from supplier", shipped: "Shipped", arrived: "Arrived, ready to collect" };
 const ORDER_STATUS = { pending: "Awaiting payment", paid: "Paid", fulfilled: "Completed", cancelled: "Cancelled", refunded: "Refunded" };
 const live = (o) => !["cancelled", "refunded"].includes(o.status);
 
